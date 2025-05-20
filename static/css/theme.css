@@ -1,0 +1,234 @@
+:root {
+    --color-primary: #f97316;
+    --color-primary-rgb: 249, 115, 22;
+    --color-primary-hover: #ea580c;
+    --color-secondary: #0f172a;
+    --transition-speed: 0.2s;
+    --body-bg: #f9fafb;
+    --card-bg: white;
+    --text-color: #374151;
+    --input-bg: white;
+    --input-border: #e5e7eb;
+    --input-text: #4b5563;
+    --footer-bg: #f9fafb;
+    --header-bg: linear-gradient(135deg, var(--color-secondary) 0%, #1e293b 100%);
+    --header-text: white;
+    --label-color: #374151;
+    --hint-color: #6b7280;
+    --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    /* Базовые размеры и отступы */
+    --body-padding: 1.5rem;
+    --card-margin: 1.5rem;
+    --header-padding: 1.25rem;
+    --body-padding: 1.5rem;
+    --footer-padding: 1rem 1.5rem;
+    --form-group-margin: 1.5rem;
+    --input-padding: 0.625rem 0.75rem;
+    --input-font-size: 0.875rem;
+    --title-font-size: 1.1rem;
+    /* Цвета сайдбара */
+    --sidebar-bg: #0f172a;
+    --sidebar-item-hover: rgba(255, 255, 255, 0.02);
+    --sidebar-text: #f1f5f9;
+    --sidebar-item-active-bg: rgba(255, 255, 255, 0.05);
+    --sidebar-border-color: #1e293b;
+    --navbar-bg: white;
+    /* Цвет иконок сайдбара */
+    --sidebar-icon-color: white;
+}
+
+/* Темная тема */
+body.dark-theme {
+    --body-bg: #111827;
+    --card-bg: #1e293b;
+    --text-color: #f1f5f9;
+    --input-bg: #374151;
+    --input-border: #4b5563;
+    --input-text: #e5e7eb;
+    --footer-bg: #1e293b;
+    --header-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    --header-text: #f8fafc;
+    --label-color: #e5e7eb;
+    --hint-color: #9ca3af;
+    --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+    --sidebar-bg: #111827;
+    --sidebar-item-hover: #1e293b;
+    --sidebar-text: #f1f5f9;
+    --navbar-bg: #1e293b;
+    --sidebar-item-active-bg: #374151;
+    --sidebar-border-color: #374151;
+    --sidebar-icon-color: white;
+}
+
+/* Компактный режим */
+body.compact-mode {
+    --body-padding: 1rem;
+    --card-margin: 1rem;
+    --header-padding: 0.75rem;
+    --body-padding: 1rem;
+    --footer-padding: 0.75rem 1rem;
+    --form-group-margin: 0.75rem;
+    --input-padding: 0.4rem 0.6rem;
+    --input-font-size: 0.8rem;
+    --title-font-size: 1rem;
+}
+
+/* Отключение анимаций */
+body.no-animations * {
+    transition: none !important;
+}
+
+/* Применение основных стилей */
+body {
+    background-color: var(--body-bg);
+    color: var(--text-color);
+    transition:
+        background-color var(--transition-speed),
+        color var(--transition-speed);
+}
+
+/* Применение стилей для карточек и элементов интерфейса */
+.card,
+.settings-card,
+.property-card,
+.user-card,
+.request-card {
+    background-color: var(--card-bg);
+    box-shadow: var(--card-shadow);
+    transition:
+        background-color var(--transition-speed),
+        box-shadow var(--transition-speed);
+}
+
+/* Стили для основных элементов ввода */
+input,
+select,
+textarea,
+.form-input,
+.form-select {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--input-text);
+    transition: all var(--transition-speed) ease;
+}
+
+/* Стили для кнопок */
+.btn-primary,
+.save-button,
+.action-button {
+    background-color: var(--color-primary);
+    color: white;
+    transition: background-color var(--transition-speed);
+}
+
+.btn-primary:hover,
+.save-button:hover,
+.action-button:hover {
+    background-color: var(--color-primary-hover);
+}
+
+/* Стили для заголовков и текста */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.heading,
+.card-title,
+.section-title {
+    color: var(--text-color);
+}
+
+/* Стили для сайдбара */
+.sidebar {
+    background-color: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    transition:
+        background-color var(--transition-speed),
+        color var(--transition-speed);
+}
+
+.sidebar-item:hover {
+    background-color: var(--sidebar-item-hover);
+}
+
+/* Дополнительные стили для сайдбар компонентов */
+.sidebar-link {
+    color: var(--sidebar-text);
+    transition:
+        background-color var(--transition-speed),
+        color var(--transition-speed),
+        border-left-color var(--transition-speed);
+}
+
+.sidebar-link:hover {
+    background-color: var(--sidebar-item-hover);
+    color: var(--header-text);
+    border-left-color: var(--color-primary) !important;
+}
+
+.sidebar-link.active {
+    background-color: var(--sidebar-item-active-bg);
+    border-left-color: var(--color-primary) !important;
+}
+
+.sidebar .border-b,
+.sidebar .border-t {
+    border-color: var(--sidebar-border-color) !important;
+}
+
+.sidebar i {
+    color: var(--sidebar-icon-color) !important;
+}
+
+/* Стили для навбара */
+.navbar,
+.nav-container,
+.top-navbar {
+    background-color: var(--navbar-bg);
+    color: var(--header-text);
+    transition: background-color var(--transition-speed);
+}
+
+/* Дополнительные стили для контента и футера */
+.main-content > div {
+    background-color: var(--body-bg);
+}
+
+footer {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border-color: var(--input-border);
+}
+
+/* Специфичные стили для цветовых схем */
+body[data-color-scheme="blue"] {
+    --color-primary: #3b82f6;
+    --color-primary-rgb: 59, 130, 246;
+    --color-primary-hover: #2563eb;
+}
+
+body[data-color-scheme="green"] {
+    --color-primary: #10b981;
+    --color-primary-rgb: 16, 185, 129;
+    --color-primary-hover: #059669;
+}
+
+body[data-color-scheme="red"] {
+    --color-primary: #ef4444;
+    --color-primary-rgb: 239, 68, 68;
+    --color-primary-hover: #dc2626;
+}
+
+body[data-color-scheme="purple"] {
+    --color-primary: #8b5cf6;
+    --color-primary-rgb: 139, 92, 246;
+    --color-primary-hover: #7c3aed;
+}
+
+body[data-color-scheme="orange"] {
+    --color-primary: #f97316;
+    --color-primary-rgb: 249, 115, 22;
+    --color-primary-hover: #ea580c;
+}

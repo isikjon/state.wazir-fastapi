@@ -21,8 +21,8 @@ class Message(Base, TimestampMixin):
     sender_id = Column(Integer, ForeignKey("users.id"))
     recipient_id = Column(Integer, ForeignKey("users.id"))
     
-    sender = relationship("User", foreign_keys=[sender_id], back_populates="messages_sent")
-    recipient = relationship("User", foreign_keys=[recipient_id], back_populates="messages_received")
+    sender = relationship("User", foreign_keys=[sender_id], backref="messages_sent")
+    recipient = relationship("User", foreign_keys=[recipient_id], backref="messages_received")
 
 
 class TicketStatus(str, enum.Enum):
@@ -41,7 +41,7 @@ class SupportTicket(Base, TimestampMixin):
     status = Column(Enum(TicketStatus), default=TicketStatus.OPEN)
     
     user_id = Column(Integer, ForeignKey("users.id"))
-    user = relationship("User", back_populates="support_tickets")
+    user = relationship("User", backref="support_tickets")
     
     responses = relationship("TicketResponse", back_populates="ticket")
 

@@ -31,6 +31,5 @@ class User(Base, TimestampMixin):
     
     properties = relationship("Property", back_populates="owner")
     favorites = relationship("Favorite", back_populates="user")
-    messages_sent = relationship("Message", back_populates="sender", foreign_keys="Message.sender_id")
-    messages_received = relationship("Message", back_populates="recipient", foreign_keys="Message.recipient_id")
-    support_tickets = relationship("SupportTicket", back_populates="user") 
+    # Отношения messages_sent и messages_received будут определены через backref в Message
+    # support_tickets будет определено через backref в SupportTicket 

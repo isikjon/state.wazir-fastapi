@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Тест WebSocket</title>
+        <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .container {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        button {
+            padding: 8px 16px;
+            background: #4765f6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input {
+            padding: 8px;
+            width: 70%;
+            margin-right: 10px;
+        }
+        #messages {
+            margin-top: 20px;
+            border: 1px solid #eee;
+            padding: 10px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .message {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .sent {
+            background: #e6f7ff;
+            text-align: right;
+        }
+        .received {
+            background: #f0f0f0;
+        }
+        h3 {
+            margin-top: 0;
+        }
+    </style>
+    </head>
+    <body>
+        <h1>Тестирование WebSocket соединения</h1>
+
+        <div class="container">
+            <h3>Тестовый WebSocket эндпоинт</h3>
+            <p>Статус соединения: <span id="status-test">Не
+                    подключено</span></p>
+            <div>
+                <input type="text" id="message-test"
+                    placeholder="Введите сообщение...">
+                <button id="send-test">Отправить</button>
+            </div>
+            <div id="messages-test">
+                <p>Ожидание сообщений...</p>
+            </div>
+        </div>
+
+        <div class="container">
+            <h3>Соединение с чатом</h3>
+            <p>Статус соединения: <span id="status-chat">Не
+                    подключено</span></p>
+            <div>
+                <input type="text" id="message-chat"
+                    placeholder="Введите сообщение...">
+                <button id="send-chat">Отправить</button>
+            </div>
+            <div id="messages-chat">
+                <p>Ожидание сообщений...</p>
+            </div>
+        </div>
+
+        <script>
+        // Функция для добавления сообщения в контейнер
+        function addMessage(container, text, isReceived = true) {
+            const message = document.createElement('div');
+            message.className = `message ${isReceived ? 'received' : 'sent'}`;
+            message.textContent = text;
+            container.appendChild(message);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Подключение к тестовому WebSocket
+        const testWsUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + 
+                        window.location.host + '/mobile/ws/test';
+        
+        const testSocket = new WebSocket(testWsUrl);
+        const testStatusEl = document.getElementById('status-test');
+        const testMessagesEl = document.getElementById('messages-test');
+        
+        testSocket.onopen = function() {
+            testStatusEl.textContent = 'Подключено';
+            testStatusEl.style.color = 'green';
+            addMessage(testMessagesEl, 'Соединение установлено', true);
+        };
+        
+        testSocket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            addMessage(testMessagesEl, `Получено: ${data.message}`, true);
+        };
+        
+        testSocket.onclose = function() {
+            testStatusEl.textContent = 'Отключено';
+            testStatusEl.style.color = 'red';
+            addMessage(testMessagesEl, 'Соединение закрыто', true);
+        };
+        
+        testSocket.onerror = function(error) {
+            testStatusEl.textContent = 'Ошибка';
+            testStatusEl.style.color = 'red';
+            addMessage(testMessagesEl, 'Ошибка соединения', true);
+            console.error('Ошибка WebSocket:', error);
+        };
+        
+        // Обработка отправки сообщения
+        document.getElementById('send-test').addEventListener('click', function() {
+            const messageInput = document.getElementById('message-test');
+            const message = messageInput.value.trim();
+            
+            if (message && testSocket.readyState === WebSocket.OPEN) {
+                testSocket.send(JSON.stringify({
+                    message: message
+                }));
+                addMessage(testMessagesEl, `Отправлено: ${message}`, false);
+                messageInput.value = '';
+            }
+        });
+
+        // Подключение к WebSocket чата
+        const chatWsUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + 
+                        window.location.host + '/mobile/ws/chats_list';
+        
+        const chatSocket = new WebSocket(chatWsUrl);
+        const chatStatusEl = document.getElementById('status-chat');
+        const chatMessagesEl = document.getElementById('messages-chat');
+        
+        chatSocket.onopen = function() {
+            chatStatusEl.textContent = 'Подключено';
+            chatStatusEl.style.color = 'green';
+            addMessage(chatMessagesEl, 'Соединение установлено', true);
+            
+            // Отправляем токен при подключении
+            setTimeout(() => {
+                chatSocket.send(JSON.stringify({
+                    token: getToken(),
+                    type: "get_chats"
+                }));
+                addMessage(chatMessagesEl, 'Отправлен запрос на получение чатов', false);
+            }, 1000);
+        };
+        
+        chatSocket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            addMessage(chatMessagesEl, `Получено: ${JSON.stringify(data).substring(0, 100)}...`, true);
+        };
+        
+        chatSocket.onclose = function() {
+            chatStatusEl.textContent = 'Отключено';
+            chatStatusEl.style.color = 'red';
+            addMessage(chatMessagesEl, 'Соединение закрыто', true);
+        };
+        
+        chatSocket.onerror = function(error) {
+            chatStatusEl.textContent = 'Ошибка';
+            chatStatusEl.style.color = 'red';
+            addMessage(chatMessagesEl, 'Ошибка соединения', true);
+            console.error('Ошибка WebSocket чата:', error);
+        };
+        
+        // Обработка отправки сообщения в чат
+        document.getElementById('send-chat').addEventListener('click', function() {
+            const messageInput = document.getElementById('message-chat');
+            const message = messageInput.value.trim();
+            
+            if (message && chatSocket.readyState === WebSocket.OPEN) {
+                chatSocket.send(JSON.stringify({
+                    token: getToken(),
+                    type: "message",
+                    content: message
+                }));
+                addMessage(chatMessagesEl, `Отправлено: ${message}`, false);
+                messageInput.value = '';
+            }
+        });
+        
+        // Получение токена из cookie
+        function getToken() {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'access_token') {
+                    return value;
+                }
+            }
+            return null;
+        }
+    </script>
+    </body>
+</html>

@@ -35,6 +35,15 @@ class Property(Base, TimestampMixin):
     is_featured = Column(Boolean, default=False)
     tour_360_url = Column(String(255), nullable=True)
     
+    # Дополнительные поля для фильтрации
+    rooms = Column(Integer, nullable=True)  # Количество комнат
+    floor = Column(Integer, nullable=True)  # Этаж
+    building_floors = Column(Integer, nullable=True)  # Этажность здания
+    has_balcony = Column(Boolean, default=False)  # Наличие балкона
+    has_furniture = Column(Boolean, default=False)  # Наличие мебели
+    has_renovation = Column(Boolean, default=False)  # Наличие ремонта
+    has_parking = Column(Boolean, default=False)  # Наличие парковки
+    
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="properties")
     

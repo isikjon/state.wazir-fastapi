@@ -7,10 +7,10 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
-from app import deps
+from app.api import deps
 from app.models.user import User
-from app.models.support import SupportTicket, SupportMessage
-from app.schemas.support import SupportTicketCreate, SupportMessageCreate, SupportTicketResponse, SupportMessageResponse
+from app.models.message import SupportTicket, TicketResponse as SupportMessage
+from app.schemas.message import TicketCreate as SupportTicketCreate, TicketResponseCreate as SupportMessageCreate, Ticket as SupportTicketResponse, TicketResponse as SupportMessageResponse
 
 router = APIRouter()
 

@@ -15,14 +15,14 @@
             rel="stylesheet">
         <link rel="stylesheet"
             href="{{ url_for('static', path='layout/assets/scss/main.css') }}">
-        {% block extra_css %}{% endblock %}
+        {% block head %}{% endblock %}
     </head>
     <body class="bg-gray-50 font-sans">
         {% block content %}{% endblock %}
 
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script
-            src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
-        {% block extra_js %}{% endblock %}
+            src="{{ url_for('static', path='layout/assets/js/auth-check.js') }}"></script>
+        {% block scripts %}{% endblock %}
     </body>
 </html>

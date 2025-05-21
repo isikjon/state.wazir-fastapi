@@ -5,11 +5,12 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas, services
 from app.api import deps
+from app.schemas.message import Message as AppMessageSchema
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[schemas.Message])
+@router.get("/", response_model=List[AppMessageSchema])
 def read_messages(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
@@ -22,7 +23,7 @@ def read_messages(
     return messages
 
 
-@router.post("/", response_model=schemas.Message)
+@router.post("/", response_model=AppMessageSchema)
 def create_message(
     *,
     db: Session = Depends(deps.get_db),
@@ -39,7 +40,7 @@ def create_message(
     return message
 
 
-@router.get("/conversation/{user_id}", response_model=List[schemas.Message])
+@router.get("/conversation/{user_id}", response_model=List[AppMessageSchema])
 def read_conversation(
     *,
     db: Session = Depends(deps.get_db),

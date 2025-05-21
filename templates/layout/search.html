@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Wazir Недвижимость - Поиск</title>
+        <link rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.css" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+            rel="stylesheet">
+        <link rel="stylesheet"
+            href="{{ url_for('static', path='layout/assets/scss/main.css') }}">
+        <style>
+            .bottom-nav {
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            }
+            .nav-item {
+                transition: all 0.2s ease;
+            }
+            .nav-item.active {
+                color: var(--color-primary);
+            }
+            .nav-item:hover {
+                color: var(--color-primary-hover);
+            }
+            .nav-icons {
+                font-size: 1.6rem;
+                font-weight: 300;
+            }
+            .weather-currency {
+                font-size: 1.1rem;
+                font-weight: 500;
+            }
+            .weather-icon {
+                font-size: 1.4rem;
+            }
+            .category-tabs {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                background-color: #f9fafb;
+                border-bottom: 1px solid #e5e7eb;
+                padding: 10px 0;
+            }
+            .category-tabs::-webkit-scrollbar {
+                display: none;
+            }
+            .category-select {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                font-size: 1rem;
+                color: #4b5563;
+                background-color: white;
+                outline: none;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            .swiper {
+                width: 100%;
+                height: 220px;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            .swiper-slide img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .property-card {
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+                margin-bottom: 16px;
+            }
+            .property-info {
+                font-size: 1.05rem;
+                line-height: 1.5;
+                color: #4b5563;
+            }
+            .property-address {
+                font-size: 0.95rem;
+                color: #6b7280;
+            }
+            .property-price {
+                font-size: 1.3rem;
+                font-weight: 700;
+                color: #111827;
+            }
+            .action-btn {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 10px;
+                font-size: 1rem;
+                font-weight: 500;
+                transition: all 0.2s ease;
+                border-radius: 0;
+            }
+            .action-btn i {
+                margin-right: 6px;
+                font-size: 1.1rem;
+            }
+            .action-btn.call-btn {
+                background-color: #f9fafb;
+                color: #4b5563;
+                border-right: 1px solid #e5e7eb;
+            }
+            .action-btn.details-btn {
+                background-color: #f9fafb;
+                color: #4b5563;
+                border-right: 1px solid #e5e7eb;
+            }
+            .action-btn.tour-btn {
+                background-color: #f9fafb;
+                color: #4b5563;
+            }
+            .pagination-dot {
+                width: 6px;
+                height: 6px;
+                background-color: rgba(255,255,255,0.5);
+                border-radius: 50%;
+                margin: 0 2px;
+            }
+            .pagination-dot.active {
+                background-color: white;
+                width: 8px;
+                height: 8px;
+            }
+            .filter-panel {
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+            }
+            .filter-panel.open {
+                max-height: 1000px;
+                display: block;
+            }
+            .filter-panel.closed {
+                display: none;
+            }
+            .filter-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 16px;
+                background-color: #fff;
+                cursor: pointer;
+                border-radius: 8px;
+                margin-bottom: 8px;
+                font-size: 1.05rem;
+                font-weight: 400;
+            }
+            .applied-filters {
+                background-color: #ffedd5;
+                color: var(--color-primary);
+                padding: 8px 16px;
+                border-radius: 8px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+                font-weight: 400;
+                display: none;
+            }
+            .applied-filters.visible {
+                display: flex;
+            }
+            .price-range {
+                height: 6px;
+                background: #e5e7eb;
+                border-radius: 3px;
+                position: relative;
+            }
+            .price-progress {
+                height: 100%;
+                background: var(--color-primary);
+                position: absolute;
+                border-radius: 3px;
+            }
+            .range-input {
+                position: relative;
+                margin-top: 24px;
+                margin-bottom: 10px;
+            }
+            .range-input input {
+                position: absolute;
+                top: -8px;
+                height: 6px;
+                width: 100%;
+                background: none;
+                pointer-events: none;
+                appearance: none;
+            }
+            .range-input input::-webkit-slider-thumb {
+                height: 24px;
+                width: 24px;
+                border-radius: 50%;
+                pointer-events: auto;
+                appearance: none;
+                background: white;
+                border: 2px solid var(--color-primary);
+                box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+                cursor: pointer;
+            }
+            .room-btn {
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-size: 1rem;
+                transition: all 0.2s ease;
+            }
+            .room-btn.active {
+                background-color: var(--color-primary);
+                color: white;
+                border-color: var(--color-primary);
+            }
+            .checkbox-label {
+                font-size: 1rem;
+            }
+            .no-results {
+                text-align: center;
+                padding: 40px 20px;
+                color: #6b7280;
+            }
+            .no-results i {
+                font-size: 3rem;
+                margin-bottom: 15px;
+                color: #d1d5db;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-100 font-sans">
+        <div class="min-h-screen flex flex-col">
+            <!-- Верхний блок: Лого, Погода, Валюта -->
+            <header class="bg-white shadow-sm">
+                <div class="container mx-auto px-4 py-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <img
+                                src="{{ url_for('static', path='layout/assets/img/logo_non.png') }}"
+                                alt="Wazir Logo"
+                                class="h-10">
+                        </div>
+                        <div class="flex items-center space-x-6">
+                            <div class="flex items-center weather-currency">
+                                <div id="weather-icon-container" class="mr-2">
+                                    <!-- Погодная иконка -->
+                                </div>
+                                <span id="weather-temp">Загрузка...</span>
+                            </div>
+                            <div class="flex items-center weather-currency">
+                                <img src="https://flagcdn.com/w20/us.png"
+                                    alt="USD" class="h-5 mr-2">
+                                <span id="currency-rate">Загрузка...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Основное содержимое -->
+            <main class="flex-grow pb-20">
+                <!-- Категории (табы) -->
+                <div class="category-tabs py-2 sticky top-0 z-10 shadow-sm">
+                    <div class="container mx-auto px-4">
+                        <select class="category-select" id="category-select">
+                            <option value {% if not selected_category
+                                %}selected{% endif %}>Выберите
+                                категорию</option>
+                            {% for category in categories %}
+                            <option value="{{ category.name }}" {% if
+                                selected_category == category.name %}selected{%
+                                endif %}>{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Поисковая строка и фильтры -->
+                <div class="container mx-auto px-4 mb-4 mt-3">
+                    <form id="search-form" method="get"
+                        action="{{ url_for('search') }}">
+                        <div class="flex items-center mb-3">
+                            <div class="relative flex-1">
+                                <input type="text" name="q" id="search-input"
+                                    class="bg-white w-full py-3 pl-10 pr-4 rounded-lg shadow-sm text-base"
+                                    style="border-bottom: 1px solid #e5e7eb; outline: none;"
+                                    placeholder="Поиск недвижимости, улица, слова"
+                                    value="{{ search_query or '' }}">
+                                <i
+                                    class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            </div>
+                            <button id="filter-toggle" type="button"
+                                class="ml-2 bg-white p-3 rounded-lg shadow-sm">
+                                <i
+                                    class="fas fa-sliders-h text-gray-600 text-lg"></i>
+                            </button>
+                            <input type="hidden" name="category"
+                                id="category-input"
+                                value="{{ selected_category or '' }}">
+                        </div>
+                    </form>
+
+                    <!-- Индикатор примененных фильтров -->
+                    <div id="applied-filters"
+                        class="applied-filters {% if min_price or max_price or min_area or max_area or rooms or min_floor or max_floor or balcony or furniture or renovation or parking %}visible{% endif %}">
+                        <span>Применены фильтры</span>
+                        <button id="reset-all-filters"
+                            class="text-red-500 flex items-center">
+                            <span>Сбросить</span>
+                            <i class="fas fa-times-circle ml-1"></i>
+                        </button>
+                    </div>
+
+                    <!-- Панель фильтров -->
+                    <div class="filter-header" id="filter-header">
+                        <span>Фильтры поиска</span>
+                        <i class="fas fa-chevron-down text-gray-500"></i>
+                    </div>
+                    <div id="filter-panel"
+                        class="filter-panel bg-white rounded-lg shadow-sm p-4 mb-4">
+                        <form id="filter-form">
+                            <!-- Цена -->
+                            <div class="mb-5 price-block">
+                                <label
+                                    class="block text-base font-medium text-gray-700 mb-2">Цена</label>
+                                <div class="price-range mb-6">
+                                    <div class="price-progress"
+                                        style="left: {{ (min_price or 0) / 10000000 * 100 }}%; right: {{ 100 - ((max_price or 10000000) / 10000000 * 100) }}%"></div>
+                                </div>
+                                <div class="range-input">
+                                    <input type="range" name="min_price" min="0"
+                                        max="10000000"
+                                        value="{{ min_price or 0 }}"
+                                        class="min-range">
+                                    <input type="range" name="max_price" min="0"
+                                        max="10000000"
+                                        value="{{ max_price or 10000000 }}"
+                                        class="max-range">
+                                </div>
+                                <div
+                                    class="flex justify-between text-sm text-gray-700 mt-2 font-medium">
+                                    <span id="min-price">{{ min_price or 0 }}
+                                        KGZ</span>
+                                    <span id="max-price">{{ max_price or
+                                        10000000 }} KGZ</span>
+                                </div>
+                            </div>
+
+                            <!-- Площадь -->
+                            <div class="mb-5">
+                                <label
+                                    class="block text-base font-medium text-gray-700 mb-2">Площадь
+                                    (м²)</label>
+                                <div class="price-range mb-6">
+                                    <div class="price-progress"
+                                        style="left: {{ (min_area or 0) / 500 * 100 }}%; right: {{ 100 - ((max_area or 500) / 500 * 100) }}%"></div>
+                                </div>
+                                <div class="range-input">
+                                    <input type="range" name="min_area" min="0"
+                                        max="500" value="{{ min_area or 0 }}"
+                                        class="min-area">
+                                    <input type="range" name="max_area" min="0"
+                                        max="500"
+                                        value="{{ max_area or 500 }}"
+                                        class="max-area">
+                                </div>
+                                <div
+                                    class="flex justify-between text-sm text-gray-700 mt-2 font-medium">
+                                    <span id="min-area">{{ min_area or 0 }}
+                                        м²</span>
+                                    <span id="max-area">{{ max_area or 500 }}
+                                        м²</span>
+                                </div>
+                            </div>
+
+                            <!-- Количество комнат -->
+                            <div class="mb-5">
+                                <label
+                                    class="block text-base font-medium text-gray-700 mb-2">Количество
+                                    комнат</label>
+                                <div class="flex flex-wrap gap-2">
+                                    <button type="button" data-value="1"
+                                        class="room-btn border border-gray-300 text-gray-700 {% if rooms == 1 %}active{% endif %}">1</button>
+                                    <button type="button" data-value="2"
+                                        class="room-btn border border-gray-300 text-gray-700 {% if rooms == 2 %}active{% endif %}">2</button>
+                                    <button type="button" data-value="3"
+                                        class="room-btn border border-gray-300 text-gray-700 {% if rooms == 3 %}active{% endif %}">3</button>
+                                    <button type="button" data-value="4"
+                                        class="room-btn border border-gray-300 text-gray-700 {% if rooms == 4 %}active{% endif %}">4</button>
+                                    <button type="button" data-value="5"
+                                        class="room-btn border border-gray-300 text-gray-700 {% if rooms == 5 %}active{% endif %}">5+</button>
+                                    <input type="hidden" name="rooms"
+                                        id="rooms-input"
+                                        value="{{ rooms or '' }}">
+                                </div>
+                            </div>
+
+                            <!-- Этаж -->
+                            <div class="mb-5">
+                                <label
+                                    class="block text-base font-medium text-gray-700 mb-2">Этаж</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label
+                                            class="block text-sm text-gray-600 mb-1">От</label>
+                                        <select name="min_floor"
+                                            class="w-full p-3 border border-gray-300 rounded-md text-base">
+                                            <option value>Любой</option>
+                                            {% for i in range(1, 21) %}
+                                            <option value="{{ i }}" {% if
+                                                min_floor == i %}selected{%
+                                                endif %}>{{ i }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-sm text-gray-600 mb-1">До</label>
+                                        <select name="max_floor"
+                                            class="w-full p-3 border border-gray-300 rounded-md text-base">
+                                            <option value>Любой</option>
+                                            {% for i in range(1, 21) %}
+                                            <option value="{{ i }}" {% if
+                                                max_floor == i %}selected{%
+                                                endif %}>{{ i }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Дополнительные опции -->
+                            <div class="mb-5">
+                                <label
+                                    class="block text-base font-medium text-gray-700 mb-3">Дополнительно</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label
+                                        class="flex items-center checkbox-label">
+                                        <input type="checkbox" name="balcony"
+                                            value="true" class="mr-2 w-5 h-5" {%
+                                            if balcony %}checked{% endif %}>
+                                        С балконом
+                                    </label>
+                                    <label
+                                        class="flex items-center checkbox-label">
+                                        <input type="checkbox" name="furniture"
+                                            value="true" class="mr-2 w-5 h-5" {%
+                                            if furniture %}checked{% endif %}>
+                                        С мебелью
+                                    </label>
+                                    <label
+                                        class="flex items-center checkbox-label">
+                                        <input type="checkbox" name="renovation"
+                                            value="true" class="mr-2 w-5 h-5" {%
+                                            if renovation %}checked{% endif %}>
+                                        Ремонт
+                                    </label>
+                                    <label
+                                        class="flex items-center checkbox-label">
+                                        <input type="checkbox" name="parking"
+                                            value="true" class="mr-2 w-5 h-5" {%
+                                            if parking %}checked{% endif %}>
+                                        Паркинг
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="flex space-x-3">
+                                <button id="apply-filters" type="button"
+                                    class="btn-primary flex-1 py-3 rounded-lg text-base font-medium">Применить</button>
+                                <button id="reset-filters" type="button"
+                                    class="btn-secondary w-1/3 py-3 rounded-lg text-base font-medium">Сбросить</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Объявления -->
+                <div class="container mx-auto px-4">
+                    {% if properties %}
+                    {% for prop in properties %}
+                    <!-- Карточка объявления -->
+                    <div class="property-card bg-white mb-5">
+                        <div class="relative">
+                            <!-- Слайдер изображений -->
+                            <div class="swiper property-swiper">
+                                <div class="swiper-wrapper">
+                                    {% if prop.images %}
+                                    {% for image in prop.images %}
+                                    <div class="swiper-slide">
+                                        <div class="col-span-1">
+                                            <img src="{{ image }}"
+                                                alt="{{ prop.title }}"
+                                                class="w-full h-full object-cover">
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                    {% else %}
+                                    <div class="swiper-slide">
+                                        <div class="col-span-1">
+                                            <img
+                                                src="{{ url_for('static', path='layout/assets/img/property-placeholder.jpg') }}"
+                                                alt="Нет фото"
+                                                class="w-full h-full object-cover">
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="swiper-pagination"></div>
+                            </div>
+
+                            <!-- Индикатор просмотра фото -->
+                            <div
+                                class="absolute bottom-3 right-3 bg-black bg-opacity-50 text-white px-3 py-1 rounded text-sm font-medium">
+                                1/{{ prop.images_count or 1 }}
+                            </div>
+                        </div>
+
+                        <div class="p-4">
+                            <div class="mb-2">
+                                <h3 class="property-price">{{
+                                    "{:,.0f}".format(prop.price).replace(',',
+                                    ' ') }} KGZ</h3>
+                            </div>
+                            <div class="property-info mb-1">
+                                <p>{{ prop.rooms or "?" }}-комн.кв • {{
+                                    prop.area or "?" }} м² • {{ prop.floor or
+                                    "?" }}/{{ prop.building_floors or "?" }}
+                                    этаж</p>
+                            </div>
+                            <div class="property-address mb-3">
+                                <p>г.{{ prop.city or "Ош" }} • {{ prop.address
+                                    or "Адрес не указан" }}</p>
+                            </div>
+
+                            <!-- Кнопки действий -->
+                            <div class="flex">
+                                <a href="tel:+996123456789"
+                                    class="action-btn call-btn">
+                                    <i class="fas fa-phone-alt"></i> Позвонить
+                                </a>
+                                <a
+                                    href="{{ url_for('property', property_id=prop.id) }}"
+                                    class="action-btn details-btn">
+                                    <i class="fas fa-info-circle"></i> Подробно
+                                </a>
+                                {% if prop.tour_360_url %}
+                                <a href="{{ prop.tour_360_url }}"
+                                    class="action-btn tour-btn">
+                                    <i class="fas fa-vr-cardboard"></i> 360° -
+                                    Тур
+                                </a>
+                                {% else %}
+                                <a href="#" class="action-btn tour-btn"
+                                    style="opacity: 0.5; pointer-events: none;">
+                                    <i class="fas fa-vr-cardboard"></i> 360° -
+                                    Тур
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <!-- Если нет объявлений -->
+                    <div class="no-results">
+                        <i class="fas fa-search"></i>
+                        <h3 class="text-xl font-semibold mb-2">Объявления не
+                            найдены</h3>
+                        <p class="mb-4">Попробуйте изменить параметры поиска или
+                            сбросить фильтры</p>
+                        <button id="clear-search"
+                            class="bg-white text-gray-700 border border-gray-300 py-2 px-4 rounded-lg hover:bg-gray-50">
+                            Сбросить все фильтры
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </main>
+
+            <!-- Нижняя навигация -->
+            <nav
+                class="bottom-nav fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10">
+                <div class="flex justify-around items-center py-4">
+                    <a href="{{ url_for('dashboard') }}"
+                        class="nav-item text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24"
+                            height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.75"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="nav-icons"><path
+                                d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline
+                                points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    </a>
+                    <a href="{{ url_for('search') }}" class="nav-item active">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24"
+                            height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.75"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="nav-icons"><circle cx="11" cy="11"
+                                r="8"></circle><line x1="21" y1="21" x2="16.65"
+                                y2="16.65"></line></svg>
+                    </a>
+                    <a href="{{ url_for('chats') }}"
+                        class="nav-item text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24"
+                            height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.75"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="nav-icons"><path
+                                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    </a>
+                    <a href="{{ url_for('support') }}"
+                        class="nav-item text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24"
+                            height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.75"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="nav-icons"><circle cx="12" cy="12"
+                                r="10"></circle><path
+                                d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line
+                                x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    </a>
+                    <a href="{{ url_for('profile') }}"
+                        class="nav-item text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24"
+                            height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.75"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="nav-icons"><path
+                                d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle
+                                cx="12" cy="7" r="4"></circle></svg>
+                    </a>
+                </div>
+            </nav>
+        </div>
+
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
+        <!-- Подключаем скрипт для кэширования данных о погоде и курсе валюты -->
+        <script
+            src="{{ url_for('static', path='layout/assets/js/weather-currency-cache.js') }}"></script>
+        <script>
+        $(document).ready(function() {
+            // Инициализация слайдера для каждой карточки
+            const propertySwipers = new Swiper('.property-swiper', {
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                },
+                loop: true
+            });
+            
+            // Функция для получения данных о погоде через Visual Crossing Weather
+            function getWeather() {
+                // Сначала проверяем, есть ли кэшированные данные
+                const cachedWeather = getWeatherFromCache();
+                if (cachedWeather) {
+                    // Если есть кэшированные данные, сразу их отображаем
+                    displayWeatherData(cachedWeather);
+                    return;
+                }
+                
+                // Если кэша нет или он устарел, запрашиваем данные с API
+                const city = "Osh,Kyrgyzstan";
+                const apiKey = "JPWU9UY254WNDKUNM9MH9E8AR"; // Публичный ключ с ограничениями
+                
+                $.ajax({
+                    url: `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${city}/today`,
+                    data: {
+                        unitGroup: "metric",
+                        key: apiKey,
+                        include: "current"
+                    },
+                    success: function(data) {
+                        try {
+                            if (data && data.currentConditions && data.currentConditions.temp !== undefined) {
+                                // Округляем температуру до целого числа
+                                const temp = Math.round(data.currentConditions.temp);
+                                
+                                // Получаем код состояния погоды и создаем иконку
+                                const condition = data.currentConditions.conditions ? 
+                                    data.currentConditions.conditions.toLowerCase() : '';
+                                const iconCode = data.currentConditions.icon ? 
+                                    data.currentConditions.icon.toLowerCase() : '';
+                                
+                                let iconHtml;
+                                // Определяем иконку на основе кода погоды Visual Crossing
+                                if (iconCode.includes('rain') || condition.includes('дождь') || condition.includes('осадки')) {
+                                    // Дождь
+                                    iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4c94f2" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><line x1="16" y1="13" x2="16" y2="21"></line><line x1="8" y1="13" x2="8" y2="21"></line><line x1="12" y1="15" x2="12" y2="23"></line><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path></svg>`;
+                                } else if (iconCode.includes('snow') || condition.includes('снег')) {
+                                    // Снег
+                                    iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9cc0fa" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"></path><line x1="8" y1="16" x2="8.01" y2="16"></line><line x1="8" y1="20" x2="8.01" y2="20"></line><line x1="12" y1="18" x2="12.01" y2="18"></line><line x1="12" y1="22" x2="12.01" y2="22"></line><line x1="16" y1="16" x2="16.01" y2="16"></line><line x1="16" y1="20" x2="16.01" y2="20"></line></svg>`;
+                                } else if (iconCode.includes('thunder') || iconCode.includes('lightning') || condition.includes('гроза')) {
+                                    // Гроза
+                                    iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c8aa0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"></path><polyline points="13 11 9 17 15 17 11 23"></polyline></svg>`;
+                                } else if (iconCode.includes('fog') || iconCode.includes('mist') || condition.includes('туман') || condition.includes('дымка')) {
+                                    // Туман
+                                    iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c8aa0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`;
+                                } else if (iconCode === 'clear-day' || iconCode === 'clear-night' || condition.includes('ясно')) {
+                                    // Ясно
+                                    iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
+                                } else if (iconCode.includes('cloud') || condition.includes('облачно') || condition.includes('пасмурно')) {
+                                    // Облачно
+                                    iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c8aa0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`;
+                                } else {
+                                    // По умолчанию или для других условий
+                                    iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c8aa0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`;
+                                }
+                                
+                                // Сохраняем данные в кэш
+                                const weatherData = {
+                                    temp: temp,
+                                    iconHtml: iconHtml,
+                                    condition: condition
+                                };
+                                saveWeatherToCache(weatherData);
+                                
+                                // Отображаем данные
+                                displayWeatherData(weatherData);
+                            } else {
+                                showFallbackWeather();
+                            }
+                        } catch (e) {
+                            showFallbackWeather();
+                        }
+                    },
+                    error: function() {
+                        // При ошибке используем резервные данные
+                        showFallbackWeather();
+                    }
+                });
+            }
+            
+            // Резервные данные для погоды
+            function showFallbackWeather() {
+                // Сезонные температуры для Оша
+                const month = new Date().getMonth() + 1;
+                
+                let temp;
+                if (month >= 12 || month <= 2) {
+                    // Зима (декабрь-февраль)
+                    temp = -2;
+                } else if (month >= 3 && month <= 5) {
+                    // Весна (март-май)
+                    temp = 15;
+                } else if (month >= 6 && month <= 8) {
+                    // Лето (июнь-август)
+                    temp = 28;
+                } else {
+                    // Осень (сентябрь-ноябрь)
+                    temp = 12;
+                }
+                
+                // Базовая иконка облачности
+                const iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c8aa0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`;
+                
+                // Создаем резервные данные
+                const fallbackData = {
+                    temp: temp,
+                    iconHtml: iconHtml,
+                    condition: 'cloudy'
+                };
+                
+                // Сохраняем резервные данные в кэш
+                saveWeatherToCache(fallbackData);
+                
+                // Отображаем данные
+                displayWeatherData(fallbackData);
+            }
+            
+            // Функция для получения курса валют через API FX.kg
+            function getCurrencyRate() {
+                // Сначала проверяем, есть ли кэшированные данные
+                const cachedCurrency = getCurrencyFromCache();
+                if (cachedCurrency) {
+                    // Если есть кэшированные данные, сразу их отображаем
+                    displayCurrencyData(cachedCurrency);
+                    return;
+                }
+                
+                // Если кэша нет или он устарел, запрашиваем данные с API
+                $.ajax({
+                    url: "https://data.fx.kg/api/v1/central",
+                    headers: {
+                        "Authorization": "Bearer HuJSCtMKCYVv7QFMKKauRlwbFQIgo4omR85aRwCO919e391c"
+                    },
+                    success: function(data) {
+                        if (data && data.usd) {
+                            const rate = parseFloat(data.usd).toFixed(1);
+                            
+                            // Сохраняем данные в кэш
+                            const currencyData = {
+                                rate: rate,
+                                source: 'fx.kg'
+                            };
+                            saveCurrencyToCache(currencyData);
+                            
+                            // Отображаем данные
+                            displayCurrencyData(currencyData);
+                        } else {
+                            // Пробуем альтернативный метод через Google
+                            getCurrencyRateGoogle();
+                        }
+                    },
+                    error: function() {
+                        // При ошибке переходим на резервный метод
+                        getCurrencyRateGoogle();
+                    }
+                });
+            }
+            
+            // Метод получения курса валют через Google Finance (первый резервный)
+            function getCurrencyRateGoogle() {
+                // Используем Google Finance через Google Apps Script
+                $.ajax({
+                    url: "https://script.google.com/macros/s/AKfycbzuBnGgEZdYMvWPJmyqO0eLP7dMWyU45OyEUEGHhdJ7LWNwx1IU7F8Wl_uLF9YADjVx/exec",
+                    data: {
+                        from: "USD",
+                        to: "KGS"
+                    },
+                    dataType: "jsonp",
+                    success: function(data) {
+                        if (data && data.rate) {
+                            const rate = parseFloat(data.rate).toFixed(1);
+                            
+                            // Сохраняем данные в кэш
+                            const currencyData = {
+                                rate: rate,
+                                source: 'google'
+                            };
+                            saveCurrencyToCache(currencyData);
+                            
+                            // Отображаем данные
+                            displayCurrencyData(currencyData);
+                        } else {
+                            // Пробуем альтернативный метод
+                            showFallbackCurrency();
+                        }
+                    },
+                    error: function() {
+                        showFallbackCurrency();
+                    }
+                });
+            }
+            
+            // Резервные данные для курса валют
+            function showFallbackCurrency() {
+                // Резервные данные
+                const fallbackData = {
+                    rate: '89.5',
+                    source: 'fallback'
+                };
+                
+                // Сохраняем резервные данные в кэш
+                saveCurrencyToCache(fallbackData);
+                
+                // Отображаем данные
+                displayCurrencyData(fallbackData);
+            }
+            
+            // Обработка клика по категориям
+            $('#category-select').on('change', function() {
+                // Устанавливаем выбранную категорию в скрытом поле
+                $('#category-input').val($(this).val());
+                // Отправляем форму поиска
+                $('#search-form').submit();
+            });
+            
+            // Переключение панели фильтров
+            $('#filter-header, #filter-toggle').on('click', function() {
+                $('#filter-panel').toggleClass('open');
+                
+                // Вращение иконки
+                const icon = $('#filter-header i');
+                if ($('#filter-panel').hasClass('open')) {
+                    icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+                    $('.price-block').show(); // Показываем блок цены
+                    $('#filter-panel').removeClass('closed');
+                } else {
+                    icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+                    $('.price-block').hide(); // Скрываем блок цены
+                    // Полностью скрываем панель фильтров
+                    setTimeout(function() {
+                        $('#filter-panel').addClass('closed');
+                    }, 300); // Задержка для завершения анимации
+                }
+            });
+            
+            // Инициализация панели фильтров как закрытой
+            $('#filter-panel').removeClass('open').addClass('closed');
+            $('#filter-header i').removeClass('fa-chevron-up').addClass('fa-chevron-down');
+            $('.price-block').hide(); // Сразу скрываем блок цены при загрузке
+            
+            // Управление ползунками цены с моментальным обновлением
+            const minRangeInput = $('.min-range');
+            const maxRangeInput = $('.max-range');
+            const priceProgress = $('.price-progress').eq(0);
+            const minPriceText = $('#min-price');
+            const maxPriceText = $('#max-price');
+            
+            function updatePriceRange() {
+                const minVal = parseInt(minRangeInput.val());
+                const maxVal = parseInt(maxRangeInput.val());
+                
+                if (maxVal - minVal < 500000) {
+                    if ($(this).hasClass('min-range')) {
+                        minRangeInput.val(maxVal - 500000);
+                    } else {
+                        maxRangeInput.val(minVal + 500000);
+                    }
+                } else {
+                    const percent = (minVal / 10000000) * 100;
+                    const maxPercent = 100 - ((maxVal / 10000000) * 100);
+                    
+                    priceProgress.css({
+                        'left': percent + '%',
+                        'right': maxPercent + '%'
+                    });
+                    
+                    minPriceText.text(formatPrice(minVal) + ' KGZ');
+                    maxPriceText.text(formatPrice(maxVal) + ' KGZ');
+                }
+            }
+            
+            // Вызываем функцию сразу для инициализации значений
+            updatePriceRange();
+            
+            function formatPrice(price) {
+                return new Intl.NumberFormat('ru-RU').format(price);
+            }
+            
+            // Обновляем значения при движении ползунка
+            minRangeInput.on('input', updatePriceRange);
+            maxRangeInput.on('input', updatePriceRange);
+            
+            // Управление ползунками площади с моментальным обновлением
+            const minAreaInput = $('.min-area');
+            const maxAreaInput = $('.max-area');
+            const areaProgress = $('.price-progress').eq(1);
+            const minAreaText = $('#min-area');
+            const maxAreaText = $('#max-area');
+            
+            function updateAreaRange() {
+                const minVal = parseInt(minAreaInput.val());
+                const maxVal = parseInt(maxAreaInput.val());
+                
+                if (maxVal - minVal < 10) {
+                    if ($(this).hasClass('min-area')) {
+                        minAreaInput.val(maxVal - 10);
+                    } else {
+                        maxAreaInput.val(minVal + 10);
+                    }
+                } else {
+                    const percent = (minVal / 500) * 100;
+                    const maxPercent = 100 - ((maxVal / 500) * 100);
+                    
+                    areaProgress.css({
+                        'left': percent + '%',
+                        'right': maxPercent + '%'
+                    });
+                    
+                    minAreaText.text(minVal + ' м²');
+                    maxAreaText.text(maxVal + ' м²');
+                }
+            }
+            
+            // Вызываем функцию сразу для инициализации значений
+            updateAreaRange();
+            
+            minAreaInput.on('input', updateAreaRange);
+            maxAreaInput.on('input', updateAreaRange);
+            
+            // Выбор количества комнат
+            $('.room-btn').on('click', function() {
+                // Если кнопка уже активна и пользователь нажимает на нее снова - снимаем выделение
+                if ($(this).hasClass('active')) {
+                    $(this).removeClass('active');
+                    $('#rooms-input').val('');
+                } else {
+                    // Иначе делаем эту кнопку активной
+                    $('.room-btn').removeClass('active');
+                    $(this).addClass('active');
+                    $('#rooms-input').val($(this).data('value'));
+                }
+            });
+            
+            // Применение фильтров
+            $('#apply-filters').on('click', function() {
+                // Собираем все данные из формы фильтров
+                const formData = $('#filter-form').serializeArray();
+                
+                // Создаем объект с параметрами запроса
+                const searchParams = new URLSearchParams(window.location.search);
+                
+                // Добавляем данные из формы поиска
+                const q = $('#search-input').val();
+                if (q) searchParams.set('q', q);
+                
+                const category = $('#category-input').val();
+                if (category) searchParams.set('category', category);
+                
+                // Добавляем все параметры из формы фильтров
+                formData.forEach(function(item) {
+                    if (item.value) {
+                        searchParams.set(item.name, item.value);
+                    }
+                });
+                
+                // Перенаправляем на страницу поиска с параметрами
+                window.location.href = window.location.pathname + '?' + searchParams.toString();
+            });
+            
+            // Сброс фильтров
+            $('#reset-filters, #reset-all-filters, #clear-search').on('click', function() {
+                // Перенаправляем на страницу поиска без параметров
+                window.location.href = window.location.pathname;
+            });
+            
+            // Загружаем данные о погоде и курсе валют
+            getWeather();
+            getCurrencyRate();
+            
+            // Добавляем обработку ошибок CORS для fx.kg API
+            $(document).ajaxError(function(event, jqxhr, settings) {
+                // Обработка ошибок CORS для fx.kg API
+                if (settings.url.includes('fx.kg') && (jqxhr.status === 0 || jqxhr.status === 401)) {
+                    console.log('CORS or auth error detected with fx.kg API, using fallback');
+                    getCurrencyRateGoogle();
+                }
+                
+                // Обработка ошибок Visual Crossing Weather
+                if (settings.url.includes('visualcrossing.com') && (jqxhr.status === 0 || jqxhr.status === 401 || jqxhr.status === 403)) {
+                    console.log('Error detected with Visual Crossing Weather API, using fallback');
+                    showFallbackWeather();
+                }
+            });
+        });
+        </script>
+    </body>
+</html>

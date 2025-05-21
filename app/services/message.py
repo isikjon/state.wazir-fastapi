@@ -3,16 +3,16 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 
 from app.services.base import CRUDBase
-from app.models.message import Message, SupportTicket, TicketResponse
+from app.models.message import Message as AppMessage, SupportTicket, TicketResponse
 from app.schemas.message import MessageCreate, TicketCreate, TicketUpdate, TicketResponseCreate
 
 
-class CRUDMessage(CRUDBase[Message, MessageCreate, Any]):
+class CRUDMessage(CRUDBase[AppMessage, MessageCreate, Any]):
     def create_with_sender(
         self, db: Session, *, obj_in: MessageCreate, sender_id: int
-    ) -> Message:
+    ) -> AppMessage:
         obj_in_data = obj_in.dict()
-        db_obj = Message(**obj_in_data, sender_id=sender_id)
+        db_obj = AppMessage(**obj_in_data, sender_id=sender_id)
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)
@@ -20,13 +20,13 @@ class CRUDMessage(CRUDBase[Message, MessageCreate, Any]):
     
     def get_user_messages(
         self, db: Session, *, user_id: int, skip: int = 0, limit: int = 100
-    ) -> List[Message]:
+    ) -> List[AppMessage]:
         return (
-            db.query(Message)
+            db.query(AppMessage)
             .filter(
-                (Message.sender_id == user_id) | (Message.recipient_id == user_id)
+                (AppMessage.sender_id == user_id) | (AppMessage.recipient_id == user_id)
             )
-            .order_by(Message.created_at.desc())
+            .order_by(AppMessage.created_at.desc())
             .offset(skip)
             .limit(limit)
             .all()
@@ -34,14 +34,14 @@ class CRUDMessage(CRUDBase[Message, MessageCreate, Any]):
     
     def get_conversation(
         self, db: Session, *, user_id: int, other_user_id: int, skip: int = 0, limit: int = 100
-    ) -> List[Message]:
+    ) -> List[AppMessage]:
         return (
-            db.query(Message)
+            db.query(AppMessage)
             .filter(
-                ((Message.sender_id == user_id) & (Message.recipient_id == other_user_id)) |
-                ((Message.sender_id == other_user_id) & (Message.recipient_id == user_id))
+                ((AppMessage.sender_id == user_id) & (AppMessage.recipient_id == other_user_id)) |
+                ((AppMessage.sender_id == other_user_id) & (AppMessage.recipient_id == user_id))
             )
-            .order_by(Message.created_at.desc())
+            .order_by(AppMessage.created_at.desc())
             .offset(skip)
             .limit(limit)
             .all()
@@ -96,6 +96,6 @@ class CRUDTicketResponse(CRUDBase[TicketResponse, TicketResponseCreate, Any]):
         )
 
 
-message = CRUDMessage(Message)
+message = CRUDMessage(AppMessage)
 ticket = CRUDTicket(SupportTicket)
 ticket_response = CRUDTicketResponse(TicketResponse) 

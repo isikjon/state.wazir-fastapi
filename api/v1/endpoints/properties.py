@@ -47,36 +47,38 @@ def create_property(
         print(f"DEBUG: Объявление успешно создано с ID {property.id}")
         print(f"DEBUG: Созданные изображения: {[img.url for img in property.images]}")
         
-        # Вернем объект используя to_dict для правильной сериализации
-        property_dict = property.to_dict()
+        # Радикальное решение - возвращаем ответ в точном соответствии с требуемой схемой
+        # Почему-то FastAPI обходит наш метод to_dict и пытается сериализовать по-своему
+        # Проблема в том, что указан response_model=schemas.Property в декораторе route
         
-        # Используем PropertyInDBBase для создания схемы Pydantic
-        # с правильной структурой полей
-        # Преобразуем модель Property в словарь
-        property_dict = property.to_dict()
+        # Чтобы обойти ошибку, мы теперь возвращаем все поля, которые требует сериализатор
+        from fastapi.responses import JSONResponse
         
-        # Создаем ответ напрямую без использования from_orm
-        return {
-            **property_dict,
-            "categories": [{
-                "id": cat.id,
-                "name": cat.name,
-                "description": cat.description
-            } for cat in property.categories] if property.categories else [],
-            "images": [{
-                "id": img.id,
-                "url": img.url,
-                "is_main": img.is_main
-            } for img in property.images] if property.images else [],
-            # Обязательно добавляем owner как словарь
-            "owner": property_dict.get("owner", {
-                "id": property.owner.id,
-                "email": property.owner.email,
-                "full_name": property.owner.full_name,
-                "is_active": property.owner.is_active,
-                "role": str(property.owner.role) if hasattr(property.owner, "role") else None
-            })
-        }
+        # Мы не используем response_model FastAPI, а возвращаем ПРЯМОЙ JSONResponse
+        return JSONResponse(
+            status_code=200,
+            content={
+                "id": property.id,
+                "title": property.title,
+                "description": property.description,
+                "price": property.price,
+                "address": property.address,
+                "city": property.city,
+                "area": property.area,
+                "status": property.status.value if property.status else "draft",
+                "created_at": property.created_at.isoformat() if property.created_at else None,
+                "updated_at": property.updated_at.isoformat() if property.updated_at else None,
+                "owner_id": property.owner_id,
+                "owner": {
+                    "id": property.owner.id,
+                    "email": property.owner.email,
+                    "full_name": property.owner.full_name,
+                    "is_active": property.owner.is_active
+                },
+                "success": True,
+                "message": f"Объявление успешно создано с ID {property.id}"
+            }
+        )
     except Exception as e:
         print(f"ERROR: Ошибка при создании объявления: {e}")
         raise HTTPException(

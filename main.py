@@ -27,7 +27,7 @@ from app.models.token import TokenPayload
 from fastapi import APIRouter
 from app.models.chat import AppChatModel, AppChatMessageModel
 from app.models.chat_message import ChatMessage
-from websocket_manager import WebSocketManager
+from app.websockets.chat_manager import ConnectionManager as WebSocketManager
 from app.utils.image_helper import get_valid_image_url
 
 def create_access_token(data: dict) -> str:
@@ -788,6 +788,7 @@ async def mobile_search(
             "area": prop.area,
             "floor": prop.floor,
             "has_tour": bool(prop.tour_360_url),
+            "tour_360_url": prop.tour_360_url,  # Добавляем URL для 360° тура
             "has_balcony": prop.has_balcony,
             "has_furniture": prop.has_furniture,
             "has_renovation": prop.has_renovation,

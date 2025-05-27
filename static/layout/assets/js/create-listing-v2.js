@@ -396,8 +396,8 @@ $(document).ready(function() {
                         city: $('#city').val(),
                         area: parseFloat($('#area').val()),
                         
-                        // Статус объявления
-                        status: 'pending', // Используем строго определенное значение из enum
+                        // Статус объявления - используем строку вместо Enum
+                        status: 'pending',
                         
                         // Категория и тип
                         category_ids: [categoryId],

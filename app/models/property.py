@@ -77,7 +77,7 @@ class Property(Base, TimestampMixin):
             "address": self.address,
             "city": self.city,
             "area": self.area,
-            "status": str(self.status),
+            "status": self.status.value if self.status else "draft",
             "is_featured": self.is_featured,
             "tour_360_url": self.tour_360_url,
             "notes": self.notes,
@@ -108,7 +108,8 @@ class Property(Base, TimestampMixin):
                 {
                     "id": cat.id,
                     "name": cat.name,
-                    "description": cat.description
+                    "description": cat.description,
+                    "created_at": cat.created_at.isoformat() if hasattr(cat, "created_at") and cat.created_at else None
                 } for cat in self.categories
             ]
             
@@ -117,7 +118,9 @@ class Property(Base, TimestampMixin):
                 {
                     "id": img.id,
                     "url": img.url,
-                    "is_main": img.is_main
+                    "is_main": img.is_main,
+                    "property_id": img.property_id if hasattr(img, "property_id") else self.id,
+                    "created_at": img.created_at.isoformat() if hasattr(img, "created_at") and img.created_at else None
                 } for img in self.images
             ]
             

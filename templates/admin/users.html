@@ -434,45 +434,16 @@
                 <span>Все пользователи</span>
             </div>
             <div class="users-actions">
-                <form action="{{ request.url.path }}" method="get"
-                    class="search-bar">
+                <div class="search-bar">
                     <i class="fas fa-search"></i>
-                    <input type="text" name="search"
+                    <input type="text" id="user-search-input"
                         placeholder="Поиск пользователей..."
                         value="{{ search_query }}">
-                    {% if status %}<input type="hidden" name="status"
-                        value="{{ status }}">{% endif %}
-                    {% if current_page > 1 %}<input type="hidden" name="page"
-                        value="{{ current_page }}">{% endif %}
-                </form>
-
-                <div class="filter-dropdown">
-                    <div class="filter-button" id="statusFilterButton">
-                        <i class="fas fa-filter"></i>
-                        <span>Статус</span>
-                    </div>
-                    <div class="filter-menu" id="statusFilterMenu">
-                        <a
-                            href="{{ request.url.path }}?{% if search_query %}search={{ search_query }}&{% endif %}page=1"
-                            class="filter-item {% if not status %}active{% endif %}">
-                            Все
-                        </a>
-                        <a
-                            href="{{ request.url.path }}?{% if search_query %}search={{ search_query }}&{% endif %}status=active&page=1"
-                            class="filter-item {% if status == 'active' %}active{% endif %}">
-                            Активные
-                        </a>
-                        <a
-                            href="{{ request.url.path }}?{% if search_query %}search={{ search_query }}&{% endif %}status=inactive&page=1"
-                            class="filter-item {% if status == 'inactive' %}active{% endif %}">
-                            Неактивные
-                        </a>
-                    </div>
                 </div>
 
-                <a
-                    href="/admin/users/export?{% if search_query %}search={{ search_query }}&{% endif %}{% if status %}status={{ status }}{% endif %}"
-                    class="export-button">
+                <!-- Удалены фильтры по статусу -->
+
+                <a href="/admin/users/export" id="export-button" class="export-button">
                     <i class="fas fa-download"></i>
                     <span>Экспорт</span>
                 </a>
@@ -490,13 +461,12 @@
                         <th>Кол-во объявлений</th>
                         <th>360-туры</th>
                         <th>Дата регистрации</th>
-                        <th>Последняя активность</th>
                         <th>Действия</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for user in users %}
-                    <tr>
+                    <tr data-user-id="{{ user.id }}">
                         <td>
                             <div class="user-name">
                                 <div class="user-avatar">
@@ -530,27 +500,18 @@
                         <td>{{ user.tours_count }}</td>
                         <td class="user-date">{{ user.registered_at }}</td>
                         <td>
-                            <div
-                                class="activity-indicator {% if user.last_activity.startswith('Сегодня') %}active-today{% elif user.last_activity == 'Нет данных' %}inactive{% elif user.last_activity.endswith('минут назад') %}active-now{% else %}active-week{% endif %}">
-                                <div class="activity-dot"></div>
-                                <div class="activity-text">{{ user.last_activity
-                                    }}</div>
-                            </div>
-                        </td>
-                        <td>
                             <div class="user-actions">
-                                <a href="/admin/users/{{ user.id }}"
-                                    class="user-action">
-                                    <i class="fas fa-eye"></i>
+                                <!-- Кнопка блокировки/разблокировки -->
+                                <a href="javascript:void(0);" class="user-action {% if user.is_active %}ban{% else %}activate{% endif %}"
+                                    onclick="confirmAction('{{ user.id }}', '{% if user.is_active %}ban{% else %}activate{% endif %}', '{{ user.full_name }}')">
+                                    <i class="fas fa-{% if user.is_active %}ban{% else %}check{% endif %}"
+                                       title="{% if user.is_active %}Заблокировать{% else %}Разблокировать{% endif %}"></i>
                                 </a>
-                                <a href="/admin/users/{{ user.id }}/edit"
-                                    class="user-action edit">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="#" class="user-action delete"
-                                    onclick="confirmAction({{ user.id }}, '{% if user.is_active %}ban{% else %}activate{% endif %}', '{{ user.full_name }}')">
-                                    <i
-                                        class="fas fa-{% if user.is_active %}ban{% else %}check{% endif %}"></i>
+                                
+                                <!-- Кнопка удаления -->
+                                <a href="javascript:void(0);" class="user-action delete"
+                                    onclick="confirmAction('{{ user.id }}', 'delete', '{{ user.full_name }}')">
+                                    <i class="fas fa-trash" title="Удалить полностью"></i>
                                 </a>
                             </div>
                         </td>
@@ -607,22 +568,78 @@
 
 {% block extra_js %}
 <script>
-    // Переключение фильтра статуса
-    const statusFilterButton = document.getElementById('statusFilterButton');
-    const statusFilterMenu = document.getElementById('statusFilterMenu');
-
-    statusFilterButton.addEventListener('click', function() {
-        statusFilterMenu.classList.toggle('show');
-    });
-
-    // Закрытие меню при клике вне элемента
-    document.addEventListener('click', function(event) {
-        if (!statusFilterButton.contains(event.target) && !statusFilterMenu.contains(event.target)) {
-            statusFilterMenu.classList.remove('show');
+    // Документ загружен
+    document.addEventListener('DOMContentLoaded', function() {
+        // Поиск в реальном времени
+        const searchInput = document.getElementById('user-search-input');
+        const userRows = document.querySelectorAll('.users-table tbody tr');
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                
+                userRows.forEach(row => {
+                    const userName = row.querySelector('.user-full-name').textContent.toLowerCase();
+                    const userId = row.querySelector('.user-id').textContent.toLowerCase();
+                    const userPhone = row.querySelector('.user-phone').textContent.toLowerCase();
+                    const userEmail = row.querySelector('.user-email').textContent.toLowerCase();
+                    
+                    // Поиск по имени, ID, телефону или email
+                    if (userName.includes(searchTerm) || userId.includes(searchTerm) || 
+                        userPhone.includes(searchTerm) || userEmail.includes(searchTerm)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                // Обновляем информацию о пагинации
+                updatePaginationInfo();
+            });
+        }
+        
+        // Обновление информации о количестве отображаемых пользователей
+        function updatePaginationInfo() {
+            const visibleRows = document.querySelectorAll('.users-table tbody tr:not([style*="display: none"])');
+            const paginationInfo = document.querySelector('.pagination-info');
+            
+            if (paginationInfo) {
+                const totalUsers = userRows.length;
+                const visibleUsersCount = visibleRows.length;
+                
+                if (visibleUsersCount === totalUsers) {
+                    paginationInfo.textContent = `Показано 1-${totalUsers} из ${totalUsers} пользователей`;
+                } else {
+                    paginationInfo.textContent = `Показано ${visibleUsersCount} из ${totalUsers} пользователей (поиск)`;
+                }
+            }
+        }
+        
+        // Экспорт данных
+        const exportButton = document.getElementById('export-button');
+        
+        if (exportButton) {
+            exportButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Собираем данные только видимых пользователей
+                const visibleRows = document.querySelectorAll('.users-table tbody tr:not([style*="display: none"])');
+                const searchTerm = searchInput ? searchInput.value : '';
+                
+                // Формируем URL для экспорта
+                let exportUrl = '/admin/users/export';
+                
+                if (searchTerm) {
+                    exportUrl += `?search=${encodeURIComponent(searchTerm)}`;
+                }
+                
+                // Переходим по URL для экспорта
+                window.location.href = exportUrl;
+            });
         }
     });
-
-    // Подтверждение действия (блокировка/активация)
+    
+    // Подтверждение действия (блокировка/активация/удаление)
     function confirmAction(userId, action, userName) {
         let message = '';
         let url = '';
@@ -630,13 +647,48 @@
         if (action === 'ban') {
             message = `Вы уверены, что хотите заблокировать пользователя ${userName}?`;
             url = `/admin/users/${userId}/ban`;
-        } else {
+        } else if (action === 'activate') {
             message = `Вы уверены, что хотите активировать пользователя ${userName}?`;
             url = `/admin/users/${userId}/activate`;
+        } else if (action === 'delete') {
+            message = `Вы уверены, что хотите полностью удалить пользователя ${userName}? Это действие нельзя отменить.`;
+            url = `/admin/users/${userId}/delete`;
         }
         
         if (confirm(message)) {
-            window.location.href = url;
+            // Отправляем AJAX запрос вместо перехода по URL
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ user_id: userId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message || 'Операция выполнена успешно!');
+                    
+                    // Обновляем страницу или обновляем только конкретную строку
+                    if (action === 'delete') {
+                        // Удаляем строку из таблицы
+                        const row = document.querySelector(`tr[data-user-id="${userId}"]`);
+                        if (row) {
+                            row.remove();
+                        }
+                    } else {
+                        // Обновляем статус пользователя и кнопку действия
+                        location.reload(); // Пока просто перезагружаем страницу
+                    }
+                } else {
+                    alert(data.error || 'Произошла ошибка. Попробуйте еще раз.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Произошла ошибка при выполнении операции.');
+            });
         }
     }
 </script>

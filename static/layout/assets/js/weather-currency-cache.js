@@ -200,7 +200,7 @@ function getCurrencyRate(callback) {
     // Получение данных о курсе валют через API
     fetch("https://data.fx.kg/api/v1/central", {
         headers: {
-            "Authorization": "Bearer HuJSCtMKCYVv7QFMKKauRlwbFQIgo4omR85aRwCO919e391c"
+            "Authorization": "Bearer d2WimsDMvhnYStSsq1VRd7jKLZDSS6DQMbzut6rNa9a33c51"
         }
     })
         .then(response => response.json())
@@ -259,7 +259,7 @@ function getCurrencyRateAlt(callback) {
 // Функция для отображения резервных данных о курсе валют
 function showFallbackCurrency(callback) {
     const fallbackData = {
-        rate: '89.5',
+        rate: '69.8',
         source: 'fallback'
     };
 

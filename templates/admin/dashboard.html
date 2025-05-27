@@ -16,7 +16,8 @@
         color: var(--text-color);
     }
 </style>
-{% endblock %}
+
+{% endblock %} 
 
 {% block content %}
 <div class="p-5">
@@ -138,34 +139,22 @@
                         <td class="py-3 text-sm text-gray-900">{{
                             property.title }}</td>
                         <td class="py-3 text-sm text-gray-500">
-                            {% if property.property_type == 'sale'
-                            %}Продажа
-                            {% elif property.property_type == 'rent'
-                            %}Аренда
-                            {% else %}{{ property.property_type }}
-                            {% endif %}
+                            {{ property.property_type_display }}
                         </td>
                         <td class="py-3 text-sm text-gray-900">
-                            ₽ {{ "{:,.0f}".format(property.price) }}
+                            {{ "{:,.0f}".format(property.price) }} KGZ
                             {% if property.property_type == 'rent'
                             %}/мес{% endif %}
                         </td>
                         <td class="py-3 text-sm">
-                            {% if property.status == 'active' %}
-                            <span
-                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Активно</span>
-                            {% elif property.status == 'pending' %}
-                            <span
-                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">На
-                                модерации</span>
-                            {% elif property.status == 'inactive' %}
-                            <span
-                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Неактивно</span>
-                            {% else %}
-                            <span
-                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">{{
-                                property.status }}</span>
-                            {% endif %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if property.status == 'active' %}bg-green-100 text-green-800
+                                {% elif property.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% elif property.status == 'inactive' or property.status == 'rejected' %}bg-red-100 text-red-800
+                                {% elif property.status == 'sold' %}bg-blue-100 text-blue-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ property.status_display }}
+                            </span>
                         </td>
                         <td
                             class="py-3 text-sm text-right space-x-2">
@@ -189,99 +178,70 @@
         </div>
     </div>
 
-    <!-- Последние заявки и тикеты -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Последние заявки -->
-        <div class="card p-6">
-            <div class="flex justify-between items-center mb-5">
-                <h3
-                    class="text-lg font-semibold text-gray-800">Последние
-                    заявки</h3>
-                <a href="{{ url_for('admin_requests') }}"
-                    style="color: var(--color-primary)"
-                    class="hover:opacity-80 text-sm">Посмотреть
-                    все</a>
-            </div>
-
-            <div class="space-y-4">
-                {% for request in last_requests %}
-                <div class="border-b pb-4">
-                    <div class="flex justify-between">
-                        <p class="font-medium text-gray-800">{{
-                            request.title }}</p>
-                        <span class="text-sm text-gray-500">
-                            {{
-                            (request.created_at|string).split(' ')[0]
-                            if request.created_at else 'Н/Д' }}
-                        </span>
-                    </div>
-                    <p class="text-sm text-gray-600 mt-1">
-                        {{ request.user.full_name if request.user
-                        and request.user.full_name else
-                        'Пользователь' }},
-                        {{ request.user.phone if request.user and
-                        request.user.phone else 'Телефон не указан'
-                        }}
-                    </p>
-                </div>
-                {% else %}
-                <div class="py-4 text-center text-gray-500">
-                    Нет доступных заявок
-                </div>
-                {% endfor %}
-            </div>
+    <!-- Последние заявки -->
+    <div class="card p-6">
+        <div class="flex justify-between items-center mb-5">
+            <h3
+                class="text-lg font-semibold text-gray-800">Последние
+                заявки</h3>
+            <a href="{{ url_for('admin_requests') }}"
+                style="color: var(--color-primary)"
+                class="hover:opacity-80 text-sm">Посмотреть
+                все</a>
         </div>
 
-        <!-- Последние тикеты -->
-        <div class="card p-6">
-            <div class="flex justify-between items-center mb-5">
-                <h3
-                    class="text-lg font-semibold text-gray-800">Последние
-                    тикеты</h3>
-                <a href="{{ url_for('admin_support') }}"
-                    style="color: var(--color-primary)"
-                    class="hover:opacity-80 text-sm">Посмотреть
-                    все</a>
+        <div class="space-y-4">
+            {% for request in last_requests %}
+            <div class="border-b pb-4">
+                <div class="flex justify-between">
+                    <p class="font-medium text-gray-800">{{
+                        request.title }}</p>
+                    <span class="text-sm text-gray-500">
+                        {{
+                        (request.created_at|string).split(' ')[0]
+                        if request.created_at else 'Н/Д' }}
+                    </span>
+                </div>
+                <p class="text-sm text-gray-600 mt-1">
+                    {{ request.user.full_name if request.user
+                    and request.user.full_name else
+                    'Пользователь' }},
+                    {{ request.user.phone if request.user and
+                    request.user.phone else 'Телефон не указан'
+                    }}
+                </p>
             </div>
+            {% else %}
+            <div class="py-4 text-center text-gray-500">
+                Нет доступных заявок
+            </div>
+            {% endfor %}
+        </div>
+    </div>
 
-            <div class="space-y-4">
-                {% for ticket in last_tickets %}
-                <div class="border-b pb-4">
-                    <div class="flex justify-between">
-                        <p class="font-medium text-gray-800">{{
-                            ticket.title }}</p>
-                        <span class="text-sm text-gray-500">
-                            {{
-                            (ticket.created_at|string).split(' ')[0]
-                            if ticket.created_at else 'Н/Д' }}
-                        </span>
-                    </div>
-                    <div class="flex justify-between mt-1">
-                        <p class="text-sm text-gray-600">
-                            Пользователь: {{ ticket.user.email if
-                            ticket.user and ticket.user.email else
-                            'Email не указан' }}
-                        </p>
-                        <span
-                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                            {% if ticket.priority == 'high' %}bg-red-100 text-red-800
-                            {% elif ticket.priority == 'medium' %}bg-yellow-100 text-yellow-800
-                            {% elif ticket.status == 'resolved' %}bg-green-100 text-green-800
-                            {% else %}bg-gray-100 text-gray-800{% endif %}">
-                            {% if ticket.priority == 'high' %}Срочно
-                            {% elif ticket.priority == 'medium' %}В
-                            работе
-                            {% elif ticket.status == 'resolved'
-                            %}Решено
-                            {% else %}{{ ticket.status }}{% endif %}
-                        </span>
-                    </div>
+    <!-- Статистика вместо тикетов -->
+    <div class="card p-6">
+        <div class="flex justify-between items-center mb-5">
+            <h3 class="text-lg font-semibold text-gray-800">Статистика пользователей</h3>
+        </div>
+
+        <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-gray-50 rounded-lg p-4 text-center">
+                    <p class="text-2xl font-bold text-gray-800">{{ users_count|default(0) }}</p>
+                    <p class="text-sm text-gray-600">Всего пользователей</p>
                 </div>
-                {% else %}
-                <div class="py-4 text-center text-gray-500">
-                    Нет доступных тикетов
+                <div class="bg-gray-50 rounded-lg p-4 text-center">
+                    <p class="text-2xl font-bold text-gray-800">{{ total_properties|default(0) }}</p>
+                    <p class="text-sm text-gray-600">Всего объектов</p>
                 </div>
-                {% endfor %}
+            </div>
+            
+            <div class="mt-4 pt-4 border-t">
+                <h4 class="text-md font-medium text-gray-700 mb-2">Активность на сайте</h4>
+                <div class="h-24 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <p class="text-gray-500">График активности будет доступен позже</p>
+                </div>
             </div>
         </div>
     </div>

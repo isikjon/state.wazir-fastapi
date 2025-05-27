@@ -20,6 +20,16 @@ def read_users(
     return users
 
 
+@router.get("/chat-contacts", response_model=List[schemas.User])
+def get_chat_contacts(
+    db: Session = Depends(deps.get_db),
+    current_user: models.User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Получить список пользователей для чата (все пользователи кроме текущего)"""
+    users = db.query(models.User).filter(models.User.id != current_user.id).all()
+    return users
+
+
 @router.get("/me", response_model=schemas.User)
 def read_user_me(
     current_user: models.User = Depends(deps.get_current_active_user),

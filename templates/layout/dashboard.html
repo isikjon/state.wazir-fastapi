@@ -85,7 +85,7 @@
                 font-weight: 300;
             }
         </style>
-    </head>
+    </head> 
     <body class="bg-gray-100 font-sans">
         <div class="min-h-screen flex flex-col">
             <!-- Верхний блок: Лого, Погода, Валюта -->
@@ -98,13 +98,7 @@
                                 alt="Wazir Logo"
                                 class="h-10">
                         </div>
-                        <div class="flex items-center space-x-6">
-                            <div class="flex items-center weather-currency">
-                                <div id="weather-icon-container" class="mr-2">
-                                    <!-- Погодная иконка будет динамически подставляться -->
-                                </div>
-                                <span id="weather-temp">Загрузка...</span>
-                            </div>
+                        <div class="flex items-center">
                             <div class="flex items-center weather-currency">
                                 <img src="https://flagcdn.com/w20/us.png"
                                     alt="USD" class="h-5 mr-2">
@@ -113,7 +107,7 @@
                         </div>
                     </div>
                 </div>
-            </header>
+            </header> 
 
             <!-- Основное содержимое -->
             <main class="flex-grow pb-20">
@@ -271,7 +265,7 @@
                             class="nav-icons"><path
                                 d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                     </a>
-                    <a href="{{ url_for('support') }}"
+                    <a href="{{ url_for('support') }}" 
                         class="nav-item text-gray-500">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24"
                             height="24" viewBox="0 0 24 24" fill="none"
@@ -422,25 +416,8 @@
                         // Осень (сентябрь-ноябрь)
                         temp = 12;
                     }
-                    
-                    // Базовая иконка облачности
-                    const iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c8aa0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`;
-                    
-                    // Создаем резервные данные
-                    const fallbackData = {
-                        temp: temp,
-                        iconHtml: iconHtml,
-                        condition: 'cloudy'
-                    };
-                    
-                    // Сохраняем резервные данные в кэш
-                    saveWeatherToCache(fallbackData);
-                    
-                    // Отображаем данные
-                    displayWeatherData(fallbackData);
                 }
                 
-                // Функция для получения курса валют
                 function getCurrencyRate() {
                     // Сначала проверяем, есть ли кэшированные данные
                     const cachedCurrency = getCurrencyFromCache();
@@ -454,7 +431,7 @@
                     $.ajax({
                         url: "https://data.fx.kg/api/v1/central",
                         headers: {
-                            "Authorization": "Bearer HuJSCtMKCYVv7QFMKKauRlwbFQIgo4omR85aRwCO919e391c"
+                            "Authorization": "Bearer d2WimsDMvhnYStSsq1VRd7jKLZDSS6DQMbzut6rNa9a33c51"
                         },
                         success: function(data) {
                             if (data && data.usd) {
@@ -471,57 +448,16 @@
                                 displayCurrencyData(currencyData);
                             } else {
                                 // Пробуем альтернативный метод
-                                getCurrencyRateGoogle();
-                            }
-                        },
-                        error: function() {
-                            // При ошибке используем альтернативный метод
-                            getCurrencyRateGoogle();
-                        }
-                    });
-                }
-                
-                // Альтернативный метод получения курса валют через Google
-                function getCurrencyRateGoogle() {
-                    // Проверка кэша перед запросом
-                    const cachedCurrency = getCurrencyFromCache();
-                    if (cachedCurrency) {
-                        displayCurrencyData(cachedCurrency);
-                        return;
-                    }
-                    
-                    // Запрос данных через Google Apps Script
-                    $.ajax({
-                        url: "https://script.google.com/macros/s/AKfycbzuBnGgEZdYMvWPJmyqO0eLP7dMWyU45OyEUEGHhdJ7LWNwx1IU7F8Wl_uLF9YADjVx/exec",
-                        data: {
-                            from: "USD",
-                            to: "KGS"
-                        },
-                        dataType: "jsonp",
-                        success: function(data) {
-                            if (data && data.rate) {
-                                const rate = parseFloat(data.rate).toFixed(1);
-                                
-                                // Сохраняем данные в кэш
-                                const currencyData = {
-                                    rate: rate,
-                                    source: 'google'
-                                };
-                                saveCurrencyToCache(currencyData);
-                                
-                                // Отображаем данные
-                                displayCurrencyData(currencyData);
-                            } else {
                                 getCurrencyRateAlt();
                             }
                         },
                         error: function() {
+                            // При ошибке используем альтернативный метод
                             getCurrencyRateAlt();
                         }
                     });
                 }
                 
-                // Другой альтернативный метод получения курса валют
                 function getCurrencyRateAlt() {
                     // Проверка кэша перед запросом
                     const cachedCurrency = getCurrencyFromCache();
@@ -534,11 +470,9 @@
                     showFallbackCurrency();
                 }
                 
-                // Показываем резервные данные о курсе валют
                 function showFallbackCurrency() {
-                    // Резервные данные
                     const fallbackData = {
-                        rate: '89.5',
+                        rate: '69.8',
                         source: 'fallback'
                     };
                     
@@ -549,8 +483,7 @@
                     displayCurrencyData(fallbackData);
                 }
                 
-                // Загружаем данные о погоде и курсе валют
-                getWeather();
+                // Загружаем данные о курсе валют
                 getCurrencyRate();
                 
                 // Обработка клика по элементам навигации

@@ -47,6 +47,19 @@ def get_current_active_user(
     return current_user
 
 
+def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme)) -> Optional[dict]:
+    """
+    Получить текущего пользователя, но не выбрасывать исключение, если пользователь не найден
+    """
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except (jwt.JWTError, ValidationError):
+        return None
+
+
 def get_current_active_admin(
     current_user: models.User = Depends(get_current_active_user),
 ) -> models.User:

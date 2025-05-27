@@ -1,304 +1,397 @@
 {
-  "chat_1": [
+  "4": [
     {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 6621,
-      "sender_id": 2,
-      "content": "вася",
-      "is_read": false,
-      "created_at": "2025-05-22T00:06:01.721181",
-      "time": "00:06"
+      "id": 141,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "privet",
+      "timestamp": "2025-05-25T18:07:32",
+      "is_read": false
     },
     {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 9053,
+      "id": 142,
+      "chat_id": 4,
       "sender_id": 2,
+      "receiver_id": 1,
+      "content": "privet 1",
+      "timestamp": "2025-05-25T18:07:36",
+      "is_read": false
+    },
+    {
+      "id": 143,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "privet 2",
+      "timestamp": "2025-05-25T18:07:38",
+      "is_read": false
+    },
+    {
+      "id": 144,
+      "chat_id": 4,
+      "sender_id": 2,
+      "receiver_id": 1,
+      "content": "чел",
+      "timestamp": "2025-05-25T18:32:22",
+      "is_read": false
+    },
+    {
+      "id": 145,
+      "chat_id": 4,
+      "sender_id": 2,
+      "receiver_id": 1,
+      "content": "ты прочитал?",
+      "timestamp": "2025-05-25T18:32:25",
+      "is_read": false
+    }
+  ],
+  "1-2": [
+    {
+      "id": 141,
+      "chat_id": "1-2",
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "privet",
+      "timestamp": "2025-05-25T18:07:32",
+      "is_read": false
+    },
+    {
+      "id": 142,
+      "chat_id": "1-2",
+      "sender_id": 2,
+      "receiver_id": 1,
+      "content": "privet 1",
+      "timestamp": "2025-05-25T18:07:36",
+      "is_read": false
+    },
+    {
+      "id": 143,
+      "chat_id": "1-2",
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "privet 2",
+      "timestamp": "2025-05-25T18:07:38",
+      "is_read": false
+    },
+    {
+      "id": 144,
+      "chat_id": "1-2",
+      "sender_id": 2,
+      "receiver_id": 1,
+      "content": "чел",
+      "timestamp": "2025-05-25T18:32:22",
+      "is_read": false
+    },
+    {
+      "id": 145,
+      "chat_id": "1-2",
+      "sender_id": 2,
+      "receiver_id": 1,
+      "content": "ты прочитал?",
+      "timestamp": "2025-05-25T18:32:25",
+      "is_read": false
+    },
+    {
+      "id": 146,
+      "chat_id": 4,
+      "sender_id": 2,
+      "receiver_id": 1,
+      "content": "vasilis eto soobsheniye",
+      "timestamp": "2025-05-25T18:39:58",
+      "is_read": false
+    },
+    {
+      "id": 150,
+      "chat_id": 4,
+      "sender_id": 2,
+      "receiver_id": 1,
+      "content": "привет",
+      "timestamp": "2025-05-26T21:53:26",
+      "is_read": false
+    },
+    {
+      "id": 151,
+      "chat_id": 4,
+      "sender_id": 2,
+      "receiver_id": 1,
+      "content": "пиривет",
+      "timestamp": "2025-05-26T21:55:46",
+      "is_read": false
+    },
+    {
+      "id": 153,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "цц",
+      "timestamp": "2025-05-27T12:54:18",
+      "is_read": false
+    },
+    {
+      "id": 154,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "это мое сообщение бро",
+      "timestamp": "2025-05-27T12:57:08",
+      "is_read": false
+    },
+    {
+      "id": 155,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "это мое сообщение #1",
+      "timestamp": "2025-05-27T12:57:39",
+      "is_read": false
+    },
+    {
+      "id": 156,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "это мое сообщение #1",
+      "timestamp": "2025-05-27T12:57:41",
+      "is_read": false
+    },
+    {
+      "id": 157,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "ыы",
+      "timestamp": "2025-05-27T13:04:59",
+      "is_read": false
+    },
+    {
+      "id": 158,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "смс",
+      "timestamp": "2025-05-27T13:05:04",
+      "is_read": false
+    },
+    {
+      "id": 159,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "смс",
+      "timestamp": "2025-05-27T13:05:28",
+      "is_read": false
+    },
+    {
+      "id": 160,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "с",
+      "timestamp": "2025-05-27T13:05:29",
+      "is_read": false
+    },
+    {
+      "id": 161,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "с",
+      "timestamp": "2025-05-27T13:05:30",
+      "is_read": false
+    },
+    {
+      "id": 162,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "а где прокрутка",
+      "timestamp": "2025-05-27T13:08:13",
+      "is_read": false
+    },
+    {
+      "id": 163,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "прокрутка",
+      "timestamp": "2025-05-27T13:08:18",
+      "is_read": false
+    },
+    {
+      "id": 164,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "жду прокрутку",
+      "timestamp": "2025-05-27T13:08:23",
+      "is_read": false
+    },
+    {
+      "id": 165,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "прокрутка?",
+      "timestamp": "2025-05-27T13:16:59",
+      "is_read": false
+    },
+    {
+      "id": 166,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "четко вроде",
+      "timestamp": "2025-05-27T13:17:03",
+      "is_read": false
+    },
+    {
+      "id": 167,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "ы",
+      "timestamp": "2025-05-27T13:28:32",
+      "is_read": false
+    },
+    {
+      "id": 168,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "ыы",
+      "timestamp": "2025-05-27T13:28:34",
+      "is_read": false
+    },
+    {
+      "id": 169,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
       "content": "ыыы",
-      "is_read": false,
-      "created_at": "2025-05-22T00:06:09.031083",
-      "time": "00:06"
+      "timestamp": "2025-05-27T13:28:36",
+      "is_read": false
     },
     {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 2604,
-      "sender_id": 2,
-      "content": "dddd",
-      "is_read": false,
-      "created_at": "2025-05-22T00:06:31.705487",
-      "time": "00:06"
+      "id": 170,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "1",
+      "timestamp": "2025-05-27T13:28:39",
+      "is_read": false
     },
     {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 4816,
-      "sender_id": 2,
-      "content": "dd",
-      "is_read": false,
-      "created_at": "2025-05-22T00:06:37.870389",
-      "time": "00:06"
+      "id": 171,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "12",
+      "timestamp": "2025-05-27T13:28:40",
+      "is_read": false
     },
     {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 1412,
-      "sender_id": 2,
-      "content": "василис",
-      "is_read": false,
-      "created_at": "2025-05-22T00:08:55.286450",
-      "time": "00:08"
+      "id": 172,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "122",
+      "timestamp": "2025-05-27T13:28:41",
+      "is_read": false
     },
     {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 2937,
-      "sender_id": 2,
-      "content": "ну че ты",
-      "is_read": false,
-      "created_at": "2025-05-22T00:08:57.160253",
-      "time": "00:08"
+      "id": 173,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "1222",
+      "timestamp": "2025-05-27T13:28:41",
+      "is_read": false
     },
     {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 8363,
-      "sender_id": 2,
-      "content": "бл заебал",
-      "is_read": false,
-      "created_at": "2025-05-22T00:09:06.164822",
-      "time": "00:09"
+      "id": 174,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "3",
+      "timestamp": "2025-05-27T13:31:01",
+      "is_read": false
     },
     {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 7495,
-      "sender_id": 2,
-      "content": "че не сохраняется",
-      "is_read": false,
-      "created_at": "2025-05-22T00:09:09.362669",
-      "time": "00:09"
+      "id": 175,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "3",
+      "timestamp": "2025-05-27T13:31:02",
+      "is_read": false
     },
     {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 6762,
-      "sender_id": 2,
-      "content": "ссссссссссс",
-      "is_read": false,
-      "created_at": "2025-05-22T00:11:48.884595",
-      "time": "00:11"
+      "id": 176,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "3",
+      "timestamp": "2025-05-27T13:31:03",
+      "is_read": false
     },
     {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 5761,
-      "sender_id": 2,
-      "content": "с",
-      "is_read": false,
-      "created_at": "2025-05-22T00:11:49.658164",
-      "time": "00:11"
+      "id": 177,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "33",
+      "timestamp": "2025-05-27T13:31:04",
+      "is_read": false
     },
     {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 1305,
-      "sender_id": 2,
-      "content": "с",
-      "is_read": false,
-      "created_at": "2025-05-22T00:11:49.914505",
-      "time": "00:11"
+      "id": 178,
+      "chat_id": 4,
+      "sender_id": 1,
+      "receiver_id": 2,
+      "content": "333",
+      "timestamp": "2025-05-27T13:31:06",
+      "is_read": false
+    }
+  ],
+  "1-5": [
+    {
+      "id": 147,
+      "chat_id": 5,
+      "sender_id": 1,
+      "receiver_id": 5,
+      "content": "sss",
+      "timestamp": "2025-05-25T19:03:45",
+      "is_read": false
     },
     {
-      "type": "new_message",
+      "id": 148,
+      "chat_id": 5,
+      "sender_id": 1,
+      "receiver_id": 5,
+      "content": "блять",
+      "timestamp": "2025-05-25T19:03:46",
+      "is_read": false
+    }
+  ],
+  "1-3": [
+    {
+      "id": 149,
       "chat_id": 1,
-      "message_id": 3296,
-      "sender_id": 2,
-      "content": "с",
-      "is_read": false,
-      "created_at": "2025-05-22T00:11:50.123824",
-      "time": "00:11"
+      "sender_id": 3,
+      "receiver_id": 1,
+      "content": "ебать",
+      "timestamp": "2025-05-26T01:32:40",
+      "is_read": false
     },
     {
-      "type": "new_message",
+      "id": 152,
       "chat_id": 1,
-      "message_id": 7456,
-      "sender_id": 2,
-      "content": "с",
-      "is_read": false,
-      "created_at": "2025-05-22T00:11:50.301513",
-      "time": "00:11"
-    },
-    {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 6696,
-      "sender_id": 2,
-      "content": "с",
-      "is_read": false,
-      "created_at": "2025-05-22T00:11:50.483274",
-      "time": "00:11"
-    },
-    {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 4468,
-      "sender_id": 2,
-      "content": "с",
-      "is_read": false,
-      "created_at": "2025-05-22T00:11:50.663829",
-      "time": "00:11"
-    },
-    {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 8276,
-      "sender_id": 2,
-      "content": "с",
-      "is_read": false,
-      "created_at": "2025-05-22T00:11:50.845614",
-      "time": "00:11"
-    },
-    {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 7453,
-      "sender_id": 2,
-      "content": "ебанный насос",
-      "is_read": false,
-      "created_at": "2025-05-22T00:11:55.369276",
-      "time": "00:11"
-    },
-    {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 3147,
-      "sender_id": 2,
-      "content": "ебанный насос",
-      "is_read": false,
-      "created_at": "2025-05-22T00:12:14.684015",
-      "time": "00:12"
-    },
-    {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 4735,
-      "sender_id": 2,
-      "content": "че не сохраняется",
-      "is_read": false,
-      "created_at": "2025-05-22T00:12:19.486568",
-      "time": "00:12"
-    },
-    {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 9338,
-      "sender_id": 2,
-      "content": "ввв",
-      "is_read": false,
-      "created_at": "2025-05-22T00:12:24.748213",
-      "time": "00:12"
-    },
-    {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 6338,
-      "sender_id": 2,
-      "content": "вввв",
-      "is_read": false,
-      "created_at": "2025-05-22T00:15:23.515626",
-      "time": "00:15"
-    },
-    {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 8928,
-      "sender_id": 2,
-      "content": "в",
-      "is_read": false,
-      "created_at": "2025-05-22T00:15:24.016626",
-      "time": "00:15"
-    },
-    {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 8168,
-      "sender_id": 2,
-      "content": "в",
-      "is_read": false,
-      "created_at": "2025-05-22T00:15:24.192275",
-      "time": "00:15"
-    },
-    {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 3251,
-      "sender_id": 2,
-      "content": "в",
-      "is_read": false,
-      "created_at": "2025-05-22T00:15:24.353716",
-      "time": "00:15"
-    },
-    {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 7812,
-      "sender_id": 2,
-      "content": "в",
-      "is_read": false,
-      "created_at": "2025-05-22T00:15:24.516668",
-      "time": "00:15"
-    },
-    {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 9872,
-      "sender_id": 2,
-      "content": "в",
-      "is_read": false,
-      "created_at": "2025-05-22T00:15:24.668938",
-      "time": "00:15"
-    },
-    {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 8605,
-      "sender_id": 2,
-      "content": "ввв",
-      "is_read": false,
-      "created_at": "2025-05-22T00:15:30.351906",
-      "time": "00:15"
-    },
-    {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 8623,
-      "sender_id": 2,
-      "content": "бл че ты вася",
-      "is_read": false,
-      "created_at": "2025-05-22T00:18:19.786928",
-      "time": "00:18"
-    },
-    {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 5823,
-      "sender_id": 2,
-      "content": "четко ъ",
-      "is_read": false,
-      "created_at": "2025-05-22T00:18:30.476069",
-      "time": "00:18"
-    },
-    {
-      "type": "new_message",
-      "chat_id": 1,
-      "message_id": 8048,
-      "sender_id": 2,
-      "content": "молодец что могу ещё сказать",
-      "is_read": false,
-      "created_at": "2025-05-22T00:18:35.994622",
-      "time": "00:18"
+      "sender_id": 1,
+      "receiver_id": 3,
+      "content": "xxx",
+      "timestamp": "2025-05-27T12:50:05",
+      "is_read": false
     }
   ]
 }

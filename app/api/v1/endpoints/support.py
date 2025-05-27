@@ -11,6 +11,7 @@ from app import deps
 from app.models.user import User
 from app.models.support import SupportTicket, SupportMessage
 from app.schemas.support import SupportTicketCreate, SupportMessageCreate, SupportTicketResponse, SupportMessageResponse
+from app.models.chat import AppChatModel
 
 router = APIRouter()
 
@@ -278,28 +279,75 @@ def create_support_ticket(
     """
     Создание нового тикета поддержки.
     """
-    ticket = SupportTicket(
-        user_id=current_user.id,
-        subject=ticket_data.subject,
-        status="new"
-    )
-    db.add(ticket)
-    db.flush()
-    
-    # Добавляем первое сообщение
-    if ticket_data.message:
-        message = SupportMessage(
+    try:
+        # Создаем чат между пользователем и администратором (ID=3 по умолчанию)
+        admin_id = 3  # Фиксированный ID администратора для демонстрации
+        
+        # Ищем существующий чат между пользователем и админом
+        existing_chat = db.query(AppChatModel).filter(
+            ((AppChatModel.user1_id == current_user.id) & (AppChatModel.user2_id == admin_id)) |
+            ((AppChatModel.user1_id == admin_id) & (AppChatModel.user2_id == current_user.id))
+        ).first()
+        
+        if existing_chat:
+            chat_id = existing_chat.id
+            print(f"DEBUG: Найден существующий чат между пользователем {current_user.id} и админом {admin_id}, ID чата: {chat_id}")
+        else:
+            # Создаем новый чат
+            print(f"DEBUG: Создание нового чата между пользователем {current_user.id} и админом {admin_id}")
+            new_chat = AppChatModel(
+                user1_id=current_user.id,
+                user2_id=admin_id,
+                created_at=datetime.now(),
+                updated_at=datetime.now()
+            )
+            db.add(new_chat)
+            db.commit()
+            db.refresh(new_chat)
+            chat_id = new_chat.id
+        
+        # Создаем тикет и связываем его с чатом
+        ticket = SupportTicket(
+            user_id=current_user.id,
+            subject=ticket_data.subject,
+            description=ticket_data.description,
+            status="OPEN",
+            chat_id=chat_id  # Важно: устанавливаем ID чата в тикете
+        )
+        db.add(ticket)
+        db.commit()
+        db.refresh(ticket)
+        print(f"DEBUG: Тикет создан успешно, ID: {ticket.id}")
+        
+        # Также создаем первое сообщение в чате с описанием тикета
+        print(f"DEBUG: Создание сообщения в чат {chat_id} с описанием тикета")
+        if ticket_data.message:
+            message_content = ticket_data.message
+        elif ticket_data.description:
+            message_content = ticket_data.description
+        else:
+            message_content = f"Запрос в поддержку: {ticket_data.subject}"
+            
+        support_message = SupportMessage(
             ticket_id=ticket.id,
-            content=ticket_data.message,
+            content=message_content,
             is_admin=False,
+            user_id=current_user.id,
             is_read=False
         )
-        db.add(message)
-    
-    db.commit()
-    db.refresh(ticket)
-    
-    return ticket
+        db.add(support_message)
+        db.commit()
+        db.refresh(support_message)
+        print(f"DEBUG: Сообщение создано, ID чата: {chat_id}")
+        
+        return ticket
+    except Exception as e:
+        db.rollback()
+        print(f"DEBUG: Ошибка при создании тикета: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при создании тикета: {str(e)}"
+        )
 
 @router.get("/tickets/{ticket_id}", response_model=SupportTicketResponse)
 def get_support_ticket(
@@ -331,52 +379,87 @@ def send_support_message(
     """
     Отправка сообщения в тикет поддержки.
     """
+    # Проверяем существование тикета
     ticket = db.query(SupportTicket).filter(SupportTicket.id == ticket_id).first()
-    
     if not ticket:
-        raise HTTPException(status_code=404, detail="Тикет не найден")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Тикет не найден"
+        )
     
-    # Проверка доступа
-    if not current_user.is_admin and ticket.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Нет доступа к этому тикету")
+    # Проверяем, не закрыт ли тикет
+    if ticket.status == "CLOSED" or ticket.status == "closed" or ticket.status == TicketStatus.CLOSED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Тикет закрыт"
+        )
     
-    # Если тикет закрыт, его нельзя использовать
-    if ticket.status == "closed":
-        raise HTTPException(status_code=400, detail="Тикет закрыт")
+    # Получаем chat_id из тикета
+    chat_id = ticket.chat_id
+    
+    # Проверяем права доступа (админ или владелец тикета)
+    is_admin = hasattr(current_user, "role") and current_user.role == "ADMIN"
+    if not is_admin and ticket.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Нет доступа к этому тикету"
+        )
+    
+    # Если это первое сообщение от администратора, меняем статус на "в процессе"
+    if is_admin and ticket.status == "OPEN" or ticket.status == TicketStatus.OPEN:
+        ticket.status = TicketStatus.IN_PROGRESS
+        print(f"DEBUG: Статус тикета {ticket_id} изменен на IN_PROGRESS")
     
     # Создаем сообщение
     message = SupportMessage(
         ticket_id=ticket_id,
         content=content,
-        is_admin=current_user.is_admin,
-        admin_id=current_user.id if current_user.is_admin else None,
+        is_admin=is_admin,
+        admin_id=current_user.id if is_admin else None,
+        user_id=None if is_admin else current_user.id,
         is_read=False
     )
+    
     db.add(message)
-    
-    # Обновляем статус тикета
-    if current_user.is_admin:
-        if ticket.status in ["new", "closed"]:
-            ticket.status = "active"
-    else:
-        if ticket.status in ["closed", "waiting"]:
-            ticket.status = "new"
-    
-    ticket.updated_at = datetime.now()
     db.commit()
     db.refresh(message)
     
-    # Возвращаем ответ
-    return SupportMessageResponse(
-        id=message.id,
-        ticket_id=message.ticket_id,
-        content=message.content,
-        is_admin=message.is_admin,
-        admin_id=message.admin_id,
-        is_read=message.is_read,
-        time=message.time,
-        created_at=message.created_at
-    )
+    print(f"DEBUG: Сообщение {message.id} успешно сохранено в тикет {ticket_id}")
+    
+    # Отправляем сообщение в WebSocket, если доступно
+    try:
+        # Импортируем ConnectionManager из main
+        from main import manager
+        
+        # Формируем данные сообщения
+        message_data = {
+            "type": "new_message",
+            "chat_id": chat_id if chat_id else ticket_id,
+            "ticket_id": ticket_id,
+            "message_id": message.id,
+            "sender_id": current_user.id,
+            "content": message.content,
+            "is_read": message.is_read,
+            "is_admin": message.is_admin,
+            "created_at": message.created_at.isoformat() if message.created_at else None,
+            "time": message.created_at.strftime("%H:%M") if message.created_at else datetime.now().strftime("%H:%M")
+        }
+        
+        # Рассылаем в обе комнаты - и по chat_id, и по ticket_id
+        if chat_id and chat_id != ticket_id:
+            chat_room = f"chat_{chat_id}"
+            print(f"DEBUG: Сохранено сообщение в комнату {chat_room}, всего сообщений: {len(manager.get_messages(chat_room)) + 1}")
+            manager.save_message(chat_room, message_data)
+            manager.broadcast(message_data, chat_room)
+        
+        # Всегда отправляем в комнату тикета
+        ticket_room = f"chat_{ticket_id}"
+        manager.broadcast(message_data, ticket_room)
+        
+    except Exception as e:
+        print(f"DEBUG: Ошибка отправки в WebSocket: {str(e)}")
+    
+    return message
 
 @router.get("/tickets/{ticket_id}/messages", response_model=List[SupportMessageResponse])
 def get_ticket_messages(
@@ -387,37 +470,58 @@ def get_ticket_messages(
     limit: int = 100
 ) -> Any:
     """
-    Получение сообщений конкретного тикета.
+    Получение сообщений тикета поддержки.
     """
+    # Проверяем существование тикета
     ticket = db.query(SupportTicket).filter(SupportTicket.id == ticket_id).first()
-    
     if not ticket:
-        raise HTTPException(status_code=404, detail="Тикет не найден")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Тикет не найден"
+        )
     
-    # Проверка доступа
-    if not current_user.is_admin and ticket.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Нет доступа к этому тикету")
+    # Проверяем права доступа (админ или владелец тикета)
+    is_admin = hasattr(current_user, "role") and current_user.role == "ADMIN"
+    if not is_admin and ticket.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Нет доступа к этому тикету"
+        )
     
-    messages = db.query(SupportMessage)\
-        .filter(SupportMessage.ticket_id == ticket_id)\
-        .order_by(SupportMessage.created_at)\
-        .offset(skip)\
-        .limit(limit)\
-        .all()
+    # Получаем сообщения
+    messages = db.query(SupportMessage).filter(
+        SupportMessage.ticket_id == ticket_id
+    ).order_by(SupportMessage.created_at.asc()).offset(skip).limit(limit).all()
     
-    # Если пользователь открыл тикет, отмечаем сообщения как прочитанные
-    if current_user.is_admin:
-        for msg in messages:
-            if not msg.is_admin and not msg.is_read:
-                msg.is_read = True
-    else:
-        for msg in messages:
-            if msg.is_admin and not msg.is_read:
-                msg.is_read = True
+    # Отмечаем сообщения как прочитанные
+    # Для админа отмечаем сообщения от пользователя, для пользователя - от админа
+    for message in messages:
+        if (is_admin and not message.is_admin and not message.is_read) or \
+           (not is_admin and message.is_admin and not message.is_read):
+            message.is_read = True
     
     db.commit()
     
-    return messages
+    print(f"DEBUG: Запрос на получение сообщений тикета {ticket_id} пользователем {current_user.id}")
+    print(f"DEBUG: Найдено {len(messages)} сообщений для тикета {ticket_id}")
+    
+    # Добавляем chat_id к ответу
+    result = []
+    for msg in messages:
+        msg_dict = {
+            "id": msg.id,
+            "ticket_id": msg.ticket_id,
+            "chat_id": ticket.chat_id,  # Добавляем chat_id из тикета
+            "content": msg.content,
+            "is_admin": msg.is_admin,
+            "admin_id": msg.admin_id,
+            "is_read": msg.is_read,
+            "time": msg.created_at.strftime("%H:%M") if msg.created_at else "00:00",
+            "created_at": msg.created_at
+        }
+        result.append(SupportMessageResponse(**msg_dict))
+    
+    return result
 
 @router.get("/tickets/{ticket_id}/messages/new", response_model=List[SupportMessageResponse])
 def get_new_ticket_messages(

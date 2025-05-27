@@ -26,7 +26,10 @@
                 const animationsEnabled = localStorage.getItem('wazir_animations_enabled') !== 'false';
                 
                 // Применяем цветовую схему
-                document.body.setAttribute('data-color-scheme', colorScheme);
+                // Проверяем, что document.body существует для избежания ошибки
+                if (document.body) {
+                    document.body.setAttribute('data-color-scheme', colorScheme);
+                }
                 
                 // Применяем тему
                 if (themeMode === 'dark') {
@@ -246,35 +249,28 @@
                     </div>
 
                     <nav>
-                        <a href="{{ url_for('admin_dashboard') }}"
-                            class="sidebar-link {% if request.url.path == '/admin/dashboard' %}active{% endif %} flex items-center space-x-3 px-5 py-3">
-                            <i
-                                class="fas fa-tachometer-alt w-5 text-center"></i>
+                        <a href="/admin/dashboard" 
+                           class="sidebar-link {% if request.path == '/admin' or request.path == '/admin/dashboard' %}active{% endif %} flex items-center space-x-3 px-5 py-3">
+                            <i class="fas fa-tachometer-alt w-5 text-center"></i>
                             <span>Панель управления</span>
                         </a>
-                        <a href="{{ url_for('admin_properties') }}"
-                            class="sidebar-link {% if request.url.path == '/admin/properties' %}active{% endif %} flex items-center space-x-3 px-5 py-3">
+                        <a href="/admin/properties" 
+                           class="sidebar-link {% if request.path == '/admin/properties' %}active{% endif %} flex items-center space-x-3 px-5 py-3">
                             <i class="fas fa-building w-5 text-center"></i>
                             <span>Объекты недвижимости</span>
                         </a>
-                        <a href="{{ url_for('admin_users') }}"
-                            class="sidebar-link {% if request.url.path == '/admin/users' %}active{% endif %} flex items-center space-x-3 px-5 py-3">
+                        <a href="/admin/users" 
+                           class="sidebar-link {% if request.path == '/admin/users' %}active{% endif %} flex items-center space-x-3 px-5 py-3">
                             <i class="fas fa-users w-5 text-center"></i>
                             <span>Пользователи</span>
                         </a>
-                        <a href="{{ url_for('admin_requests') }}"
-                            class="sidebar-link {% if request.url.path == '/admin/requests' %}active{% endif %} flex items-center space-x-3 px-5 py-3">
-                            <i
-                                class="fas fa-clipboard-list w-5 text-center"></i>
+                        <a href="/admin/requests" 
+                           class="sidebar-link {% if request.path == '/admin/requests' %}active{% endif %} flex items-center space-x-3 px-5 py-3">
+                            <i class="fas fa-clipboard-list w-5 text-center"></i>
                             <span>Заявки</span>
                         </a>
-                        <a href="{{ url_for('admin_support') }}"
-                            class="sidebar-link {% if request.url.path == '/admin/support' %}active{% endif %} flex items-center space-x-3 px-5 py-3">
-                            <i class="fas fa-headset w-5 text-center"></i>
-                            <span>Поддержка</span>
-                        </a>
-                        <a href="{{ url_for('admin_settings') }}"
-                            class="sidebar-link {% if request.url.path == '/admin/settings' %}active{% endif %} flex items-center space-x-3 px-5 py-3">
+                        <a href="/admin/settings" 
+                           class="sidebar-link {% if request.path == '/admin/settings' %}active{% endif %} flex items-center space-x-3 px-5 py-3">
                             <i class="fas fa-cog w-5 text-center"></i>
                             <span>Настройки</span>
                         </a>
@@ -285,7 +281,7 @@
                     class="absolute bottom-0 w-full p-5 border-t border-gray-800">
                     <a href="/logout"
                         class="flex items-center space-x-3 sidebar-link">
-                        <i class="fas fa-sign-out-alt"></i>
+                        <i class="fas fa-sign-out-alt w-5 text-center"></i>
                         <span>Выйти</span>
                     </a>
                 </div>

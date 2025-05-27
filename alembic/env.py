@@ -10,14 +10,12 @@ from alembic import context
 config = context.config
 
 # Import the project's settings and database URL
-from config import settings
 from database import Base
 
-# Override the SQLAlchemy URL with our project's DATABASE_URL
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
-
-# Import all models so that Alembic can detect them
-from app.models import user, property, message
+# Импортируем все модели (но в правильном порядке)
+from app.models.user import User
+from models.chat import ChatModel, ChatMessageModel
+from models.support import SupportTicket, SupportMessage
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -26,8 +24,6 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

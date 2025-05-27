@@ -249,13 +249,7 @@
                                 alt="Wazir Logo"
                                 class="h-10">
                         </div>
-                        <div class="flex items-center space-x-6">
-                            <div class="flex items-center weather-currency">
-                                <div id="weather-icon-container" class="mr-2">
-                                    <!-- Погодная иконка -->
-                                </div>
-                                <span id="weather-temp">Загрузка...</span>
-                            </div>
+                        <div class="flex items-center">
                             <div class="flex items-center weather-currency">
                                 <img src="https://flagcdn.com/w20/us.png"
                                     alt="USD" class="h-5 mr-2">
@@ -311,7 +305,8 @@
 
                     <!-- Индикатор примененных фильтров -->
                     <div id="applied-filters"
-                        class="applied-filters {% if min_price or max_price or min_area or max_area or rooms or min_floor or max_floor or balcony or furniture or renovation or parking %}visible{% endif %}">
+                        data-has-filters="{% if filter.price_min or filter.price_max or filter.min_area or filter.max_area or filter.rooms or filter.min_floor or filter.max_floor or filter.balcony or filter.furniture or filter.renovation or filter.parking %}true{% else %}false{% endif %}"
+                        class="applied-filters {% if min_price or max_price or min_area or max_area or rooms or min_floor or max_floor or balcony or furniture or renovation or parking %}visible{% else %}hidden{% endif %}">
                         <span>Применены фильтры</span>
                         <button id="reset-all-filters"
                             class="text-red-500 flex items-center">
@@ -794,7 +789,7 @@
                 $.ajax({
                     url: "https://data.fx.kg/api/v1/central",
                     headers: {
-                        "Authorization": "Bearer HuJSCtMKCYVv7QFMKKauRlwbFQIgo4omR85aRwCO919e391c"
+                        "Authorization": "Bearer d2WimsDMvhnYStSsq1VRd7jKLZDSS6DQMbzut6rNa9a33c51"
                     },
                     success: function(data) {
                         if (data && data.usd) {
@@ -931,6 +926,10 @@
                     
                     minPriceText.text(formatPrice(minVal) + ' KGZ');
                     maxPriceText.text(formatPrice(maxVal) + ' KGZ');
+                    
+                    // Обновляем значения в форме
+                    $('input[name="price_min"]').val(minVal);
+                    $('input[name="price_max"]').val(maxVal);
                 }
             }
             
@@ -973,6 +972,10 @@
                     
                     minAreaText.text(minVal + ' м²');
                     maxAreaText.text(maxVal + ' м²');
+                    
+                    // Обновляем значения в форме
+                    $('input[name="min_area"]').val(minVal);
+                    $('input[name="max_area"]').val(maxVal);
                 }
             }
             
@@ -998,35 +1001,106 @@
             
             // Применение фильтров
             $('#apply-filters').on('click', function() {
+                console.log('[Применение фильтров] Нажата кнопка Применить');
+                
+                // Считываем значения ползунков напрямую
+                const priceMin = $('input[name="min_price"]').val();
+                const priceMax = $('input[name="max_price"]').val();
+                const areaMin = $('input[name="min_area"]').val();
+                const areaMax = $('input[name="max_area"]').val();
+                
+                console.log('[Фильтры] Цена:', priceMin, '-', priceMax, 'Площадь:', areaMin, '-', areaMax);
+                
                 // Собираем все данные из формы фильтров
                 const formData = $('#filter-form').serializeArray();
+                console.log('[Форма] Сериализованные данные:', formData);
                 
                 // Создаем объект с параметрами запроса
-                const searchParams = new URLSearchParams(window.location.search);
+                const searchParams = new URLSearchParams();
                 
                 // Добавляем данные из формы поиска
                 const q = $('#search-input').val();
-                if (q) searchParams.set('q', q);
+                if (q) {
+                    searchParams.set('q', q);
+                    console.log('[Поиск] Поисковый запрос:', q);
+                }
                 
                 const category = $('#category-input').val();
-                if (category) searchParams.set('category', category);
+                if (category) {
+                    searchParams.set('category', category);
+                    console.log('[Категория] Выбранная категория:', category);
+                }
                 
-                // Добавляем все параметры из формы фильтров
+                // Напрямую добавляем значения цены и площади
+                if (priceMin && priceMin > 0) {
+                    searchParams.set('price_min', priceMin);
+                }
+                if (priceMax && priceMax < 10000000) {
+                    searchParams.set('price_max', priceMax);
+                }
+                if (areaMin && areaMin > 0) {
+                    searchParams.set('min_area', areaMin);
+                }
+                if (areaMax && areaMax < 500) {
+                    searchParams.set('max_area', areaMax);
+                }
+                
+                // Добавляем остальные параметры из формы фильтров
                 formData.forEach(function(item) {
-                    if (item.value) {
-                        searchParams.set(item.name, item.value);
+                    // Пропускаем цену и площадь, мы их уже добавили выше
+                    if (!['min_price', 'max_price', 'min_area', 'max_area'].includes(item.name)) {
+                        if (item.value) {
+                            searchParams.set(item.name, item.value);
+                            console.log('[Параметр] Добавлен', item.name, '=', item.value);
+                        }
                     }
                 });
                 
+                // Формируем URL для перехода
+                const url = window.location.pathname + '?' + searchParams.toString();
+                console.log('[Переход] Новый URL:', url);
+                
                 // Перенаправляем на страницу поиска с параметрами
-                window.location.href = window.location.pathname + '?' + searchParams.toString();
+                window.location.href = url;
             });
             
             // Сброс фильтров
-            $('#reset-filters, #reset-all-filters, #clear-search').on('click', function() {
+            $('#reset-filters, #reset-all-filters, #clear-search, #clear-all-filters').on('click', function() {
                 // Перенаправляем на страницу поиска без параметров
                 window.location.href = window.location.pathname;
             });
+            
+            // Функция для удаления конкретных фильтров
+            function removeFilter() {
+                const searchParams = new URLSearchParams(window.location.search);
+                
+                // Удаляем указанные параметры
+                for (var i = 0; i < arguments.length; i++) {
+                    searchParams.delete(arguments[i]);
+                }
+                
+                // Перенаправляем на страницу с обновленными параметрами
+                window.location.href = window.location.pathname + '?' + searchParams.toString();
+            }
+            
+            // Проверяем, есть ли активные фильтры
+            var hasActiveFilters = false;
+            // Используем data-атрибут для передачи информации о наличии фильтров
+            hasActiveFilters = document.getElementById('applied-filters').getAttribute('data-has-filters') === 'true';
+            
+            // Отображение блока примененных фильтров
+            if (hasActiveFilters) {
+                $('#applied-filters').removeClass('hidden');
+            } else {
+                $('#applied-filters').addClass('hidden');
+            }
+            
+            // Если есть активные фильтры, открываем панель фильтров
+            if (hasActiveFilters) {
+                $('#filter-panel').removeClass('closed').addClass('open');
+                $('#filter-header i').removeClass('fa-chevron-down').addClass('fa-chevron-up');
+                $('.price-block').show();
+            }
             
             // Загружаем данные о погоде и курсе валют
             getWeather();

@@ -17,7 +17,6 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Создаем базовый класс для моделей
 Base = declarative_base()
 
-
 # Dependency для получения сессии БД
 def get_db():
     db = SessionLocal()

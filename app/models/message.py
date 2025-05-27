@@ -25,33 +25,7 @@ class Message(Base, TimestampMixin):
     recipient = relationship("User", foreign_keys=[recipient_id], backref="messages_received")
 
 
-class TicketStatus(str, enum.Enum):
-    OPEN = "open"
-    IN_PROGRESS = "in_progress"
-    CLOSED = "closed"
-    RESOLVED = "resolved"
-
-
-class SupportTicket(Base, TimestampMixin):
-    __tablename__ = "support_tickets"
-
-    id = Column(Integer, primary_key=True, index=True)
-    subject = Column(String(255))
-    description = Column(Text)
-    status = Column(Enum(TicketStatus), default=TicketStatus.OPEN)
-    
-    user_id = Column(Integer, ForeignKey("users.id"))
-    user = relationship("User", backref="support_tickets")
-    
-    responses = relationship("TicketResponse", back_populates="ticket")
-
-
-class TicketResponse(Base, TimestampMixin):
-    __tablename__ = "ticket_responses"
-
-    id = Column(Integer, primary_key=True, index=True)
-    content = Column(Text)
-    is_from_admin = Column(Boolean, default=False)
-    
-    ticket_id = Column(Integer, ForeignKey("support_tickets.id"))
-    ticket = relationship("SupportTicket", back_populates="responses") 
+# Удалены дублирующие классы тикетов:
+# class TicketStatus(str, enum.Enum): ...
+# class SupportTicket(Base, TimestampMixin): ...
+# class TicketResponse(Base, TimestampMixin): ... 

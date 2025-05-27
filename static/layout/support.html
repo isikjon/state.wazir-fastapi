@@ -209,12 +209,12 @@
                                         y2="18.36"></line><line x1="18.36"
                                         y1="5.64" x2="19.78"
                                         y2="4.22"></line></svg>
-                                <span>+20°</span>
+                                <span id="weather-temp">+20°</span>
                             </div>
                             <div class="flex items-center weather-currency">
                                 <img src="https://flagcdn.com/w20/us.png"
                                     alt="USD" class="h-5 mr-2">
-                                <span>69.8</span>
+                                <span id="currency-rate">69.8</span>
                             </div>
                         </div>
                     </div>
@@ -545,51 +545,99 @@
         </div>
 
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="/static/layout/assets/js/weather-currency-cache.js"></script>
+        <script src="/static/layout/assets/js/auth-check.js"></script>
         <script>
         $(document).ready(function() {
             // Обработка переключения табов
             $('.tab').on('click', function() {
                 const target = $(this).data('target');
-                
-                // Убираем активный класс со всех табов
                 $('.tab').removeClass('active');
                 $(this).addClass('active');
-                
-                // Показываем нужный контент
                 $('.tab-content').removeClass('active');
                 $('#' + target).addClass('active');
             });
-            
             // Обработка аккордеона FAQ
             $('.faq-question').on('click', function() {
                 const faqItem = $(this).parent();
-                
-                // Если элемент уже активен, закрываем его
                 if (faqItem.hasClass('active')) {
                     faqItem.removeClass('active');
                 } else {
-                    // Иначе закрываем все и открываем текущий
                     $('.faq-item').removeClass('active');
                     faqItem.addClass('active');
                 }
             });
-            
             // Обработка отправки формы поддержки
             $('#support-form').on('submit', function(e) {
                 e.preventDefault();
-                
-                // Здесь будет отправка формы на сервер
-                alert('Ваше сообщение отправлено! Мы свяжемся с вами в ближайшее время.');
-                
-                // Очищаем форму
-                $(this).trigger('reset');
+                // Собираем данные
+                const subject = $('#topic option:selected').text();
+                const description = $('#message').val();
+                if (!subject || !description) {
+                    alert('Пожалуйста, заполните все поля!');
+                    return;
+                }
+                // Получаем токен
+                let token = localStorage.getItem('access_token');
+                if (!token) {
+                    // Пробуем из cookies
+                    const cookies = document.cookie.split(';');
+                    for (let cookie of cookies) {
+                        const [name, value] = cookie.trim().split('=');
+                        if (name === 'access_token') {
+                            token = value;
+                        }
+                    }
+                }
+                if (!token) {
+                    alert('Необходима авторизация!');
+                    window.location.href = '/mobile/auth';
+                    return;
+                }
+                // Отправляем тикет через API
+                $.ajax({
+                    url: '/api/v1/support/tickets',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        subject: subject,
+                        description: description
+                    }),
+                    beforeSend: function(xhr) {
+                        xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+                    },
+                    success: function(resp) {
+                        alert('Ваше обращение отправлено! Мы свяжемся с вами в ближайшее время.');
+                        $('#support-form').trigger('reset');
+                    },
+                    error: function(xhr) {
+                        alert('Ошибка отправки обращения: ' + (xhr.responseJSON?.detail || xhr.statusText));
+                    }
+                });
             });
-            
             // Обработка клика по навигационным элементам
             $('.nav-item').on('click', function() {
                 $('.nav-item').removeClass('active').addClass('text-gray-500');
                 $(this).addClass('active').removeClass('text-gray-500');
             });
+            // Погода и валюта (кеш/запрос)
+            function displayWeatherData(data) {
+                $('.weather-icon').replaceWith(data.iconHtml);
+                $('#weather-temp').text('+' + data.temp + '°');
+            }
+            function displayCurrencyData(data) {
+                $('#currency-rate').text(data.rate);
+            }
+            if (typeof getWeatherFromCache === 'function') {
+                const cachedWeather = getWeatherFromCache();
+                if (cachedWeather) displayWeatherData(cachedWeather);
+                else if (typeof getWeather === 'function') getWeather(displayWeatherData);
+            }
+            if (typeof getCurrencyFromCache === 'function') {
+                const cachedCurrency = getCurrencyFromCache();
+                if (cachedCurrency) displayCurrencyData(cachedCurrency);
+                else if (typeof getCurrencyRate === 'function') getCurrencyRate(displayCurrencyData);
+            }
         });
         </script>
     </body>

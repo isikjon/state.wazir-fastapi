@@ -1,4 +1,8 @@
-from .chat import ChatModel, ChatMessageModel
+from .user import User, UserRole
+from .subscription import SubscriptionType, Subscription
 
 # Re-export with aliases to avoid ambiguity
-__all__ = ["ChatModel", "ChatMessageModel"] 
+__all__ = [
+    "User", "UserRole",
+    "SubscriptionType", "Subscription"
+] 

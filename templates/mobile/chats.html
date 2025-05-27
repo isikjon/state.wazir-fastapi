@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Wazir Недвижимость - Сообщения</title>
+        <link rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+            rel="stylesheet">
+        <link rel="stylesheet" href="{{ url_for('static', path='layout/assets/scss/main.css') }}">
+        <style>
+            .category-card {
+                transition: all 0.3s ease;
+                height: 120px;
+                background-size: cover;
+                background-position: center;
+                position: relative;
+                overflow: hidden;
+            }
+            .category-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            }
+            .category-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7));
+            }
+            .category-title {
+                position: relative;
+                z-index: 2;
+            }
+            .bottom-nav {
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            }
+            .nav-item {
+                transition: all 0.2s ease;
+            }
+            .nav-item.active {
+                color: var(--color-primary);
+            }
+            .nav-item:hover {
+                color: var(--color-primary-hover);
+            }
+            .city-banner {
+                height: 180px;
+                background-image: url('https://images.unsplash.com/photo-1516156008625-3a9d6067fab5?q=80&w=1200&auto=format&fit=crop');
+                background-size: cover;
+                background-position: center;
+                position: relative;
+            }
+            .city-banner::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.6));
+            }
+            .city-content {
+                position: relative;
+                z-index: 2;
+            }
+            .weather-currency {
+                font-size: 1.1rem;
+                font-weight: 500;
+            }
+            .weather-icon {
+                font-size: 1.4rem;
+            }
+            .nav-icons {
+                font-size: 1.6rem;
+                font-weight: 300;
+            }
+            .chat-header {
+                border-bottom: 1px solid #e5e7eb;
+                position: sticky;
+                top: 0;
+                background-color: white;
+                z-index: 10;
+            }
+            .chat-item {
+                padding: 16px;
+                border-bottom: 1px solid #f3f4f6;
+                transition: background-color 0.2s ease;
+            }
+            .chat-item:hover {
+                background-color: #f9fafb;
+            }
+            .chat-avatar {
+                width: 50px;
+                height: 50px;
+                border-radius: 25px;
+                overflow: hidden;
+                background-color: #f3f4f6;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #9ca3af;
+            }
+            .chat-avatar img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .chat-name {
+                font-weight: 500;
+                font-size: 1.05rem;
+                color: #111827;
+            }
+            .chat-status {
+                font-size: 0.8rem;
+                color: #6b7280;
+            }
+            .chat-last-message {
+                font-size: 0.95rem;
+                color: #4b5563;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 220px;
+            }
+            .chat-time {
+                font-size: 0.8rem;
+                color: #9ca3af;
+            }
+            .chat-unread {
+                width: 18px;
+                height: 18px;
+                border-radius: 9px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: #4b5563;
+                color: white;
+                font-size: 0.7rem;
+                font-weight: 600;
+            }
+            .search-container {
+                padding: 12px 16px;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            .search-input {
+                width: 100%;
+                padding: 10px 16px 10px 40px;
+                border: 1px solid #e5e7eb;
+                border-radius: 24px;
+                background-color: #f9fafb;
+                font-size: 0.95rem;
+                outline: none;
+            }
+            .search-icon {
+                position: absolute;
+                left: 28px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #9ca3af;
+            }
+        </style>
+    </head>
+    <body class="bg-white font-sans">
+        <div class="min-h-screen flex flex-col">
+            <header class="bg-white shadow-sm">
+                <div class="container mx-auto px-4 py-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <img
+                                src="{{ url_for('static', path='layout/assets/img/logo_non.png') }}"
+                                alt="Wazir Logo"
+                                class="h-10">
+                        </div>
+                        <div class="flex items-center">
+                            <div class="flex items-center weather-currency">
+                                <img src="https://flagcdn.com/w20/us.png"
+                                    alt="USD" class="h-5 mr-2">
+                                <span id="currency-rate">Загрузка...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header> 
+
+            <!-- Шапка страницы -->
+            <div class="chat-header px-4 py-4">
+                <h1 class="text-xl font-semibold text-gray-800">Сообщения</h1>
+            </div>
+
+            <!-- Поиск -->
+            <div class="search-container relative">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                    viewBox="0 0 24 24" fill="none" stroke="#9ca3af"
+                    stroke-width="1.75" stroke-linecap="round"
+                    stroke-linejoin="round" class="search-icon"><circle cx="11"
+                        cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65"
+                        y2="16.65"></line></svg>
+                <input type="text" class="search-input" placeholder="Поиск" id="searchInput">
+            </div>
+
+            <!-- Список чатов -->
+            <div class="chats-list flex-1" id="chatsContainer">
+                <!-- Динамически заполняемый список чатов -->
+            </div>
+
+            <!-- Нижняя навигация -->
+            <nav
+                class="bottom-nav fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10">
+                <div class="flex justify-around items-center py-4">
+                    <a href="/mobile" class="nav-item text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24"
+                            height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.75"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="nav-icons"><path
+                                d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline
+                                points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    </a>
+                    <a href="/mobile/search" class="nav-item text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24"
+                            height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.75"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="nav-icons"><circle cx="11" cy="11"
+                                r="8"></circle><line x1="21" y1="21" x2="16.65"
+                                y2="16.65"></line></svg>
+                    </a>
+                    <a href="/mobile/chats" class="nav-item active">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24"
+                            height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.75"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="nav-icons"><path
+                                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    </a>
+                    <a href="/mobile/support" class="nav-item text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24"
+                            height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.75"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="nav-icons"><circle cx="12" cy="12"
+                                r="10"></circle><path
+                                d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line
+                                x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    </a>
+                    <a href="/mobile/profile" class="nav-item text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24"
+                            height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.75"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="nav-icons"><path
+                                d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle
+                                cx="12" cy="7" r="4"></circle></svg>
+                    </a>
+                </div>
+            </nav>
+        </div>
+
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <!-- Подключаем скрипт для кэширования данных о погоде и курсе валюты -->
+        <script
+            src="{{ url_for('static', path='layout/assets/js/weather-currency-cache.js') }}"></script>
+        <script>
+            $(document).ready(function() {
+                $('.nav-item').on('click', function() {
+                    $('.nav-item').removeClass('active').addClass('text-gray-500');
+                    $(this).addClass('active').removeClass('text-gray-500');
+                });
+                
+                // Функция для получения данных о погоде через Visual Crossing Weather
+                function getWeather() {
+                    // Сначала проверяем, есть ли кэшированные данные
+                    const cachedWeather = getWeatherFromCache();
+                    if (cachedWeather) {
+                        // Если есть кэшированные данные, сразу их отображаем
+                        displayWeatherData(cachedWeather);
+                        return;
+                    }
+                    
+                    // Если кэша нет или он устарел, запрашиваем данные с API
+                    const city = "Osh,Kyrgyzstan";
+                    const apiKey = "JPWU9UY254WNDKUNM9MH9E8AR"; // Публичный ключ с ограничениями
+                    
+                    $.ajax({
+                        url: `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${city}/today`,
+                        data: {
+                            unitGroup: "metric",
+                            key: apiKey,
+                            include: "current"
+                        },
+                        success: function(data) {
+                            try {
+                                if (data && data.currentConditions && data.currentConditions.temp !== undefined) {
+                                    // Округляем температуру до целого числа
+                                    const temp = Math.round(data.currentConditions.temp);
+                                    
+                                    // Получаем код состояния погоды
+                                    const condition = data.currentConditions.conditions ? 
+                                        data.currentConditions.conditions.toLowerCase() : '';
+                                    const iconCode = data.currentConditions.icon ? 
+                                        data.currentConditions.icon.toLowerCase() : '';
+                                    
+                                    let iconHtml;
+                                    // Определяем иконку на основе кода погоды Visual Crossing
+                                    if (iconCode.includes('rain') || condition.includes('дождь') || condition.includes('осадки')) {
+                                        // Дождь
+                                        iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4c94f2" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><line x1="16" y1="13" x2="16" y2="21"></line><line x1="8" y1="13" x2="8" y2="21"></line><line x1="12" y1="15" x2="12" y2="23"></line><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path></svg>`;
+                                    } else if (iconCode.includes('snow') || condition.includes('снег')) {
+                                        // Снег
+                                        iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9cc0fa" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"></path><line x1="8" y1="16" x2="8.01" y2="16"></line><line x1="8" y1="20" x2="8.01" y2="20"></line><line x1="12" y1="18" x2="12.01" y2="18"></line><line x1="12" y1="22" x2="12.01" y2="22"></line><line x1="16" y1="16" x2="16.01" y2="16"></line><line x1="16" y1="20" x2="16.01" y2="20"></line></svg>`;
+                                    } else if (iconCode.includes('thunder') || iconCode.includes('lightning') || condition.includes('гроза')) {
+                                        // Гроза
+                                        iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c8aa0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"></path><polyline points="13 11 9 17 15 17 11 23"></polyline></svg>`;
+                                    } else if (iconCode.includes('fog') || iconCode.includes('mist') || condition.includes('туман') || condition.includes('дымка')) {
+                                        // Туман
+                                        iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c8aa0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`;
+                                    } else if (iconCode === 'clear-day' || iconCode === 'clear-night' || condition.includes('ясно')) {
+                                        // Ясно
+                                        iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
+                                    } else if (iconCode.includes('cloud') || condition.includes('облачно') || condition.includes('пасмурно')) {
+                                        // Облачно
+                                        iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c8aa0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`;
+                                    } else {
+                                        // По умолчанию или для других условий
+                                        iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c8aa0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`;
+                                    }
+                                    
+                                    // Сохраняем данные в кэш
+                                    const weatherData = {
+                                        temp: temp,
+                                        iconHtml: iconHtml,
+                                        condition: condition
+                                    };
+                                    saveWeatherToCache(weatherData);
+                                    
+                                    // Отображаем данные
+                                    displayWeatherData(weatherData);
+                                } else {
+                                    getWeatherAlt();
+                                }
+                            } catch (e) {
+                                getWeatherAlt();
+                            }
+                        },
+                        error: function() {
+                            // При ошибке используем альтернативный API
+                            getWeatherAlt();
+                        }
+                    });
+                }
+
+                // Получение данных о погоде через альтернативный API
+                function getWeatherAlt() {
+                    // Проверка кэша перед запросом
+                    const cachedWeather = getWeatherFromCache();
+                    if (cachedWeather) {
+                        displayWeatherData(cachedWeather);
+                        return;
+                    }
+                    
+                    // Пытаемся получить данные через альтернативный API
+                    // В данном случае используем резервные данные
+                    showFallbackWeather();
+                }
+                
+                // Показываем резервные данные о погоде
+                function showFallbackWeather() {
+                    // Сезонные температуры для Оша, Кыргызстан
+                    const month = new Date().getMonth() + 1;
+                    
+                    let temp;
+                    if (month >= 12 || month <= 2) {
+                        // Зима (декабрь-февраль)
+                        temp = -2;
+                    } else if (month >= 3 && month <= 5) {
+                        // Весна (март-май)
+                        temp = 15;
+                    } else if (month >= 6 && month <= 8) {
+                        // Лето (июнь-август)
+                        temp = 28;
+                    } else {
+                        // Осень (сентябрь-ноябрь)
+                        temp = 12;
+                    }
+                    
+                    // Базовая иконка облачности
+                    const iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c8aa0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`;
+                    
+                    // Создаем резервные данные
+                    const fallbackData = {
+                        temp: temp,
+                        iconHtml: iconHtml,
+                        condition: 'cloudy'
+                    };
+                    
+                    // Сохраняем резервные данные в кэш
+                    saveWeatherToCache(fallbackData);
+                    
+                    // Отображаем данные
+                    displayWeatherData(fallbackData);
+                }
+              
+                function getCurrencyRate() {
+                    // Сначала проверяем, есть ли кэшированные данные
+                    const cachedCurrency = getCurrencyFromCache();
+                    if (cachedCurrency) {
+                        // Если есть кэшированные данные, сразу их отображаем
+                        displayCurrencyData(cachedCurrency);
+                        return;
+                    }
+                     
+                    // Если кэша нет или он устарел, запрашиваем данные с API
+                    $.ajax({
+                        url: "https://data.fx.kg/api/v1/central",
+                        headers: {
+                            "Authorization": "Bearer d2WimsDMvhnYStSsq1VRd7jKLZDSS6DQMbzut6rNa9a33c51"
+                        },
+                        success: function(data) {
+                            if (data && data.usd) {
+                                const rate = parseFloat(data.usd).toFixed(1);
+                                
+                                // Сохраняем данные в кэш
+                                const currencyData = {
+                                    rate: rate,
+                                    source: 'fx.kg'
+                                };
+                                saveCurrencyToCache(currencyData);
+                                
+                                // Отображаем данные
+                                displayCurrencyData(currencyData);
+                            } else {
+                                // Пробуем альтернативный метод
+                                getCurrencyRateGoogle();
+                            }
+                        },
+                        error: function() {
+                            // При ошибке используем альтернативный метод
+                            getCurrencyRateGoogle();
+                        }
+                    });
+                }
+                  
+                function getCurrencyRateGoogle() {
+                    // Проверка кэша перед запросом
+                    const cachedCurrency = getCurrencyFromCache();
+                    if (cachedCurrency) {
+                        displayCurrencyData(cachedCurrency);
+                        return;
+                    }
+                    
+                    // Запрос данных через Google Apps Script
+                    $.ajax({
+                        url: "https://script.google.com/macros/s/AKfycbzuBnGgEZdYMvWPJmyqO0eLP7dMWyU45OyEUEGHhdJ7LWNwx1IU7F8Wl_uLF9YADjVx/exec",
+                        data: {
+                            from: "USD",
+                            to: "KGS"
+                        },
+                        dataType: "jsonp",
+                        success: function(data) {
+                            if (data && data.rate) {
+                                const rate = parseFloat(data.rate).toFixed(1);
+                                
+                                // Сохраняем данные в кэш
+                                const currencyData = {
+                                    rate: rate,
+                                    source: 'google'
+                                };
+                                saveCurrencyToCache(currencyData);
+                                
+                                // Отображаем данные
+                                displayCurrencyData(currencyData);
+                            } else {
+                                getCurrencyRateAlt();
+                            }
+                        },
+                        error: function() {
+                            getCurrencyRateAlt();
+                        }
+                    });
+                }
+                
+                function getCurrencyRateAlt() {
+                    // Проверка кэша перед запросом
+                    const cachedCurrency = getCurrencyFromCache();
+                    if (cachedCurrency) {
+                        displayCurrencyData(cachedCurrency);
+                        return;
+                    }
+                    
+                    // В данном случае просто используем резервные данные
+                    showFallbackCurrency();
+                }
+                
+                function showFallbackCurrency() {
+                    const fallbackData = {
+                        rate: '69.8',
+                        source: 'fallback'
+                    };
+                    
+                    // Сохраняем резервные данные в кэш
+                    saveCurrencyToCache(fallbackData);
+                    
+                    // Отображаем данные
+                    displayCurrencyData(fallbackData);
+                }
+                
+                // Загружаем данные о погоде и курсе валют
+                getWeather();
+                getCurrencyRate();
+                
+                // Обработка клика по элементам навигации
+                $('.nav-item').on('click', function() {
+                    $('.nav-item').removeClass('active').addClass('text-gray-500');
+                    $(this).addClass('active').removeClass('text-gray-500');
+                });
+            });
+        </script>
+        <script>
+        $(document).ready(function() {
+            function getCookie(name) {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+            }
+            
+            // Дебаггинг cookies
+            console.log('Cookies:', document.cookie);
+            
+            // Проверяем разные варианты имени токена
+            let token = getCookie('access_token');
+            if (!token) {
+                token = getCookie('token');
+            }
+            
+            // Загружаем только существующие чаты пользователя
+            loadChats();
+            
+            // Загрузка данных о погоде и валюте
+            // Функции для кэширования и обработки погоды/валюты
+            function getWeatherFromCache() {
+                const cachedData = localStorage.getItem('weatherData');
+                if (!cachedData) return null;
+                
+                try {
+                    const data = JSON.parse(cachedData);
+                    const timestamp = data.timestamp || 0;
+                    const now = Date.now();
+                    
+                    // Проверяем актуальность данных (1 час)
+                    if (now - timestamp > 3600000) {
+                        localStorage.removeItem('weatherData');
+                        return null;
+                    }
+                    
+                    return data;
+                } catch (e) {
+                    localStorage.removeItem('weatherData');
+                    return null;
+                }
+            }
+            
+            function saveWeatherToCache(data) {
+                data.timestamp = Date.now();
+                localStorage.setItem('weatherData', JSON.stringify(data));
+            }
+            
+            function getCurrencyFromCache() {
+                const cachedData = localStorage.getItem('currencyData');
+                if (!cachedData) return null;
+                
+                try {
+                    const data = JSON.parse(cachedData);
+                    const timestamp = data.timestamp || 0;
+                    const now = Date.now();
+                    
+                    // Проверяем актуальность данных (1 час)
+                    if (now - timestamp > 3600000) {
+                        localStorage.removeItem('currencyData');
+                        return null;
+                    }
+                    
+                    return data;
+                } catch (e) {
+                    localStorage.removeItem('currencyData');
+                    return null;
+                }
+            }
+            
+            function saveCurrencyToCache(data) {
+                data.timestamp = Date.now();
+                localStorage.setItem('currencyData', JSON.stringify(data));
+            }
+            
+            function displayWeatherData(data) {
+                $('#weather-temp').text(data.temperature);
+                // Выбираем иконку в зависимости от температуры
+                const temp = parseInt(data.temperature);
+                let iconClass = 'fas fa-temperature-half';
+                
+                if (temp < 0) {
+                    iconClass = 'fas fa-snowflake';
+                } else if (temp > 25) {
+                    iconClass = 'fas fa-sun';
+                }
+                
+                $('#weather-icon-container').html(`<i class="${iconClass} weather-icon"></i>`);
+            }
+            
+            function displayCurrencyData(data) {
+                $('#currency-rate').text(data.rate);
+            }
+            
+            function showFallbackWeather() {
+                const fallbackData = {
+                    temperature: '+20°',
+                    source: 'fallback'
+                };
+                
+                saveWeatherToCache(fallbackData);
+                displayWeatherData(fallbackData);
+            }
+            
+            function showFallbackCurrency() {
+                const fallbackData = {
+                    rate: '69.8',
+                    source: 'fallback'
+                };
+                
+                // Сохраняем резервные данные в кэш
+                saveCurrencyToCache(fallbackData);
+                
+                // Отображаем данные
+                displayCurrencyData(fallbackData);
+            }
+            
+            function getWeather() {
+                // Проверяем кэш перед запросом
+                const cachedWeather = getWeatherFromCache();
+                if (cachedWeather) {
+                    displayWeatherData(cachedWeather);
+                    return;
+                }
+                
+                // Делаем запрос к API погоды
+                $.ajax({
+                    url: 'https://api.openweathermap.org/data/2.5/weather',
+                    data: {
+                        q: 'Bishkek,kg',
+                        units: 'metric',
+                        appid: '11db64c2bb730756af5573ee156a2a26'
+                    },
+                    success: function(data) {
+                        if (data && data.main && data.main.temp) {
+                            // Округляем температуру до целых градусов
+                            const temp = Math.round(data.main.temp);
+                            const tempStr = (temp > 0 ? '+' : '') + temp + '°';
+                            
+                            // Сохраняем данные в кэш
+                            const weatherData = {
+                                temperature: tempStr,
+                                source: 'openweathermap'
+                            };
+                            saveWeatherToCache(weatherData);
+                            
+                            // Отображаем данные
+                            displayWeatherData(weatherData);
+                        } else {
+                            showFallbackWeather();
+                        }
+                    },
+                    error: function() {
+                        showFallbackWeather();
+                    }
+                });
+            }
+            
+            function getCurrencyRate() {
+                // Сначала проверяем, есть ли кэшированные данные
+                const cachedCurrency = getCurrencyFromCache();
+                if (cachedCurrency) {
+                    // Если есть кэшированные данные, сразу их отображаем
+                    displayCurrencyData(cachedCurrency);
+                    return;
+                }
+                
+                // Если кэша нет или он устарел, запрашиваем данные с API
+                $.ajax({
+                    url: "https://data.fx.kg/api/v1/central",
+                    headers: {
+                        "Authorization": "Bearer d2WimsDMvhnYStSsq1VRd7jKLZDSS6DQMbzut6rNa9a33c51"
+                    },
+                    success: function(data) {
+                        if (data && data.usd) {
+                            const rate = parseFloat(data.usd).toFixed(1);
+                            
+                            // Сохраняем данные в кэш
+                            const currencyData = {
+                                rate: rate,
+                                source: 'fx.kg'
+                            };
+                            saveCurrencyToCache(currencyData);
+                            
+                            // Отображаем данные
+                            displayCurrencyData(currencyData);
+                        } else {
+                            // Пробуем альтернативный метод
+                            getCurrencyRateGoogle();
+                        }
+                    },
+                    error: function() {
+                        // При ошибке используем альтернативный метод
+                        getCurrencyRateGoogle();
+                    }
+                });
+            }
+            
+            function getCurrencyRateGoogle() {
+                // Проверка кэша перед запросом
+                const cachedCurrency = getCurrencyFromCache();
+                if (cachedCurrency) {
+                    displayCurrencyData(cachedCurrency);
+                    return;
+                }
+                
+                // Запрос данных через Google Apps Script
+                $.ajax({
+                    url: "https://script.google.com/macros/s/AKfycbzuBnGgEZdYMvWPJmyqO0eLP7dMWyU45OyEUEGHhdJ7LWNwx1IU7F8Wl_uLF9YADjVx/exec",
+                    data: {
+                        from: "USD",
+                        to: "KGS"
+                    },
+                    dataType: "jsonp",
+                    success: function(data) {
+                        if (data && data.rate) {
+                            const rate = parseFloat(data.rate).toFixed(1);
+                            
+                            // Сохраняем данные в кэш
+                            const currencyData = {
+                                rate: rate,
+                                source: 'google'
+                            };
+                            saveCurrencyToCache(currencyData);
+                            
+                            // Отображаем данные
+                            displayCurrencyData(currencyData);
+                        } else {
+                            getCurrencyRateAlt();
+                        }
+                    },
+                    error: function() {
+                        getCurrencyRateAlt();
+                    }
+                });
+            }
+            
+            function getCurrencyRateAlt() {
+                // Проверка кэша перед запросом
+                const cachedCurrency = getCurrencyFromCache();
+                if (cachedCurrency) {
+                    displayCurrencyData(cachedCurrency);
+                    return;
+                }
+                
+                // В данном случае просто используем резервные данные
+                showFallbackCurrency();
+            }
+            
+            function loadWeatherAndCurrency() {
+                // Загружаем данные о погоде и курсе валют
+                getWeather();
+                getCurrencyRate();
+            }
+            
+            // Функция для загрузки всех пользователей системы
+            function loadAllUsers() {
+                // Добавляем вывод токена для отладки
+                console.log('Токен для авторизации:', token);
+                console.log('Начинаем загрузку пользователей...');
+                
+                $.ajax({
+                    url: '/api/v1/contacts/',
+                    method: 'GET',
+                    headers: {
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    },
+                    success: function(users) {
+                        console.log('Получен список пользователей:', users);
+                        console.log('Тип данных:', typeof users);
+                        console.log('Это массив?', Array.isArray(users));
+                        if (users && typeof users === 'object' && !Array.isArray(users)) {
+                            console.log('Преобразуем объект в массив');
+                            users = Object.values(users);
+                        }
+                        
+                        if (Array.isArray(users) && users.length > 0) {
+                            console.log('Передаем массив пользователей в renderUsers():', users);
+                            renderUsers(users);
+                        } else {
+                            console.warn('Получен пустой список пользователей');
+                            // Если вернулся пустой массив, используем тестовые данные
+                            const testUsers = [
+                                { id: 2, full_name: 'Иван Петров' },
+                                { id: 3, full_name: 'Анна Сидорова' },
+                                { id: 4, full_name: 'Михаил Козлов' },
+                                { id: 5, full_name: 'Елена Смирнова' }
+                            ];
+                            console.log('Используем тестовые данные:', testUsers);
+                            renderUsers(testUsers);
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error('Ошибка при загрузке пользователей:', xhr.responseText);
+                        console.error('Статус ошибки:', xhr.status);
+                        // Если API не работает, используем тестовые данные
+                        const testUsers = [
+                            { id: 2, full_name: 'Иван Петров' },
+                            { id: 3, full_name: 'Анна Сидорова' },
+                            { id: 4, full_name: 'Михаил Козлов' },
+                            { id: 5, full_name: 'Елена Смирнова' }
+                        ];
+                        console.log('Используем тестовые данные из-за ошибки:', testUsers);
+                        renderUsers(testUsers);
+                    }
+                });
+            }
+            
+            // Функция для загрузки чатов
+            function loadChats() {
+                // Проверяем, есть ли доступ к API
+                $.ajax({
+                    url: '/api/v1/chat/',
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    success: function(chats) {
+                        console.log('API чатов работает, получены данные:', chats);
+                        
+                        if (chats && chats.length > 0) {
+                            renderChats(chats);
+                        } else {
+                            // Если нет чатов, показываем всех пользователей
+                            loadAllUsers();
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error('Ошибка при загрузке чатов через API:', xhr.responseText);
+                        console.log('Загружаем список пользователей для создания новых чатов');
+                        
+                        // Если не смогли загрузить чаты, загружаем всех пользователей
+                        loadAllUsers();
+                    }
+                });
+            }
+            
+            // Функция для отображения чатов
+            function renderChats(chats) {
+                const container = $('#chatsContainer');
+                container.empty();
+                
+                if (chats.length === 0) {
+                    container.html(`
+                        <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
+                            <div class="text-gray-400 mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-700 mb-2">У вас пока нет сообщений</h3>
+                            <p class="text-gray-500 mb-6">Начните общение с пользователями системы</p>
+                            <button id="startNewChat" class="bg-gray-800 text-white rounded-full px-6 py-2 hover:bg-gray-700 transition-colors">
+                                Начать чат
+                            </button>
+                        </div>
+                    `);
+                    
+                    // Обработчик для кнопки "Начать чат"
+                    $('#startNewChat').click(function() {
+                        loadAllUsers();
+                    });
+                    return;
+                }
+                
+                // Выводим структуру данных чата для отладки
+                console.log('Структура данных чата:', chats);
+                
+                for (const chat of chats) {
+                    // Безопасное получение инициалов пользователя
+                    let userInitial = '?';
+                    let userName = 'Пользователь';
+                    let userId = chat.id || chat.user_id || 1;
+                    
+                    // Проверяем различные варианты структуры данных
+                    if (chat.user) {
+                        // Если есть объект user
+                        if (chat.user.full_name) {
+                            userName = chat.user.full_name;
+                            userInitial = chat.user.full_name.charAt(0).toUpperCase();
+                        } else if (chat.user.first_name) {
+                            userName = `${chat.user.first_name} ${chat.user.last_name || ''}`;
+                            userInitial = chat.user.first_name.charAt(0).toUpperCase();
+                        }
+                        
+                        if (chat.user.id) {
+                            userId = chat.user.id;
+                        }
+                    } else if (chat.full_name) {
+                        // Если есть поле full_name непосредственно в объекте chat
+                        userName = chat.full_name;
+                        userInitial = chat.full_name.charAt(0).toUpperCase();
+                    } else if (chat.name) {
+                        // Если есть поле name
+                        userName = chat.name;
+                        userInitial = chat.name.charAt(0).toUpperCase();
+                    }
+                    
+                    // Безопасное получение количества непрочитанных сообщений
+                    const unreadCount = chat.unread_count || 0;
+                    const unreadBadge = unreadCount > 0 ? 
+                        `<div class="chat-unread">${unreadCount}</div>` : '';
+                    
+                    // Безопасное получение времени и последнего сообщения
+                    const chatTime = chat.time || 'Недавно';
+                    const lastMessage = chat.last_message || 'Начать чат';
+                    
+                    container.append(`
+                        <a href="/mobile/chat/${userId}" class="chat-item block p-4 border-b border-gray-200">
+                            <div class="flex items-center">
+                                <div class="mr-3 w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-semibold">
+                                    ${userInitial}
+                                </div>
+                                <div class="flex-1 mr-2">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <div class="font-medium">${userName}</div>
+                                        <div class="text-sm text-gray-500">${chatTime}</div>
+                                    </div>
+                                    <div class="text-sm text-gray-500">${lastMessage}</div>
+                                </div>
+                                <div>
+                                    ${unreadBadge}
+                                </div>
+                            </div>
+                        </a>
+                    `);
+                }
+            }
+            
+            // Функция для отображения всех пользователей
+            function renderUsers(users) {
+                console.log('Рендеринг пользователей:', users);
+                
+                const container = $('#chatsContainer');
+                container.empty();
+                
+                // Если нет пользователей, показываем сообщение об этом
+                if (!users || !Array.isArray(users) || users.length === 0) {
+                    container.html(`
+                        <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
+                            <div class="text-gray-400 mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-700 mb-2">Нет доступных пользователей</h3>
+                            <p class="text-gray-500">Нажмите кнопку ниже, чтобы начать новый чат</p>
+                            <button id="startNewChat" class="mt-4 bg-gray-800 text-white rounded-full px-6 py-2 hover:bg-gray-700 transition-colors">
+                                Начать новый чат
+                            </button>
+                        </div>
+                    `);
+                    return;
+                }
+                
+                // Заголовок для списка пользователей
+                container.append(`
+                    <div class="p-4 border-b border-gray-200">
+                        <h2 class="text-md font-medium text-gray-700">Доступные пользователи</h2>
+                        <p class="text-sm text-gray-500">Выберите пользователя, чтобы начать новый чат</p>
+                    </div>
+                `);
+                
+                // Перебираем пользователей и создаем простые элементы
+                users.forEach(function(user) {
+                    // Проверка на наличие обязательных полей
+                    if (!user || !user.id || !user.full_name) {
+                        console.error('Некорректные данные пользователя:', user);
+                        return;
+                    }
+                    
+                    // Создаем простой элемент списка
+                    const userItem = $(`
+                        <div class="chat-item p-4 border-b border-gray-200 cursor-pointer" data-user-id="${user.id}" data-user-name="${user.full_name}">
+                            <div class="flex items-center">
+                                <div class="mr-3 w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-semibold">
+                                    ${user.full_name.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <div class="font-medium">${user.full_name}</div>
+                                    <div class="text-sm text-gray-500">Начните чат</div>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                    
+                    // Добавляем обработчик клика
+                    userItem.on('click', function() {
+                        const userId = $(this).data('user-id');
+                        const userName = $(this).data('user-name');
+                        window.location.href = `/mobile/chat/${userId}?name=${encodeURIComponent(userName)}`;
+                    });
+                    
+                    container.append(userItem);
+                });
+            }
+            
+            // Обработка поиска
+            $('#searchInput').on('input', function() {
+                const query = $(this).val().toLowerCase();
+                $('.chat-item').each(function() {
+                    const name = $(this).find('.chat-name').text().toLowerCase();
+                    const message = $(this).find('.chat-last-message').text().toLowerCase();
+                    
+                    if (name.includes(query) || message.includes(query)) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            });
+            
+            // Подключение к WebSocket для обновлений в реальном времени
+            function connectWebSocket() {
+                const ws = new WebSocket(`ws://${window.location.host}/mobile/ws/chat/${token}`);
+                
+                ws.onopen = function() {
+                    console.log('WebSocket подключен');
+                };
+                
+                ws.onmessage = function(event) {
+                    console.log('Получено сообщение через WebSocket:', event.data);
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'new_message') {
+                            // Обновляем чаты при получении нового сообщения
+                            loadChats();
+                        }
+                    } catch (e) {
+                        console.error('Ошибка при обработке сообщения WebSocket:', e);
+                    }
+                };
+                
+                ws.onclose = function() {
+                    console.log('WebSocket отключен');
+                    // Пытаемся переподключиться через 5 секунд
+                    setTimeout(connectWebSocket, 5000);
+                };
+            }
+            
+            // Обработка клика по навигационным элементам
+            $('.nav-item').on('click', function() {
+                $('.nav-item').removeClass('active').addClass('text-gray-500');
+                $(this).addClass('active').removeClass('text-gray-500');
+            });
+            
+            // Функции для работы с погодой и валютой
+            function loadWeatherAndCurrency() {
+                // Загрузка данных о курсе валюты
+                getCurrencyRate();
+            }
+            
+            // Функции для работы с погодой
+            function getWeatherFromCache() {
+                const weatherData = localStorage.getItem('weatherData');
+                if (!weatherData) return null;
+                
+                try {
+                    const data = JSON.parse(weatherData);
+                    const timestamp = data.timestamp || 0;
+                    const now = new Date().getTime();
+                    
+                    // Если данные старше 1 часа, считаем их устаревшими
+                    if (now - timestamp > 60 * 60 * 1000) {
+                        return null;
+                    }
+                    
+                    return data;
+                } catch (e) {
+                    return null;
+                }
+            }
+            
+            function saveWeatherToCache(data) {
+                data.timestamp = new Date().getTime();
+                localStorage.setItem('weatherData', JSON.stringify(data));
+            }
+            
+            function displayWeatherData(data) {
+                // Отображаем температуру
+                $('#weather-temp').text(data.temperature);
+            }
+            
+            function showFallbackWeather() {
+                const fallbackData = {
+                    temperature: '+20°',
+                    source: 'fallback'
+                };
+                
+                saveWeatherToCache(fallbackData);
+                displayWeatherData(fallbackData);
+            }
+            
+            function getWeather() {
+                // Проверяем кэш перед запросом
+                const cachedWeather = getWeatherFromCache();
+                if (cachedWeather) {
+                    displayWeatherData(cachedWeather);
+                    return;
+                }
+                
+                // Делаем запрос к API погоды
+                $.ajax({
+                    url: 'https://api.openweathermap.org/data/2.5/weather',
+                    data: {
+                        q: 'Bishkek,kg',
+                        units: 'metric',
+                        appid: '11db64c2bb730756af5573ee156a2a26'
+                    },
+                    success: function(data) {
+                        if (data && data.main && data.main.temp) {
+                            // Округляем температуру до целых градусов
+                            const temp = Math.round(data.main.temp);
+                            const tempStr = (temp > 0 ? '+' : '') + temp + '°';
+                            
+                            // Сохраняем данные в кэш
+                            const weatherData = {
+                                temperature: tempStr,
+                                source: 'openweathermap'
+                            };
+                            saveWeatherToCache(weatherData);
+                            
+                            // Отображаем данные
+                            displayWeatherData(weatherData);
+                        } else {
+                            showFallbackWeather();
+                        }
+                    },
+                    error: function() {
+                        showFallbackWeather();
+                    }
+                });
+            }
+            
+            // Функции для работы с валютой
+            function getCurrencyFromCache() {
+                const currencyData = localStorage.getItem('currencyData');
+                if (!currencyData) return null;
+                
+                try {
+                    const data = JSON.parse(currencyData);
+                    const timestamp = data.timestamp || 0;
+                    const now = new Date().getTime();
+                    
+                    // Если данные старше 1 часа, считаем их устаревшими
+                    if (now - timestamp > 60 * 60 * 1000) {
+                        return null;
+                    }
+                    
+                    return data;
+                } catch (e) {
+                    return null;
+                }
+            }
+            
+            function saveCurrencyToCache(data) {
+                data.timestamp = new Date().getTime();
+                localStorage.setItem('currencyData', JSON.stringify(data));
+            }
+            
+            function displayCurrencyData(data) {
+                // Отображаем курс валюты
+                $('#currency-rate').text(data.rate);
+            }
+            
+            function getCurrencyRate() {
+                // Сначала проверяем, есть ли кэшированные данные
+                const cachedCurrency = getCurrencyFromCache();
+                if (cachedCurrency) {
+                    // Если есть кэшированные данные, сразу их отображаем
+                    displayCurrencyData(cachedCurrency);
+                    return;
+                }
+                
+                // Если кэша нет или он устарел, запрашиваем данные с API
+                $.ajax({
+                    url: "https://data.fx.kg/api/v1/central",
+                    headers: {
+                        "Authorization": "Bearer d2WimsDMvhnYStSsq1VRd7jKLZDSS6DQMbzut6rNa9a33c51"
+                    },
+                    success: function(data) {
+                        if (data && data.usd) {
+                            const rate = parseFloat(data.usd).toFixed(1);
+                            
+                            // Сохраняем данные в кэш
+                            const currencyData = {
+                                rate: rate,
+                                source: 'fx.kg'
+                            };
+                            saveCurrencyToCache(currencyData);
+                            
+                            // Отображаем данные
+                            displayCurrencyData(currencyData);
+                        } else {
+                            // Пробуем альтернативный метод
+                            getCurrencyRateGoogle();
+                        }
+                    },
+                    error: function() {
+                        // При ошибке используем альтернативный метод
+                        getCurrencyRateGoogle();
+                    }
+                });
+            }
+              
+            function getCurrencyRateGoogle() {
+                // Проверка кэша перед запросом
+                const cachedCurrency = getCurrencyFromCache();
+                if (cachedCurrency) {
+                    displayCurrencyData(cachedCurrency);
+                    return;
+                }
+                
+                // Запрос данных через Google Apps Script
+                $.ajax({
+                    url: "https://script.google.com/macros/s/AKfycbzuBnGgEZdYMvWPJmyqO0eLP7dMWyU45OyEUEGHhdJ7LWNwx1IU7F8Wl_uLF9YADjVx/exec",
+                    data: {
+                        from: "USD",
+                        to: "KGS"
+                    },
+                    dataType: "jsonp",
+                    success: function(data) {
+                        if (data && data.rate) {
+                            const rate = parseFloat(data.rate).toFixed(1);
+                            
+                            // Сохраняем данные в кэш
+                            const currencyData = {
+                                rate: rate,
+                                source: 'google'
+                            };
+                            saveCurrencyToCache(currencyData);
+                            
+                            // Отображаем данные
+                            displayCurrencyData(currencyData);
+                        } else {
+                            getCurrencyRateAlt();
+                        }
+                    },
+                    error: function() {
+                        getCurrencyRateAlt();
+                    }
+                });
+            }
+            
+            function getCurrencyRateAlt() {
+                // Проверка кэша перед запросом
+                const cachedCurrency = getCurrencyFromCache();
+                if (cachedCurrency) {
+                    displayCurrencyData(cachedCurrency);
+                    return;
+                }
+                
+                // В данном случае просто используем резервные данные
+                showFallbackCurrency();
+            }
+            
+            function showFallbackCurrency() {
+                const fallbackData = {
+                    rate: '69.8',
+                    source: 'fallback'
+                };
+                
+                // Сохраняем резервные данные в кэш
+                saveCurrencyToCache(fallbackData);
+                
+                // Отображаем данные
+                displayCurrencyData(fallbackData);
+            }
+            
+            // Инициализация
+            // Загружаем только существующие чаты
+            loadChats();
+            loadWeatherAndCurrency();
+            connectWebSocket();
+            
+            // Обновляем список чатов при возвращении на страницу
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible') {
+                    console.log('Страница стала видимой, обновляем список чатов');
+                    loadChats();
+                }
+            });
+            
+            // Обновляем список чатов каждые 5 секунд, пока страница активна
+            const chatRefreshInterval = setInterval(function() {
+                if (document.visibilityState === 'visible') {
+                    console.log('Автоматическое обновление списка чатов');
+                    loadChats();
+                }
+            }, 5000);
+        });
+        </script>
+    </body>
+</html>

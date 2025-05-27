@@ -24,7 +24,7 @@ class CategoryInDBBase(CategoryBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class Category(CategoryInDBBase):
@@ -51,7 +51,7 @@ class PropertyImageInDBBase(PropertyImageBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PropertyImage(PropertyImageInDBBase):
@@ -65,13 +65,23 @@ class PropertyBase(BaseModel):
     address: str
     city: str
     area: float
-    status: Optional[PropertyStatus] = PropertyStatus.DRAFT
+    status: Optional[PropertyStatus] = PropertyStatus.PENDING
     is_featured: Optional[bool] = False
     tour_360_url: Optional[str] = None
+    type: Optional[str] = "apartment"
 
 
 class PropertyCreate(PropertyBase):
     category_ids: List[int]
+    photo_urls: Optional[List[str]] = None
+    rooms: Optional[int] = None
+    floor: Optional[int] = None
+    building_floors: Optional[int] = None
+    has_furniture: Optional[bool] = False
+    has_balcony: Optional[bool] = False
+    has_renovation: Optional[bool] = False
+    has_parking: Optional[bool] = False
+    type: Optional[str] = "apartment"
 
 
 class PropertyUpdate(PropertyBase):
@@ -91,7 +101,7 @@ class PropertyInDBBase(PropertyBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PropertyInDB(PropertyInDBBase):
@@ -119,7 +129,7 @@ class FavoriteInDBBase(FavoriteBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class Favorite(FavoriteInDBBase):

@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Wazir Недвижимость - {{ property.title }}</title>
+        <link rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+            rel="stylesheet">
+        <link rel="stylesheet" href="{{ url_for('static', path='layout/assets/scss/main.css') }}">
+        <link rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.css" />
+        <style>
+            .btn favorite-btn {
+                width: 100%;
+            }
+            #view-360-btn {
+                width: 100%;
+            }
+            .btn favorite-btn {
+                width: 100%;
+            }
+            .bottom-nav {
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            }
+            .nav-item {
+                transition: all 0.2s ease;
+            }
+            .nav-item.active {
+                color: var(--color-primary);
+            }
+            .nav-item:hover {
+                color: var(--color-primary-hover);
+            }
+            .nav-icons {
+                font-size: 1.6rem;
+                font-weight: 300;
+            }
+            .weather-currency {
+                font-size: 1.1rem;
+                font-weight: 500;
+            }
+            .weather-icon {
+                font-size: 1.4rem;
+            }
+            .swiper {
+                width: 100%;
+                height: 280px;
+                border-radius: 0;
+                overflow: hidden;
+            }
+            .swiper-slide {
+                position: relative;
+                background-color: #f3f4f6;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #9ca3af;
+                font-size: 1.3rem;
+            }
+            .swiper-slide img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .thumbnails-container {
+                display: flex;
+                overflow-x: auto;
+                gap: 8px;
+                padding: 10px 0;
+                margin-top: 10px;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: thin;
+                scrollbar-color: #cbd5e0 #f3f4f6;
+            }
+            .thumbnails-container::-webkit-scrollbar {
+                height: 6px;
+            }
+            .thumbnails-container::-webkit-scrollbar-track {
+                background: #f3f4f6;
+            }
+            .thumbnails-container::-webkit-scrollbar-thumb {
+                background-color: #cbd5e0;
+                border-radius: 3px;
+            }
+            .thumbnail {
+                flex: 0 0 auto;
+                width: 80px;
+                height: 70px;
+                background-color: #f3f4f6;
+                border-radius: 4px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #9ca3af;
+                font-size: 1rem;
+                cursor: pointer;
+                opacity: 0.6;
+                transition: opacity 0.2s ease;
+                border: 1px solid #e5e7eb;
+            }
+            .thumbnail.active {
+                opacity: 1;
+                border-color: #9ca3af;
+            }
+            .thumbnail:hover {
+                opacity: 0.8;
+            }
+            .action-buttons .btn {
+                border: 1px solid #e5e7eb;
+                border-radius: 4px;
+                padding: 8px 12px;
+                font-size: 0.9rem;
+                background-color: #f9fafb;
+                color: #4b5563;
+                width: 100%;
+            }
+            .property-id {
+                color: #9ca3af;
+                font-size: 1rem;
+                font-weight: 400;
+            }
+            .property-price {
+                font-size: 1.6rem;
+                font-weight: 600;
+                color: #111827;
+            }
+            .property-specs {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-top: 10px;
+            }
+            .property-spec {
+                display: flex;
+                align-items: center;
+                padding: 6px 10px;
+                border-radius: 4px;
+                background-color: #f3f4f6;
+                color: #6b7280;
+                font-size: 1rem;
+            }
+            .property-description {
+                font-size: 1.05rem;
+                line-height: 1.5;
+                color: #4b5563;
+            }
+            .info-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            .info-item {
+                display: flex;
+                align-items: center;
+                font-size: 1rem;
+                color: #4b5563;
+                padding: 4px 0;
+            }
+            .info-item i {
+                width: 20px;
+                margin-right: 8px;
+                color: #9ca3af;
+            }
+            .action-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 12px;
+                font-weight: 500;
+                border-radius: 4px;
+                font-size: 1.05rem;
+                width: 100%;
+                transition: all 0.2s ease;
+            }
+            .action-btn.primary {
+                background-color: #f3f4f6;
+                color: #4b5563;
+                border: 1px solid #e5e7eb;
+            }
+            .action-btn.secondary {
+                background-color: #f3f4f6;
+                color: #4b5563;
+                border: 1px solid #e5e7eb;
+            }
+            .seller-info {
+                display: flex;
+                align-items: center;
+                padding: 12px;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                margin-bottom: 16px;
+            }
+            .avatar {
+                width: 50px;
+                height: 50px;
+                border-radius: 25px;
+                overflow: hidden;
+                margin-right: 12px;
+            }
+            .avatar img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .seller-name {
+                font-weight: 500;
+                font-size: 1.05rem;
+                color: #111827;
+            }
+            .seller-info .call-btn {
+                margin-left: auto;
+                padding: 8px 14px;
+                border-radius: 4px;
+                background-color: #f3f4f6;
+                color: #4b5563;
+                font-size: 0.95rem;
+                border: 1px solid #e5e7eb;
+            }
+            .similar-title {
+                font-size: 1.2rem;
+                font-weight: 600;
+                margin: 24px 0 16px;
+                color: #111827;
+            }
+            .property-card {
+                border-radius: 8px;
+                overflow: hidden;
+                background-color: white;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            .property-card-img {
+                height: 120px;
+                overflow: hidden;
+            }
+            .property-card-img img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .property-card-body {
+                padding: 10px;
+            }
+            .property-card-title {
+                font-size: 0.9rem;
+                font-weight: 500;
+                color: #111827;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .property-card-price {
+                font-size: 1rem;
+                font-weight: 600;
+                color: #111827;
+                margin-top: 2px;
+            }
+            .property-card-address {
+                font-size: 0.8rem;
+                color: #6b7280;
+                margin-top: 4px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .property-card-specs {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-top: 6px;
+                font-size: 0.8rem;
+                color: #6b7280;
+            }
+            .property-card-spec {
+                display: flex;
+                align-items: center;
+            }
+            .property-card-spec i {
+                margin-right: 3px;
+                font-size: 0.75rem;
+            }
+            /* 360 просмотр */
+            .tour-360-container {
+                width: 100%;
+                height: 300px;
+                background-color: #f3f4f6;
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+            }
+            .tour-360-disabled {
+                opacity: 0.7;
+                cursor: not-allowed;
+            }
+            .favorite-btn {
+                background-color: white;
+                border: 1px solid #e5e7eb;
+                color: #4b5563;
+            }
+            .favorite-btn.active {
+                color: #ef4444;
+            }
+            iframe {
+                width: 100%;
+                height: 100%;
+                border: none;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-100 font-sans">
+        <div class="min-h-screen flex flex-col">
+            <!-- Верхний блок: Лого, Погода, Валюта -->
+            <header class="bg-white shadow-sm">
+                <div class="container mx-auto px-4 py-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <img
+                                src="{{ url_for('static', path='layout/assets/img/logo_non.png') }}"
+                                alt="Wazir Logo"
+                                class="h-10">
+                        </div>
+                        <div class="flex items-center">
+                            <div class="flex items-center weather-currency">
+                                <img src="https://flagcdn.com/w20/us.png"
+                                    alt="USD" class="h-5 mr-2">
+                                <span id="currency-rate">Загрузка...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-grow pb-20">
+                <!-- Слайдер изображений -->
+                <div class="property-slider">
+                    <div class="swiper main-swiper">
+                        <div class="swiper-wrapper">
+                            {% if property.images %}
+                                {% for image in property.images %}
+                                <div class="swiper-slide">
+                                    <img src="{{ image.url }}" alt="Фото объекта">
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="swiper-slide">
+                                    <img src="{{ url_for('static', path='layout/assets/img/property-placeholder.jpg') }}" alt="Фото отсутствует">
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div
+                            class="swiper-pagination absolute bottom-2 left-0 right-0 flex justify-center"></div>
+                    </div>
+                </div>
+
+                <!-- Контент -->
+                <div class="property-content mt-2">
+                    <div class="container mx-auto px-4">
+                        <div class="thumbnails-container">
+                            {% if property.images %}
+                                {% for image in property.images %}
+                                <div class="thumbnail {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
+                                    <img src="{{ image.url }}" alt="Миниатюра">
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="thumbnail active" data-index="0">
+                                    <img src="{{ url_for('static', path='layout/assets/img/property-placeholder.jpg') }}" alt="Миниатюра">
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Кнопки действий -->
+                        <div class="action-buttons flex justify-between mt-4 mb-6" style="gap: 12px;">
+                            <button class="btn favorite-btn {% if property.is_favorite %}active{% endif %}" id="favorite-btn" data-property-id="{{ property.id }}">
+                                <i class="{% if property.is_favorite %}fas{% else %}far{% endif %} fa-heart mr-1"></i> 
+                                <span id="favorite-text">{% if property.is_favorite %}В избранном{% else %}В избранное{% endif %}</span>
+                            </button>
+                            <!-- Показываем кнопку с разными стилями в зависимости от наличия панорамы -->
+                            {% if property.tour_360_url %}
+                            <button class="btn" id="view-360-btn">
+                                <i class="fas fa-vr-cardboard mr-1"></i> 360° Просмотр
+                            </button>
+                            {% else %}
+                            <button class="btn tour-360-disabled" disabled>
+                                <i class="fas fa-vr-cardboard mr-1"></i> 360° Недоступно
+                            </button>
+                            {% endif %}
+                        </div>
+
+                        <!-- Здесь был контейнер 360 просмотра, перемещен в модальное окно -->
+
+                        <!-- Информация об объявлении -->
+                        <div class="property-header mb-4">
+                            <div class="property-id">#{{ property.id }}</div>
+                            <h1 class="text-2xl font-semibold text-gray-900 mt-1">
+                                {{ property.title }}
+                            </h1>
+                            <div class="property-price mt-2">
+                                {{ '{:,.0f}'.format(property.price) }} <span class="text-gray-600">KGZ</span>
+                            </div>
+
+                            <!-- Дата съемки 360 (только для владельца) -->
+                            {% if property.is_owner and property.notes %}
+                            <div class="mt-2 text-green-600">
+                                <i class="fas fa-calendar-check mr-1"></i> Дата съемки 360: {{ property.notes }}
+                            </div>
+                            {% endif %}
+
+                            <div class="property-specs">
+                                {% if property.rooms %}
+                                <div class="property-spec">
+                                    <i class="fas fa-door-open mr-1"></i> {{ property.rooms }} комн.
+                                </div>
+                                {% endif %}
+                                {% if property.area %}
+                                <div class="property-spec">
+                                    <i class="fas fa-vector-square mr-1"></i> {{ property.area }} м²
+                                </div>
+                                {% endif %}
+                                {% if property.floor %}
+                                <div class="property-spec">
+                                    <i class="fas fa-building mr-1"></i> {{ property.floor }} этаж
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Описание -->
+                        <div class="property-description mb-6">
+                            <h3 class="text-gray-800 font-medium mb-2">
+                                Описание
+                            </h3>
+                            <p class="text-gray-600">
+                                {{ property.description }}
+                            </p>
+                        </div>
+
+                        <!-- Подробная информация -->
+                        <div class="mb-6">
+                            <h3 class="text-gray-800 font-medium mb-3">
+                                Характеристики
+                            </h3>
+                            <div class="info-grid">
+                                {% if property.type %}
+                                <div class="info-item">
+                                    <i class="fas fa-home"></i> 
+                                    <span>{{ property.type|capitalize }}</span>
+                                </div>
+                                {% endif %}
+                                {% if property.rooms %}
+                                <div class="info-item">
+                                    <i class="fas fa-door-open"></i> 
+                                    <span>{{ property.rooms }} комнат</span>
+                                </div>
+                                {% endif %}
+                                {% if property.area %}
+                                <div class="info-item">
+                                    <i class="fas fa-vector-square"></i> 
+                                    <span>{{ property.area }} м²</span>
+                                </div>
+                                {% endif %}
+                                {% if property.floor %}
+                                <div class="info-item">
+                                    <i class="fas fa-level-up-alt"></i> 
+                                    <span>{{ property.floor }} этаж</span>
+                                </div>
+                                {% endif %}
+                                {% if property.building_floors %}
+                                <div class="info-item">
+                                    <i class="fas fa-building"></i> 
+                                    <span>Этажность: {{ property.building_floors }}</span>
+                                </div>
+                                {% endif %}
+                                {% if property.has_balcony is defined %}
+                                <div class="info-item">
+                                    <i class="fas fa-border-all"></i> 
+                                    <span>Балкон: {% if property.has_balcony %}Есть{% else %}Нет{% endif %}</span>
+                                </div>
+                                {% endif %}
+                                {% if property.has_furniture is defined %}
+                                <div class="info-item">
+                                    <i class="fas fa-couch"></i> 
+                                    <span>Мебель: {% if property.has_furniture %}Есть{% else %}Нет{% endif %}</span>
+                                </div>
+                                {% endif %}
+                                {% if property.has_renovation is defined %}
+                                <div class="info-item">
+                                    <i class="fas fa-paint-roller"></i> 
+                                    <span>Ремонт: {% if property.has_renovation %}Есть{% else %}Нет{% endif %}</span>
+                                </div>
+                                {% endif %}
+                                {% if property.has_parking is defined %}
+                                <div class="info-item">
+                                    <i class="fas fa-parking"></i> 
+                                    <span>Парковка: {% if property.has_parking %}Есть{% else %}Нет{% endif %}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Контакты продавца -->
+                        <div class="seller-info">
+                            <div class="avatar">
+                                <img
+                                    src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop"
+                                    alt="Фото продавца">
+                            </div>
+                            <div>
+                                <div class="seller-name">{{ property.owner.full_name }}</div>
+                                <div class="text-gray-500 text-sm">Продавец</div>
+                            </div>
+                            <a href="tel:{{ property.owner.phone }}" class="call-btn">
+                                <i class="fas fa-phone-alt mr-1"></i> Позвонить
+                            </a>
+                        </div>
+
+                        <!-- Кнопки действий -->
+                        <div class="grid grid-cols-1 gap-3 mb-6">
+                            {% if property.owner and property.owner.id %}
+                            <a href="{{ url_for('chat', user_id=property.owner.id) }}?property_id={{ property.id }}" class="action-btn primary">
+                                <i class="far fa-comments mr-2"></i> Написать сообщение
+                            </a>
+                            {% endif %}
+                        </div>
+
+                        <!-- Похожие объявления -->
+                        <div class="similar-properties">
+                            <h3 class="similar-title">
+                                Похожие объявления
+                            </h3>
+                            <div class="grid grid-cols-2 gap-3">
+                                {% for prop in similar_properties %}
+                                <div class="property-card">
+                                    <div class="property-card-img">
+                                        <img
+                                            src="{{ prop.image_url }}"
+                                            alt="Фото объекта">
+                                    </div>
+                                    <div class="property-card-body">
+                                        <div class="property-card-price">
+                                            {{ '{:,.0f}'.format(prop.price) }} KGZ
+                                        </div>
+                                        <div class="property-card-title">
+                                            {{ prop.title }}
+                                        </div>
+                                        <div class="property-card-address">
+                                            {{ prop.address }}
+                                        </div>
+                                        <div class="property-card-specs">
+                                            {% if prop.rooms %}
+                                            <div class="property-card-spec">
+                                                <i class="fas fa-door-open"></i> {{ prop.rooms }}
+                                            </div>
+                                            {% endif %}
+                                            {% if prop.area %}
+                                            <div class="property-card-spec">
+                                                <i class="fas fa-vector-square"></i> {{ prop.area }} м²
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Нижняя навигация -->
+            <nav
+                class="bottom-nav fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10">
+                <div class="flex justify-around items-center py-4">
+                    <a href="{{ url_for('dashboard') }}"
+                        class="nav-item active">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24"
+                            height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.75"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="nav-icons"><path
+                                d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline
+                                points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    </a>
+                    <a href="{{ url_for('search') }}"
+                        class="nav-item text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24"
+                            height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.75"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="nav-icons"><circle cx="11" cy="11"
+                                r="8"></circle><line x1="21" y1="21" x2="16.65"
+                                y2="16.65"></line></svg>
+                    </a>
+                    <a href="{{ url_for('chats') }}"
+                        class="nav-item text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24"
+                            height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.75"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="nav-icons"><path
+                                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    </a>
+                    <a href="{{ url_for('support') }}" 
+                        class="nav-item text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24"
+                            height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.75"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="nav-icons"><circle cx="12" cy="12"
+                                r="10"></circle><path
+                                d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line
+                                x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    </a>
+                    <a href="{{ url_for('profile') }}"
+                        class="nav-item text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24"
+                            height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.75"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            class="nav-icons"><path
+                                d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle
+                                cx="12" cy="7" r="4"></circle></svg>
+                    </a>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Модальное окно для 360 просмотра -->
+        <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden" id="modal-360">
+            <div class="bg-white rounded-lg w-full h-full md:w-4/5 md:h-4/5 relative overflow-hidden flex flex-col">
+                <div class="p-4 border-b flex justify-between items-center">
+                    <h3 class="text-lg font-medium">360° Просмотр</h3>
+                    <button id="close-360-modal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div class="flex-grow">
+                    {% if property.tour_360_url %}
+                    <iframe src="{{ property.tour_360_url }}" allowfullscreen class="w-full h-full"></iframe>
+                    {% else %}
+                    <div class="flex items-center justify-center h-full bg-gray-100">
+                        <div class="text-center p-5">
+                            <i class="fas fa-vr-cardboard text-gray-400 text-5xl mb-3"></i>
+                            <p class="text-gray-500">360° панорама недоступна для этого объявления</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
+        <script
+            src="{{ url_for('static', path='layout/assets/js/weather-currency-cache.js') }}"></script>
+        <!-- Скрытый элемент для передачи данных из Jinja в JavaScript -->
+        <div id="page-data" 
+             data-has-tour360="{% if property.tour_360_url %}true{% else %}false{% endif %}" 
+             style="display:none;"></div>
+
+        <script>
+            // Получаем данные из скрытого элемента
+            var pageData = document.getElementById('page-data');
+            var hasTour360 = pageData.getAttribute('data-has-tour360') === 'true';
+            
+            function getCookie(name) {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+                return null;
+            }
+            
+            // Функция для отображения данных о погоде
+            function displayWeatherData(weatherData) {
+                $('#weather-icon-container').html(weatherData.iconHtml);
+                $('#weather-temp').text(weatherData.temp + '°');
+            }
+            
+            // Функция для отображения данных о курсе валюты
+            function displayCurrencyData(currencyData) {
+                $('#currency-rate').text(currencyData.rate);
+            }
+            
+            // Функция для получения данных о погоде
+            function getWeather() {
+                // Сначала проверяем, есть ли кэшированные данные
+                const cachedWeather = getWeatherFromCache();
+                if (cachedWeather) {
+                    // Если есть кэшированные данные, сразу их отображаем
+                    displayWeatherData(cachedWeather);
+                    return;
+                }
+                
+                // Если кэша нет или он устарел, запрашиваем данные с API
+                const city = "Osh,Kyrgyzstan";
+                const apiKey = "JPWU9UY254WNDKUNM9MH9E8AR"; // Публичный ключ с ограничениями
+                
+                $.ajax({
+                    url: `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${city}/today`,
+                    data: {
+                        unitGroup: "metric",
+                        key: apiKey,
+                        include: "current"
+                    },
+                    success: function(data) {
+                        try {
+                            if (data && data.currentConditions && data.currentConditions.temp !== undefined) {
+                                // Округляем температуру до целого числа
+                                const temp = Math.round(data.currentConditions.temp);
+                                
+                                // Получаем код состояния погоды
+                                const condition = data.currentConditions.conditions ? 
+                                    data.currentConditions.conditions.toLowerCase() : '';
+                                const iconCode = data.currentConditions.icon ? 
+                                    data.currentConditions.icon.toLowerCase() : '';
+                                
+                                let iconHtml;
+                                // Определяем иконку на основе кода погоды Visual Crossing
+                                if (iconCode.includes('rain') || condition.includes('дождь') || condition.includes('осадки')) {
+                                    // Дождь
+                                    iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4c94f2" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><line x1="16" y1="13" x2="16" y2="21"></line><line x1="8" y1="13" x2="8" y2="21"></line><line x1="12" y1="15" x2="12" y2="23"></line><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path></svg>`;
+                                } else if (iconCode.includes('snow') || condition.includes('снег')) {
+                                    // Снег
+                                    iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9cc0fa" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"></path><line x1="8" y1="16" x2="8.01" y2="16"></line><line x1="8" y1="20" x2="8.01" y2="20"></line><line x1="12" y1="18" x2="12.01" y2="18"></line><line x1="12" y1="22" x2="12.01" y2="22"></line><line x1="16" y1="16" x2="16.01" y2="16"></line><line x1="16" y1="20" x2="16.01" y2="20"></line></svg>`;
+                                } else if (iconCode.includes('thunder') || iconCode.includes('lightning') || condition.includes('гроза')) {
+                                    // Гроза
+                                    iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c8aa0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"></path><polyline points="13 11 9 17 15 17 11 23"></polyline></svg>`;
+                                } else if (iconCode === 'clear-day' || iconCode === 'clear-night' || condition.includes('ясно')) {
+                                    // Ясно
+                                    iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
+                                } else {
+                                    // По умолчанию или для других условий
+                                    iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c8aa0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`;
+                                }
+                                
+                                // Сохраняем данные в кэш
+                                const weatherData = {
+                                    temp: temp,
+                                    iconHtml: iconHtml,
+                                    condition: condition
+                                };
+                                saveWeatherToCache(weatherData);
+                                
+                                // Отображаем данные
+                                displayWeatherData(weatherData);
+                            } else {
+                                getWeatherAlt();
+                            }
+                        } catch (e) {
+                            getWeatherAlt();
+                        }
+                    },
+                    error: function() {
+                        // При ошибке используем альтернативный API
+                        getWeatherAlt();
+                    }
+                });
+            }
+            
+            // Получение данных о погоде через альтернативный API
+            function getWeatherAlt() {
+                const cachedWeather = getWeatherFromCache();
+                if (cachedWeather) {
+                    displayWeatherData(cachedWeather);
+                    return;
+                }
+                
+                showFallbackWeather();
+            }
+            
+            // Показываем резервные данные о погоде
+            function showFallbackWeather() {
+                // Сезонные температуры для Оша, Кыргызстан
+                const month = new Date().getMonth() + 1;
+                
+                let temp;
+                if (month >= 12 || month <= 2) {
+                    // Зима (декабрь-февраль)
+                    temp = -2;
+                } else if (month >= 3 && month <= 5) {
+                    // Весна (март-май)
+                    temp = 15;
+                } else if (month >= 6 && month <= 8) {
+                    // Лето (июнь-август)
+                    temp = 28;
+                } else {
+                    // Осень (сентябрь-ноябрь)
+                    temp = 12;
+                }
+                
+                // Базовая иконка облачности
+                const iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c8aa0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`;
+                
+                // Создаем резервные данные
+                const fallbackData = {
+                    temp: temp,
+                    iconHtml: iconHtml,
+                    condition: 'cloudy'
+                };
+                
+                // Сохраняем резервные данные в кэш
+                saveWeatherToCache(fallbackData);
+                
+                // Отображаем данные
+                displayWeatherData(fallbackData);
+            }
+            
+            // Функция для получения курса валюты
+            function getCurrencyRate() {
+                // Сначала проверяем, есть ли кэшированные данные
+                const cachedCurrency = getCurrencyFromCache();
+                if (cachedCurrency) {
+                    // Если есть кэшированные данные, сразу их отображаем
+                    displayCurrencyData(cachedCurrency);
+                    return;
+                }
+                
+                // Если кэша нет или он устарел, запрашиваем данные с API
+                $.ajax({
+                    url: "https://data.fx.kg/api/v1/central",
+                    headers: {
+                        "Authorization": "Bearer d2WimsDMvhnYStSsq1VRd7jKLZDSS6DQMbzut6rNa9a33c51"
+                    },
+                    success: function(data) {
+                        if (data && data.usd) {
+                            const rate = parseFloat(data.usd).toFixed(1);
+                            
+                            // Сохраняем данные в кэш
+                            const currencyData = {
+                                rate: rate,
+                                source: 'fx.kg'
+                            };
+                            saveCurrencyToCache(currencyData);
+                            
+                            // Отображаем данные
+                            displayCurrencyData(currencyData);
+                        } else {
+                            // Пробуем альтернативный метод
+                            getCurrencyRateGoogle();
+                        }
+                    },
+                    error: function() {
+                        // При ошибке используем альтернативный метод
+                        getCurrencyRateGoogle();
+                    }
+                });
+            }
+              
+            function getCurrencyRateGoogle() {
+                // Проверка кэша перед запросом
+                const cachedCurrency = getCurrencyFromCache();
+                if (cachedCurrency) {
+                    displayCurrencyData(cachedCurrency);
+                    return;
+                }
+                
+                // Запрос данных через Google Apps Script
+                $.ajax({
+                    url: "https://script.google.com/macros/s/AKfycbzuBnGgEZdYMvWPJmyqO0eLP7dMWyU45OyEUEGHhdJ7LWNwx1IU7F8Wl_uLF9YADjVx/exec",
+                    data: {
+                        from: "USD",
+                        to: "KGS"
+                    },
+                    dataType: "jsonp",
+                    success: function(data) {
+                        if (data && data.rate) {
+                            const rate = parseFloat(data.rate).toFixed(1);
+                            
+                            // Сохраняем данные в кэш
+                            const currencyData = {
+                                rate: rate,
+                                source: 'google'
+                            };
+                            saveCurrencyToCache(currencyData);
+                            
+                            // Отображаем данные
+                            displayCurrencyData(currencyData);
+                        } else {
+                            getCurrencyRateAlt();
+                        }
+                    },
+                    error: function() {
+                        getCurrencyRateAlt();
+                    }
+                });
+            }
+            
+            function getCurrencyRateAlt() {
+                // Проверка кэша перед запросом
+                const cachedCurrency = getCurrencyFromCache();
+                if (cachedCurrency) {
+                    displayCurrencyData(cachedCurrency);
+                    return;
+                }
+                
+                // В данном случае просто используем резервные данные
+                showFallbackCurrency();
+            }
+            
+            function showFallbackCurrency() {
+                const fallbackData = {
+                    rate: '87.5',
+                    source: 'fallback'
+                };
+                
+                // Сохраняем резервные данные в кэш
+                saveCurrencyToCache(fallbackData);
+                
+                // Отображаем данные
+                displayCurrencyData(fallbackData);
+            }
+            
+            $(document).ready(function() {
+                // Загружаем данные о погоде и курсе валют
+                getWeather();
+                getCurrencyRate();
+                
+                // Инициализация слайдера
+                var mainSwiper = new Swiper('.main-swiper', {
+                    loop: true,
+                    pagination: {
+                        el: '.swiper-pagination',
+                        clickable: true,
+                    },
+                });
+                
+                // Обработка клика по миниатюрам
+                $('.thumbnail').click(function() {
+                    var index = $(this).data('index');
+                    mainSwiper.slideTo(index + 1);
+                    $('.thumbnail').removeClass('active');
+                    $(this).addClass('active');
+                });
+                
+                // Обновление активной миниатюры при смене слайда
+                mainSwiper.on('slideChange', function() {
+                    var realIndex = mainSwiper.realIndex;
+                    $('.thumbnail').removeClass('active');
+                    $('.thumbnail[data-index="' + realIndex + '"]').addClass('active');
+                });
+                
+                // Обработчик кнопки 360° только если панорама доступна
+                if (hasTour360) {
+                    $('#view-360-btn').on('click', function() {
+                        $('#modal-360').removeClass('hidden');
+                        $('body').addClass('overflow-hidden'); // Запретить прокрутку страницы
+                    });
+                }
+                
+                // Закрытие модального окна
+                $('#close-360-modal').on('click', function() {
+                    $('#modal-360').addClass('hidden');
+                    $('body').removeClass('overflow-hidden'); // Разрешить прокрутку страницы
+                });
+                
+                // Обработка добавления/удаления из избранного
+                $('#favorite-btn').on('click', function() {
+                    var propertyId = $(this).data('property-id');
+                    var isFavorite = $(this).hasClass('active');
+                    
+                    $.ajax({
+                        url: '/api/v1/properties/favorites/' + propertyId,
+                        type: isFavorite ? 'DELETE' : 'POST',
+                        xhrFields: {
+                            withCredentials: true // Позволяет отправлять куки с запросом
+                        },
+                        beforeSend: function(xhr) {
+                            // Получаем токен из куки
+                            var token = getCookie('access_token');
+                            if (token) {
+                                xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+                            }
+                        },
+                        success: function(response) {
+                            if (isFavorite) {
+                                $('#favorite-btn').removeClass('active');
+                                $('#favorite-text').text('В избранное');
+                                $('#favorite-btn i').removeClass('fas').addClass('far');
+                            } else {
+                                $('#favorite-btn').addClass('active');
+                                $('#favorite-text').text('В избранном');
+                                $('#favorite-btn i').removeClass('far').addClass('fas');
+                            }
+                        },
+                        error: function(error) {
+                            console.error('Ошибка при обновлении избранного:', error);
+                            alert('Для добавления в избранное необходимо авторизоваться');
+                            window.location.href = '/mobile/auth';
+                        }
+                    });
+                });
+            });
+        </script>
+    </body>
+</html>

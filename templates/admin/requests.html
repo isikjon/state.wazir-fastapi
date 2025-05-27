@@ -96,6 +96,12 @@
                         }}</div>
                     <div class="request-address">{{ request.property.address
                         }}</div>
+                    {% if request.scheduled_date %}
+                    <div style="margin-top: 8px; font-weight: bold; color: #0066cc; background-color: #e6f7ff; padding: 5px 10px; border-radius: 4px; display: inline-block;">
+                        <i class="fas fa-calendar-check"></i>
+                        <span> Дата съемки 360: {{ request.scheduled_date }}</span>
+                    </div>
+                    {% endif %}
                     <div class="request-price">{{
                         request.property.price_formatted }}</div>
 
@@ -118,11 +124,6 @@
                 <div class="request-item-actions">
                     {% if tab == 'tours' %}
                     {% if request.status == 'new' %}
-                    <button class="action-btn accept"
-                        data-request-id="{{ request.id }}">
-                        <i class="fas fa-check"></i>
-                        <span>Принять</span>
-                    </button>
                     <button class="action-btn schedule"
                         data-request-id="{{ request.id }}">
                         <i class="fas fa-calendar-alt"></i>
@@ -133,10 +134,10 @@
                         <i class="fas fa-times"></i>
                         <span>Отклонить</span>
                     </button>
-                    {% elif request.status == 'in_progress' %}
+                    {% elif request.scheduled_date %}
                     <div class="scheduled-date">
                         <i class="fas fa-calendar-check"></i>
-                        <span>{{ request.scheduled_date }}</span>
+                        <span>Дата съемки: {{ request.scheduled_date }}</span>
                     </div>
                     <button class="action-btn complete"
                         data-request-id="{{ request.id }}">
@@ -280,8 +281,7 @@
                         <div class="stat-value">{{ stats.count }}</div>
                         <div class="stat-day">{{ day }}</div>
                         <div class="stat-bar">
-                            <div class="stat-bar-fill"
-                                style="height: {{ stats.percentage }}%"></div>
+                            <div class="stat-bar-fill" style="height: {{ stats.percentage }}%;"></div>
                         </div>
                     </div>
                     {% endfor %}
@@ -292,8 +292,7 @@
                         <div class="stat-value">{{ stat.count }}</div>
                         <div class="stat-day">{{ stat.day }}</div>
                         <div class="stat-bar">
-                            <div class="stat-bar-fill"
-                                style="height: {{ stat.percentage }}%"></div>
+                            <div class="stat-bar-fill" style="height: {{ stat.percentage }}%;"></div>
                         </div>
                     </div>
                     {% endfor %}
@@ -970,7 +969,17 @@
         // Обработка кнопок действий
         $('.action-btn').on('click', function() {
             const requestId = $(this).data('request-id');
-            const action = $(this).attr('class').split(' ')[1]; // accept, reject, schedule, etc.
+            // Извлекаем все классы и находим класс действия (accept, reject, schedule, etc.)
+            const classes = $(this).attr('class').split(' ');
+            let action = '';
+            
+            // Ищем класс действия среди всех классов кнопки
+            for (const cls of classes) {
+                if (['accept', 'reject', 'schedule', 'complete', 'reschedule', 'edit', 'view', 'archive'].includes(cls)) {
+                    action = cls;
+                    break;
+                }
+            }
             
             switch(action) {
                 case 'accept':
@@ -1000,117 +1009,160 @@
             }
         });
         
+        // Получение токена авторизации из куки
+        function getAuthHeader() {
+            if (document.cookie.includes('access_token')) {
+                const token = document.cookie.split('access_token=')[1].split(';')[0];
+                return { 'Authorization': `Bearer ${token}` };
+            }
+            return {};
+        }
+        
         // Функции обработки действий
         function acceptRequest(id) {
-            if (confirm('Принять заявку #' + id + '?')) {
-                fetch(`/api/v1/requests/${id}/accept`, {
-                    method: 'POST'
+            if (confirm('Одобрить объявление #' + id + '?')) {
+                fetch(`/api/v1/properties/${id}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeader()
+                    }
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Ошибка ответа: ' + response.status);
+                })
                 .then(data => {
                     if (data.success) {
                         location.reload();
                     } else {
-                        alert('Ошибка: ' + data.message);
+                        alert('Ошибка: ' + (data.detail || 'Неизвестная ошибка'));
                     }
                 })
                 .catch(error => {
-                    alert('Произошла ошибка при обработке запроса');
+                    alert('Произошла ошибка при обработке запроса: ' + error.message);
                     console.error(error);
                 });
             }
         }
         
         function rejectRequest(id) {
-            const reason = prompt('Укажите причину отклонения заявки #' + id);
-            if (reason !== null) {
-                fetch(`/api/v1/requests/${id}/reject`, {
+            if (confirm('Отклонить объявление #' + id + '?')) {
+                fetch(`/api/v1/properties/${id}/reject`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ reason: reason })
+                        ...getAuthHeader()
+                    }
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Ошибка ответа: ' + response.status);
+                })
                 .then(data => {
                     if (data.success) {
                         location.reload();
                     } else {
-                        alert('Ошибка: ' + data.message);
+                        alert('Ошибка: ' + (data.detail || 'Неизвестная ошибка'));
                     }
                 })
                 .catch(error => {
-                    alert('Произошла ошибка при обработке запроса');
+                    alert('Произошла ошибка при обработке запроса: ' + error.message);
                     console.error(error);
                 });
             }
         }
         
         function scheduleRequest(id) {
-            const date = prompt('Укажите дату съемки (ДД.ММ.ГГГГ) для заявки #' + id);
-            if (date) {
-                fetch(`/api/v1/requests/${id}/schedule`, {
+            const scheduledDate = prompt('Укажите дату съемки 360 (ДД.ММ.ГГГГ) для объявления #' + id);
+            if (scheduledDate) {
+                fetch(`/api/v1/properties/${id}/schedule`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        ...getAuthHeader()
                     },
-                    body: JSON.stringify({ date: date })
+                    body: JSON.stringify({ scheduled_date: scheduledDate })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Ошибка ответа: ' + response.status);
+                })
                 .then(data => {
                     if (data.success) {
                         location.reload();
                     } else {
-                        alert('Ошибка: ' + data.message);
+                        alert('Ошибка: ' + (data.detail || 'Неизвестная ошибка'));
                     }
                 })
                 .catch(error => {
-                    alert('Произошла ошибка при обработке запроса');
+                    alert('Произошла ошибка при обработке запроса: ' + error.message);
                     console.error(error);
                 });
             }
         }
         
         function completeRequest(id) {
-            if (confirm('Завершить заявку #' + id + '?')) {
-                fetch(`/api/v1/requests/${id}/complete`, {
-                    method: 'POST'
+            if (confirm('Завершить съемку 360 для объявления #' + id + '?')) {
+                fetch(`/api/v1/properties/${id}/complete-tour`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeader()
+                    }
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Ошибка ответа: ' + response.status);
+                })
                 .then(data => {
                     if (data.success) {
                         location.reload();
                     } else {
-                        alert('Ошибка: ' + data.message);
+                        alert('Ошибка: ' + (data.detail || 'Неизвестная ошибка'));
                     }
                 })
                 .catch(error => {
-                    alert('Произошла ошибка при обработке запроса');
+                    alert('Произошла ошибка при обработке запроса: ' + error.message);
                     console.error(error);
                 });
             }
         }
         
         function rescheduleRequest(id) {
-            const date = prompt('Укажите новую дату съемки (ДД.ММ.ГГГГ) для заявки #' + id);
+            const date = prompt('Укажите новую дату съемки (ДД.ММ.ГГГГ) для объявления #' + id);
             if (date) {
-                fetch(`/api/v1/requests/${id}/reschedule`, {
+                fetch(`/api/v1/properties/${id}/schedule`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        ...getAuthHeader()
                     },
-                    body: JSON.stringify({ date: date })
+                    body: JSON.stringify({ scheduled_date: date })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Ошибка ответа: ' + response.status);
+                })
                 .then(data => {
                     if (data.success) {
                         location.reload();
                     } else {
-                        alert('Ошибка: ' + data.message);
+                        alert('Ошибка: ' + (data.detail || 'Неизвестная ошибка'));
                     }
                 })
                 .catch(error => {
-                    alert('Произошла ошибка при обработке запроса');
+                    alert('Произошла ошибка при обработке запроса: ' + error.message);
                     console.error(error);
                 });
             }

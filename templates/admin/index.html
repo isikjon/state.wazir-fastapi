@@ -219,17 +219,15 @@
 
                 <form id="login-form" action="/admin/login" method="post">
                     <div class="input-group">
-                        <label for="admin-id" class="form-label">ID
-                            администратора</label>
+                        <label for="admin-email" class="form-label">Email администратора</label>
                         <div class="relative">
                             <span class="input-icon">
-                                <i class="fas fa-user"></i>
+                                <i class="fas fa-envelope"></i>
                             </span>
-                            <input type="text" id="admin-id" name="username"
+                            <input type="email" id="admin-email" name="username"
                                 class="form-input"
-                                placeholder="Введите ваш ID" required>
-                            <div class="error-msg" id="id-error">Неверный ID
-                                администратора</div>
+                                placeholder="Введите ваш email" required>
+                            <div class="error-msg" id="email-error">Неверный email администратора</div>
                         </div>
                     </div>
 
@@ -242,8 +240,7 @@
                             <input type="password" id="password" name="password"
                                 class="form-input"
                                 placeholder="Введите ваш пароль" required>
-                            <div class="error-msg" id="password-error">Неверный
-                                пароль</div>
+                            <div class="error-msg" id="password-error">Неверный пароль</div>
                         </div>
                     </div>
 
@@ -270,15 +267,15 @@
         <script>
         $(document).ready(function() {
             $('#login-form').on('submit', function(e) {
-                const adminId = $('#admin-id').val().trim();
+                const adminEmail = $('#admin-email').val().trim();
                 const password = $('#password').val().trim();
                 
                 $('.error-msg').hide();
                 
-                if (!adminId || !password) {
+                if (!adminEmail || !password) {
                     e.preventDefault();
-                    if (!adminId) {
-                        $('#id-error').text('Поле не может быть пустым').show();
+                    if (!adminEmail) {
+                        $('#email-error').text('Поле не может быть пустым').show();
                     }
                     
                     if (!password) {

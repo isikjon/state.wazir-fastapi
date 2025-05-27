@@ -6,15 +6,15 @@ import enum
 
 
 class UserRole(str, enum.Enum):
-    ADMIN = "admin"
-    USER = "user"
-    MANAGER = "manager"
+    ADMIN = "ADMIN"
+    USER = "USER"
+    MANAGER = "MANAGER"
 
 
 class UserStatus(str, enum.Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    PENDING = "pending"
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+    PENDING = "PENDING"
 
 
 class User(Base, TimestampMixin):
@@ -33,3 +33,4 @@ class User(Base, TimestampMixin):
     favorites = relationship("Favorite", back_populates="user")
     # Отношения messages_sent и messages_received будут определены через backref в Message
     # support_tickets будет определено через backref в SupportTicket 
+    support_tickets = relationship("SupportTicket", back_populates="user") 

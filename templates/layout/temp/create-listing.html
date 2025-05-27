@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Wazir Недвижимость - Создание объявления</title>
+        <link rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+            rel="stylesheet">
+        <link rel="stylesheet"
+            href="{{ url_for('static', path='layout/assets/scss/main.css') }}">
+        <style>
+            .bottom-nav {
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            }
+            .nav-item {
+                transition: all 0.2s ease;
+            }
+            .nav-item.active {
+                color: var(--color-primary);
+            }
+            .nav-item:hover {
+                color: var(--color-primary-hover);
+            }
+            .nav-icons {
+                font-size: 1.8rem;
+            }
+            .weather-currency {
+                font-size: 1.1rem;
+                font-weight: 500;
+            }
+            .weather-icon {
+                font-size: 1.4rem;
+            }
+            .form-section {
+                background-color: white;
+                border-radius: 8px;
+                margin-bottom: 16px;
+                padding: 16px;
+            }
+            .section-title {
+                font-weight: 600;
+                font-size: 1.1rem;
+                color: #111827;
+                margin-bottom: 16px;
+            }
+            .form-label {
+                font-size: 0.95rem;
+                color: #4b5563;
+                margin-bottom: 6px;
+                display: block;
+            }
+            .form-input, .form-select, .form-textarea {
+                width: 100%;
+                padding: 12px;
+                border: 1px solid #e5e7eb;
+                border-radius: 6px;
+                font-size: 1rem;
+                color: #111827;
+                transition: border-color 0.2s ease;
+            }
+            .form-input:focus, .form-select:focus, .form-textarea:focus {
+                border-color: var(--color-primary);
+                outline: none;
+            }
+            .form-textarea {
+                min-height: 120px;
+                resize: vertical;
+            }
+            .char-counter {
+                font-size: 0.8rem;
+                color: #6b7280;
+                text-align: right;
+                margin-top: 4px;
+                transition: color 0.2s ease;
+            }
+            .char-counter.error {
+                color: #ef4444;
+            }
+            .room-btn {
+                flex: 1;
+                padding: 10px;
+                text-align: center;
+                border: 1px solid #e5e7eb;
+                border-radius: 6px;
+                font-size: 0.95rem;
+                color: #4b5563;
+                background-color: #f9fafb;
+                transition: all 0.2s ease;
+            }
+            .room-btn.active {
+                background-color: var(--color-primary);
+                color: white;
+                border-color: var(--color-primary);
+            }
+            .photo-upload-area {
+                border: 2px dashed #e5e7eb;
+                border-radius: 8px;
+                padding: 24px;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            .photo-upload-area:hover {
+                border-color: var(--color-primary);
+                background-color: #f9fafb;
+            }
+            .uploaded-photos {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                grid-gap: 10px;
+                margin-top: 16px;
+            }
+            .photo-item {
+                position: relative;
+                aspect-ratio: 4/3;
+                border-radius: 6px;
+                overflow: hidden;
+            }
+            .photo-item img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .photo-remove {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                background-color: rgba(255, 255, 255, 0.7);
+                color: #111827;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            .photo-remove:hover {
+                background-color: rgba(255, 255, 255, 0.9);
+                color: #ef4444;
+            }
+            .required-indicator {
+                color: #ef4444;
+                margin-left: 3px;
+            }
+            .warning-block {
+                background-color: #fff7ed;
+                border-left: 3px solid #f97316;
+                padding: 12px;
+                margin: 16px 0;
+                border-radius: 4px;
+                font-size: 0.9rem;
+                color: #9a3412;
+            }
+            .checkbox-container {
+                display: flex;
+                align-items: center;
+                margin-bottom: 8px;
+            }
+            .checkbox-container input[type="checkbox"] {
+                margin-right: 8px;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-100 font-sans">
+        <div class="min-h-screen flex flex-col">
+            <!-- Верхний блок: Лого, Погода, Валюта -->
+            <header class="bg-white shadow-sm">
+                <div class="container mx-auto px-4 py-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <img
+                                src="{{ url_for('static', path='layout/assets/img/logo_non.png') }}"
+                                alt="Wazir Logo"
+                                class="h-10">
+                        </div>
+                        <div class="flex items-center">
+                            <div class="flex items-center weather-currency">
+                                <img src="https://flagcdn.com/w20/us.png"
+                                    alt="USD" class="h-5 mr-2">
+                                <span id="currency-rate">Загрузка...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-grow pb-20">
+                <div class="container mx-auto px-4">
+                    <h1 class="text-2xl font-semibold mt-6 mb-4">Создание объявления</h1>
+                    
+                    <form id="create-listing-form">
+                        <!-- Загрузка фото -->
+                        <div class="form-section shadow-sm">
+                            <div class="section-title">
+                                Фотографии объекта
+                                <span class="required-indicator">*</span>
+                            </div>
+                            <p class="text-gray-500 text-sm mb-4">Добавьте минимум 2 фотографии вашего объекта.</p>
+                            
+                            <div class="photo-upload-area" id="photo-upload-trigger">
+                                <i class="fas fa-camera text-gray-400 text-4xl mb-2"></i>
+                                <p class="text-gray-600">Нажмите, чтобы загрузить фото</p>
+                                <input type="file" id="photo-upload" class="hidden" multiple accept="image/*">
+                            </div>
+                            
+                            <div class="uploaded-photos mt-4" id="uploaded-photos">
+                                <!-- Здесь будут отображаться загруженные фото -->
+                            </div>
+                            
+                            <div class="photo-validation-error text-red-500 text-sm mt-2 hidden">
+                                Пожалуйста, загрузите минимум 2 фотографии
+                            </div>
+                        </div>
+                        
+                        <!-- Категория и тип недвижимости -->
+                        <div class="form-section shadow-sm">
+                            <div class="section-title">
+                                Категория и тип
+                                <span class="required-indicator">*</span>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="category" class="form-label">Категория</label>
+                                <select id="category" class="form-select">
+                                    <option value="">Выберите категорию</option>
+                                    <option value="sale">Продажа</option>
+                                    <option value="rent">Аренда</option>
+                                </select>
+                                <div class="category-validation-error text-red-500 text-sm mt-2 hidden">
+                                    Пожалуйста, выберите категорию
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="property-type" class="form-label">Тип недвижимости</label>
+                                <select id="property-type" class="form-select">
+                                    <option value="">Выберите тип недвижимости</option>
+                                    <option value="apartment">Квартира</option>
+                                    <option value="house">Дом</option>
+                                    <option value="commercial">Коммерческая недвижимость</option>
+                                    <option value="land">Земельный участок</option>
+                                </select>
+                                <div class="property-type-validation-error text-red-500 text-sm mt-2 hidden">
+                                    Пожалуйста, выберите тип недвижимости
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Адрес -->
+                        <div class="form-section shadow-sm">
+                            <div class="section-title">
+                                Адрес
+                                <span class="required-indicator">*</span>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="city" class="form-label">Город</label>
+                                <select id="city" class="form-select">
+                                    <option value="">Выберите город</option>
+                                    <option value="bishkek">Бишкек</option>
+                                    <option value="osh">Ош</option>
+                                    <option value="jalal-abad">Жалал-Абад</option>
+                                    <option value="karakol">Каракол</option>
+                                    <option value="tokmok">Токмок</option>
+                                </select>
+                                <div class="city-validation-error text-red-500 text-sm mt-2 hidden">
+                                    Пожалуйста, выберите город
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="street" class="form-label">Улица</label>
+                                <input type="text" id="street" class="form-input" placeholder="Введите название улицы">
+                                <div class="street-validation-error text-red-500 text-sm mt-2 hidden">
+                                    Пожалуйста, укажите улицу
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="mb-4">
+                                    <label for="house-number" class="form-label">Номер дома</label>
+                                    <input type="text" id="house-number" class="form-input" placeholder="Номер дома">
+                                    <div class="house-number-validation-error text-red-500 text-sm mt-2 hidden">
+                                        Пожалуйста, укажите номер дома
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="apartment-number" class="form-label">Номер квартиры (при наличии)</label>
+                                    <input type="text" id="apartment-number" class="form-input" placeholder="Номер квартиры">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Параметры помещения -->
+                        <div class="form-section shadow-sm">
+                            <div class="section-title">
+                                Параметры помещения
+                                <span class="required-indicator">*</span>
+                            </div>
+                            
+                            <div id="apartment-params">
+                                <div class="mb-4">
+                                    <label class="form-label">Количество комнат</label>
+                                    <div class="flex space-x-2 mt-2">
+                                        <button type="button" class="room-btn" data-rooms="1">1</button>
+                                        <button type="button" class="room-btn" data-rooms="2">2</button>
+                                        <button type="button" class="room-btn" data-rooms="3">3</button>
+                                        <button type="button" class="room-btn" data-rooms="4">4</button>
+                                        <button type="button" class="room-btn" data-rooms="5+">5+</button>
+                                    </div>
+                                    <div class="rooms-validation-error text-red-500 text-sm mt-2 hidden">
+                                        Пожалуйста, выберите количество комнат
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="mb-4">
+                                        <label for="area" class="form-label">Площадь, м²</label>
+                                        <input type="number" id="area" class="form-input" placeholder="Площадь">
+                                        <div class="area-validation-error text-red-500 text-sm mt-2 hidden">
+                                            Пожалуйста, укажите площадь
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <label for="floor" class="form-label">Этаж</label>
+                                        <input type="number" id="floor" class="form-input" placeholder="Этаж">
+                                        <div class="floor-validation-error text-red-500 text-sm mt-2 hidden">
+                                            Пожалуйста, укажите этаж
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="total-floors" class="form-label">Всего этажей в доме</label>
+                                    <input type="number" id="total-floors" class="form-input" placeholder="Всего этажей">
+                                    <div class="total-floors-validation-error text-red-500 text-sm mt-2 hidden">
+                                        Пожалуйста, укажите общее количество этажей
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Цена -->
+                        <div class="form-section shadow-sm">
+                            <div class="section-title">
+                                Цена
+                                <span class="required-indicator">*</span>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="mb-4">
+                                    <label for="price" class="form-label">Стоимость</label>
+                                    <input type="number" id="price" class="form-input" placeholder="Стоимость">
+                                    <div class="price-validation-error text-red-500 text-sm mt-2 hidden">
+                                        Пожалуйста, укажите стоимость
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="currency" class="form-label">Валюта</label>
+                                    <select id="currency" class="form-select">
+                                        <option value="KGS">Сом (KGS)</option>
+                                        <option value="USD">Доллар (USD)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Общая информация -->
+                        <div class="form-section shadow-sm">
+                            <div class="section-title">
+                                Общая информация
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="title" class="form-label">Заголовок объявления</label>
+                                <input type="text" id="title" class="form-input" placeholder="Например: Просторная квартира в центре города">
+                                <div class="title-validation-error text-red-500 text-sm mt-2 hidden">
+                                    Пожалуйста, укажите заголовок
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label">Удобства</label>
+                                <div class="grid grid-cols-2 gap-2 mt-2">
+                                    <div class="checkbox-container">
+                                        <input type="checkbox" id="furniture" class="form-checkbox">
+                                        <label for="furniture" class="text-gray-700">Мебель</label>
+                                    </div>
+                                    <div class="checkbox-container">
+                                        <input type="checkbox" id="refrigerator" class="form-checkbox">
+                                        <label for="refrigerator" class="text-gray-700">Холодильник</label>
+                                    </div>
+                                    <div class="checkbox-container">
+                                        <input type="checkbox" id="washing-machine" class="form-checkbox">
+                                        <label for="washing-machine" class="text-gray-700">Стиральная машина</label>
+                                    </div>
+                                    <div class="checkbox-container">
+                                        <input type="checkbox" id="internet" class="form-checkbox">
+                                        <label for="internet" class="text-gray-700">Интернет</label>
+                                    </div>
+                                    <div class="checkbox-container">
+                                        <input type="checkbox" id="air-conditioner" class="form-checkbox">
+                                        <label for="air-conditioner" class="text-gray-700">Кондиционер</label>
+                                    </div>
+                                    <div class="checkbox-container">
+                                        <input type="checkbox" id="tv" class="form-checkbox">
+                                        <label for="tv" class="text-gray-700">Телевизор</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Описание -->
+                        <div class="form-section shadow-sm">
+                            <div class="section-title">
+                                Описание
+                                <span class="required-indicator">*</span>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <textarea id="description" class="form-textarea" placeholder="Опишите ваш объект подробнее. Укажите преимущества, состояние, удаленность от транспорта и другую важную информацию."></textarea>
+                                <div class="flex justify-between items-center mt-2">
+                                    <div class="description-validation-error text-red-500 text-sm hidden">
+                                        Пожалуйста, добавьте описание (минимум 50 символов)
+                                    </div>
+                                    <div class="char-counter" id="description-counter">0/2000</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Запрос съемки 360 -->
+                        <div class="form-section shadow-sm">
+                            <div class="section-title">
+                                Запрос съемки 360° тура
+                            </div>
+                            
+                            <div class="checkbox-container">
+                                <input type="checkbox" id="request-360" class="form-checkbox">
+                                <label for="request-360" class="text-gray-700">Заказать съемку 360° тура для моего объекта</label>
+                            </div>
+                            
+                            <div class="warning-block mt-3">
+                                <p>Заказывая съемку 360° тура, вы соглашаетесь на выезд нашего специалиста по адресу объекта. После публикации объявления, наш менеджер свяжется с вами для уточнения деталей.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Контактная информация -->
+                        <div class="form-section shadow-sm">
+                            <div class="section-title">
+                                Контактная информация
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="contact-name" class="form-label">ФИО</label>
+                                <input type="text" id="contact-name" class="form-input" value="{{ user.full_name if user.full_name else '' }}" readonly>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="contact-phone" class="form-label">Телефон</label>
+                                <input type="text" id="contact-phone" class="form-input" value="{{ user.phone if user.phone else '' }}" readonly>
+                            </div>
+                        </div>
+                        
+                        <!-- Кнопка отправки -->
+                        <button type="submit" id="publish-button"
+                            class="btn-primary w-full py-4 rounded-lg text-lg font-medium mb-16">
+                            Опубликовать объявление
+                        </button>
+                    </form>
+                </div>
+            </main>
+
+            <!-- Нижняя навигация -->
+            <nav
+                class="bottom-nav fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10">
+                <div class="container mx-auto px-4 py-2">
+                    <div class="flex justify-around">
+                        <a href="/mobile/dashboard"
+                            class="nav-item flex flex-col items-center py-1">
+                            <i class="fas fa-home nav-icons"></i>
+                            <span class="text-xs mt-1">Главная</span>
+                        </a>
+                        <a href="/mobile/search"
+                            class="nav-item flex flex-col items-center py-1">
+                            <i class="fas fa-search nav-icons"></i>
+                            <span class="text-xs mt-1">Поиск</span>
+                        </a>
+                        <a href="/mobile/create-listing"
+                            class="nav-item active flex flex-col items-center py-1">
+                            <i class="fas fa-plus-circle nav-icons"></i>
+                            <span class="text-xs mt-1">Разместить</span>
+                        </a>
+                        <a href="/mobile/chat"
+                            class="nav-item flex flex-col items-center py-1">
+                            <i class="fas fa-comments nav-icons"></i>
+                            <span class="text-xs mt-1">Сообщения</span>
+                        </a>
+                        <a href="/mobile/profile"
+                            class="nav-item flex flex-col items-center py-1">
+                            <i class="fas fa-user nav-icons"></i>
+                            <span class="text-xs mt-1">Профиль</span>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <!-- Подключаем скрипт для кэширования данных о погоде и курсе валюты -->
+        <script
+            src="{{ url_for('static', path='layout/assets/js/weather-currency-cache.js') }}"></script>
+        <!-- Подключаем скрипт для формы создания объявления -->
+        <script
+            src="{{ url_for('static', path='layout/assets/js/create-listing.js') }}"></script>
+    </body>
+</html>

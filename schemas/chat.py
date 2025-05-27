@@ -14,7 +14,7 @@ class Message(MessageBase):
     chat_id: int
     sender_id: int
     is_read: bool
-    created_at: datetime
+    created_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True
@@ -28,8 +28,8 @@ class ChatCreate(ChatBase):
 
 class Chat(ChatBase):
     id: int
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True

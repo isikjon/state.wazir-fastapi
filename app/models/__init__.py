@@ -1,4 +1,7 @@
 from .user import User, UserRole, UserStatus
-from .property import Property, PropertyImage, Category, Favorite, PropertyStatus, property_category
-from .message import Message as AppMessage, MessageStatus, SupportTicket, TicketStatus, TicketResponse
-from .request import Request, RequestStatus, RequestType 
+from .property import Property, PropertyImage, Category, Favorite, PropertyStatus, PropertyCategory
+from .message import Message as AppMessage, MessageStatus
+from .request import Request, RequestStatus, RequestType
+from .chat import AppChatModel, AppChatMessageModel
+from .chat_message import ChatMessage
+from .support import TicketStatus, SupportTicket, TicketResponse

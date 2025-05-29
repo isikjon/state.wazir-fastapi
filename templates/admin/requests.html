@@ -5,18 +5,10 @@
 {% block page_title %}Заявки{% endblock %}
 
 {% block content %}
-<div class="p-5">
+<div class="p-5"> 
     <!-- Табы для переключения между типами заявок -->
     <div class="bg-white rounded-lg shadow-sm mb-6">
         <div class="flex border-b">
-            <a href="{{ url_for('admin_requests') }}?tab=tours"
-                class="tab-link {{ 'active' if tab == 'tours' else '' }}">
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-camera-retro"></i>
-                    <span>Съемка 360 тур</span>
-                    <span class="tab-count">{{ tour_requests_count }}</span>
-                </div>
-            </a>
             <a href="{{ url_for('admin_requests') }}?tab=listings"
                 class="tab-link {{ 'active' if tab == 'listings' else '' }}">
                 <div class="flex items-center gap-2">
@@ -167,11 +159,6 @@
                         data-request-id="{{ request.id }}">
                         <i class="fas fa-check"></i>
                         <span>Одобрить</span>
-                    </button>
-                    <button class="action-btn edit"
-                        data-request-id="{{ request.id }}">
-                        <i class="fas fa-edit"></i>
-                        <span>Изменить</span>
                     </button>
                     <button class="action-btn reject"
                         data-request-id="{{ request.id }}">

@@ -9,7 +9,7 @@
 /* Таблица пользователей */
 .users-container {
     padding: 1.5rem;
-}
+} 
 
 .users-card {
     background-color: white;
@@ -506,12 +506,6 @@
                                     onclick="confirmAction('{{ user.id }}', '{% if user.is_active %}ban{% else %}activate{% endif %}', '{{ user.full_name }}')">
                                     <i class="fas fa-{% if user.is_active %}ban{% else %}check{% endif %}"
                                        title="{% if user.is_active %}Заблокировать{% else %}Разблокировать{% endif %}"></i>
-                                </a>
-                                
-                                <!-- Кнопка удаления -->
-                                <a href="javascript:void(0);" class="user-action delete"
-                                    onclick="confirmAction('{{ user.id }}', 'delete', '{{ user.full_name }}')">
-                                    <i class="fas fa-trash" title="Удалить полностью"></i>
                                 </a>
                             </div>
                         </td>

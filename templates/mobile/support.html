@@ -156,6 +156,254 @@
         color: #6b7280;
         font-size: 0.85rem;
     }
+    
+    /* Новые стили для страницы поддержки */
+    .support-tabs {
+        justify-content: space-around;
+        padding: 10px 5px;
+    }
+    
+    .support-tabs .tab {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 10px 5px;
+    }
+    
+    .tab-icon {
+        width: 40px;
+        height: 40px;
+        margin-bottom: 5px;
+    }
+    
+    .support-content {
+        padding: 15px;
+        background-color: white;
+    }
+    
+    .support-text {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #333;
+        margin-bottom: 20px;
+        text-align: justify;
+    }
+    
+    .apartment-image-container {
+        position: relative;
+        margin: 20px 0;
+        text-align: center;
+    }
+    
+    .apartment-image {
+        width: 100%;
+        max-width: 500px;
+        border-radius: 8px;
+    }
+    
+    .rotate-hint {
+        position: relative;
+        margin-top: 20px;
+    }
+    
+    .dashed-circle {
+        width: 60px;
+        height: 60px;
+        border: 2px dashed #ccc;
+        border-radius: 50%;
+        margin: 0 auto;
+    }
+    
+    .rotate-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #666;
+    }
+    
+    .feature-icons {
+        display: flex;
+        justify-content: space-around;
+        margin: 25px 0;
+        flex-wrap: wrap;
+    }
+    
+    .feature-icon {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 22%;
+        margin-bottom: 15px;
+    }
+    
+    .feature-icon img {
+        width: 40px;
+        height: 40px;
+        margin-bottom: 8px;
+    }
+    
+    .feature-icon span {
+        font-size: 12px;
+        color: #333;
+        text-align: center;
+    }
+    
+    .contact-info {
+        margin-top: 30px;
+        padding: 20px 15px;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .contact-title {
+        font-size: 14px;
+        margin-bottom: 15px;
+        color: #555;
+    }
+    
+    .contact-phone {
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #333;
+    }
+    
+    .contact-address, .contact-site {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 10px;
+    }
+    
+    .social-icons {
+        display: flex;
+        justify-content: center;
+        margin: 20px 0;
+    }
+    
+    .social-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: #eee;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 5px;
+        color: #666;
+        text-decoration: none;
+    }
+    
+    .copyright {
+        font-size: 12px;
+        color: #999;
+        margin-top: 15px;
+    }
+    
+    /* Стили для таба MTT Inc. */
+    .mtt-services {
+        margin: 20px 0;
+    }
+    
+    .service-item {
+        display: flex;
+        margin-bottom: 20px;
+        padding: 10px;
+        background-color: white;
+        border-radius: 8px;
+    }
+    
+    .service-icon {
+        flex: 0 0 70px;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding-top: 5px;
+    }
+    
+    .service-icon img {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .service-content {
+        flex: 1;
+        padding-left: 10px;
+    }
+    
+    .service-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    
+    .service-description {
+        font-size: 14px;
+        color: #555;
+        line-height: 1.4;
+    }
+    
+    /* Стили для таба Братва */
+    .emblem-container {
+        text-align: center;
+        margin: 15px 0 25px;
+    }
+    
+    .bratva-emblem {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .bratva-heading {
+        font-size: 15px;
+        font-weight: 500;
+        text-align: center;
+        margin-bottom: 25px;
+        color: #333;
+    }
+    
+    .bratva-services {
+        margin: 20px 0;
+    }
+    
+    .bratva-service-item {
+        display: flex;
+        margin-bottom: 15px;
+        padding: 8px;
+        background-color: white;
+    }
+    
+    .bratva-service-icon {
+        flex: 0 0 60px;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+    }
+    
+    .bratva-service-icon img {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .bratva-service-content {
+        flex: 1;
+        padding-left: 10px;
+    }
+    
+    .bratva-service-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 3px;
+    }
+    
+    .bratva-service-description {
+        font-size: 13px;
+        color: #555;
+        line-height: 1.3;
+    }
 </style>
         <style>
             .bottom-nav {
@@ -207,116 +455,274 @@
             </header> 
 <!-- Табы -->
 <div class="tabs sticky top-0 z-10 shadow-sm">
-    <div class="tab active" data-target="support">
-        Тех.поддержка
-    </div>
-    <div class="tab" data-target="about">
-        О компании
-    </div>
+    <h1
+        style="
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #fb923c;
+            text-align: center;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 500;
+        "
+    >
+        Техническая поддержка
+    </h1>
 </div>
 
 <!-- Основное содержимое -->
 <main class="flex-grow pb-20">
     <!-- Техническая поддержка -->
-    <div id="support" class="tab-content active">
-        <div class="section-title">Часто задаваемые вопросы</div>
+    <!-- Tabs navigation -->
+    <div class="tabs support-tabs">
+        <div class="tab active" data-tab="wazir">
+            <img
+            src="{{ url_for('static', path='layout/assets/img/logo_non.png') }}"
+            alt="Wazir Logo"
+            class="h-10" alt="Wazir Logo" class="tab-icon">
+            <span>Wazir</span>
+        </div>
+        <div class="tab" data-tab="mtt">
+            <img src="https://cdn-icons-png.flaticon.com/512/1785/1785655.png" alt="MTT Inc." class="tab-icon">
+            <span>MTT Inc.</span>
+        </div>
+        <div class="tab" data-tab="bratva">
+            <img src="https://cdn-icons-png.flaticon.com/512/3588/3588614.png" alt="Братва" class="tab-icon">
+            <span>Братва</span>
+        </div>
+    </div>
 
-        <!-- FAQ аккордеон -->
-        <div class="faq-accordion">
-            <!-- Вопрос 1 -->
-            <div class="faq-item">
-                <div class="faq-question">
-                    <span>Как разместить объявление о продаже/аренде?</span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="faq-answer">
-                    <div class="faq-answer-inner">
-                        Для размещения объявления перейдите в раздел "Профиль" и нажмите на кнопку "+" в правом нижнем углу. Заполните все необходимые поля, загрузите минимум 2 фотографии объекта и нажмите "Опубликовать объявление". После проверки модератором ваше объявление будет опубликовано.
+    <!-- Tab Wazir -->
+    <div id="wazir" class="tab-content active">
+        <div class="support-content">
+            <p class="support-text">
+                Мы предоставляем цифровой сервис услуг по созданию VR туров и визуализации 360. Это необходимо и привлекательно для каждого бизнеса, особенно в сфере недвижимости, ресторанного бизнеса, виртуальной реальности, шоу-румов и организации разных событий. Обширные ресурсы в таких технологиях пространственно будут расположены со всех сторон. В итоге создается эффект присутствия внутри того или иного события.
+            </p>
+            
+            <div class="apartment-image-container">
+                <img src="https://sun9-76.userapi.com/impg/rQgEW1kUCbhPPIZeDQXsrNlUQl5_d_RO8p5iIw/GkNzJsQgDmc.jpg" alt="3D планировка квартиры" class="apartment-image">
+                <div class="rotate-hint">
+                    <div class="dashed-circle"></div>
+                    <div class="rotate-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 16 16 12 12 8"></polyline>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                        </svg>
                     </div>
                 </div>
             </div>
-
-            <!-- Вопрос 2 -->
-            <div class="faq-item">
-                <div class="faq-question">
-                    <span>Как связаться с продавцом/арендодателем?</span>
-                    <i class="fas fa-chevron-down"></i>
+            
+            <p class="support-text">
+                Определиться с покупкой недвижимости поможет современный виртуальный тур по будущей квартире, дому или офису. Информационные технологии позволят кассовый подойти к улучшению качества предоставления контента не только для бизнеса, риелторов и строительных предприятий, развивающих проекты по возведению жилых комплексов.
+            </p>
+            
+            <div class="feature-icons">
+                <div class="feature-icon">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1786/1786037.png" alt="VR туры">
+                    <span>VR туры</span>
                 </div>
-                <div class="faq-answer">
-                    <div class="faq-answer-inner">
-                        На странице объявления вы можете использовать кнопку "Позвонить" для прямого контакта или "Написать" для отправки сообщения. Все сообщения будут отображаться в разделе "Сообщения" в нижней навигационной панели.
-                    </div>
+                <div class="feature-icon">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3024/3024498.png" alt="Видео 360">
+                    <span>Видео 360</span>
                 </div>
-            </div>
-
-            <!-- Вопрос 3 -->
-            <div class="faq-item">
-                <div class="faq-question">
-                    <span>Как редактировать или удалить объявление?</span>
-                    <i class="fas fa-chevron-down"></i>
+                <div class="feature-icon">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1213/1213041.png" alt="Фото 360">
+                    <span>Фото 360</span>
                 </div>
-                <div class="faq-answer">
-                    <div class="faq-answer-inner">
-                        Перейдите в раздел "Профиль", выберите вкладку "Мои объявления" и найдите нужное объявление. Нажмите на объявление и выберите "Редактировать" или "Удалить" в меню опций. После редактирования объявление может снова пройти проверку модератором.
-                    </div>
+                <div class="feature-icon">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1087/1087927.png" alt="3D Объект">
+                    <span>3D Объект</span>
                 </div>
             </div>
-
-            <!-- Вопрос 4 -->
-            <div class="faq-item">
-                <div class="faq-question">
-                    <span>Как заказать виртуальный тур 360°?</span>
-                    <i class="fas fa-chevron-down"></i>
+            
+            <p class="support-text">
+                Сотрудничество с нами поможет вам увеличить узнаваемость, экономия времени клиентов, покупателей, так как ему не нужно выезжать на объект для просмотра. Подача материала в инновационной привлекательной форме, возможности по расширению зоны охвата целевой аудитории, с интересной и др.
+            </p>
+            
+            <div class="contact-info">
+                <p class="contact-title">По всем вопросам обращайтесь наши удобным номером</p>
+                <div class="contact-phone">+996 312 123 456</div>
+                <div class="contact-address">ул. Советская 222, офис 222000</div>
+                <div class="contact-site">WAZIR.KG</div>
+                
+                <div class="social-icons">
+                    <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-telegram"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-whatsapp"></i></a>
+                    <a href="#" class="social-icon"><i class="fas fa-envelope"></i></a>
+                    <a href="#" class="social-icon"><i class="fas fa-globe"></i></a>
                 </div>
-                <div class="faq-answer">
-                    <div class="faq-answer-inner">
-                        При создании объявления поставьте галочку напротив пункта "Запросить съемку 360° тур" в разделе "Дополнительные услуги". Наш специалист свяжется с вами для согласования даты и времени съемки. Услуга предоставляется в г. Ош и Бишкек.
-                    </div>
-                </div>
-            </div>
-
-            <!-- Вопрос 5 -->
-            <div class="faq-item">
-                <div class="faq-question">
-                    <span>Сколько объявлений я могу разместить?</span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="faq-answer">
-                    <div class="faq-answer-inner">
-                        Обычные пользователи могут разместить до 3 объявлений бесплатно. Для размещения большего количества объявлений требуется перейти на премиум-аккаунт. Агентства недвижимости и застройщики могут обратиться за специальными тарифами.
-                    </div>
-                </div>
+                
+                <div class="copyright">© Wazir.KG Все права защищены</div>
             </div>
         </div>
-
-        <!-- Форма обратной связи -->
-        <div class="contact-form">
-            <div class="section-title">Связаться с поддержкой</div>
-            <form id="support-form">
-                <div class="mb-4">
-                    <label for="name" class="form-label">Ваше имя</label>
-                    <input type="text" id="name" class="form-input" placeholder="Иван Петров">
+    </div>
+    
+    <!-- Tab MTT Inc. -->
+    <div id="mtt" class="tab-content">
+        <div class="support-content">
+            <p class="support-text">
+                MTT Inc. – это команда опытных профессионалов, специализирующаяся на разработке и поддержке веб-проектов. Профессиональное создание, продвижение и поддержка сайтов - обеспечиваем высокую скорость загрузки, качественную верстку и безопасное корпоративное под ключ.
+            </p>
+            
+            <div class="mtt-services">
+                <div class="service-item">
+                    <div class="service-icon">
+                        <img src="https://cdn-icons-png.flaticon.com/512/1085/1085802.png" alt="Сайт визитка">
+                    </div>
+                    <div class="service-content">
+                        <h3 class="service-title">Сайт визитка</h3>
+                        <p class="service-description">
+                            Сайт состоит из нескольких страничек, возможность познакомить клиентов со своей деятельностью, но при заказчике возможность сделать полнофункциональный сайт.
+                        </p>
+                    </div>
                 </div>
-                <div class="mb-4">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" id="email" class="form-input" placeholder="ivan@example.com">
+                
+                <div class="service-item">
+                    <div class="service-icon">
+                        <img src="https://cdn-icons-png.flaticon.com/512/6295/6295417.png" alt="Интернет-магазин">
+                    </div>
+                    <div class="service-content">
+                        <h3 class="service-title">Интернет-магазин</h3>
+                        <p class="service-description">
+                            Разработка площадки для эффективных продаж, с удобной навигацией, фильтрами и каталогом товаров с возможностью совершения покупки онлайн.
+                        </p>
+                    </div>
                 </div>
-                <div class="mb-4">
-                    <label for="topic" class="form-label">Тема обращения</label>
-                    <select id="topic" class="form-input">
-                        <option value disabled selected>Выберите тему</option>
-                        <option value="tech">Технические проблемы</option>
-                        <option value="account">Вопросы по аккаунту</option>
-                        <option value="payment">Вопросы по оплате</option>
-                        <option value="other">Другое</option>
-                    </select>
+                
+                <div class="service-item">
+                    <div class="service-icon">
+                        <img src="https://cdn-icons-png.flaticon.com/512/6295/6295905.png" alt="Landing-page">
+                    </div>
+                    <div class="service-content">
+                        <h3 class="service-title">Landing-page</h3>
+                        <p class="service-description">
+                            Одностраничный сайт для привлечения и продажи товаров и услуг. Состоит из нескольких разделов с высоким уровнем конверсии и видами обратной связи.
+                        </p>
+                    </div>
                 </div>
-                <div class="mb-4">
-                    <label for="message" class="form-label">Сообщение</label>
-                    <textarea id="message" class="form-textarea" placeholder="Опишите вашу проблему или вопрос..."></textarea>
+                
+                <div class="service-item">
+                    <div class="service-icon">
+                        <img src="https://cdn-icons-png.flaticon.com/512/9459/9459498.png" alt="Корпоративный сайт">
+                    </div>
+                    <div class="service-content">
+                        <h3 class="service-title">Корпоративный сайт</h3>
+                        <p class="service-description">
+                            Призван рассказать аудитории о компании, преимущества продуктов, подробно познакомить пользователей с предоставляемыми услугами и реализованными проектами.
+                        </p>
+                    </div>
                 </div>
-                <button type="submit" class="btn-primary w-full py-3 rounded-lg">Отправить</button>
-            </form>
+                
+                <div class="service-item">
+                    <div class="service-icon">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3437/3437364.png" alt="Прототип приложения">
+                    </div>
+                    <div class="service-content">
+                        <h3 class="service-title">Прототип приложения</h3>
+                        <p class="service-description">
+                            Разработка мобильных приложений для различных платформ. Создание функционала, дизайна и тестирование нового продукта.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="contact-info">
+                <p class="contact-title">По всем вопросам обращайтесь наши удобным номером</p>
+                <div class="contact-phone">+996 312 123 456</div>
+                <div class="contact-address">ул. Советская 222, офис 222000</div>
+                <div class="contact-site">MTT.KG</div>
+                
+                <div class="social-icons">
+                    <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-telegram"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-whatsapp"></i></a>
+                    <a href="#" class="social-icon"><i class="fas fa-envelope"></i></a>
+                    <a href="#" class="social-icon"><i class="fas fa-globe"></i></a>
+                </div>
+                
+                <div class="copyright">© MTT Inc. Все права защищены</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab Братва -->
+    <div id="bratva" class="tab-content">
+        <div class="support-content">
+            <p class="bratva-heading">
+                MTT Inc. - веб студия полного цикла. Аккуратно и профессионально. Всё под ключ.
+            </p>
+            
+            <div class="bratva-services">
+                <div class="bratva-service-item">
+                    <div class="bratva-service-icon">
+                        <img src="https://cdn-icons-png.flaticon.com/512/1087/1087815.png" alt="Проекты/Разработка">
+                    </div>
+                    <div class="bratva-service-content">
+                        <h3 class="bratva-service-title">Проекты/Разработка</h3>
+                        <p class="bratva-service-description">
+                            Разработкой, установка и обслуживание систем видеонаблюдения на домах, офис, авто и т.д.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="bratva-service-item">
+                    <div class="bratva-service-icon">
+                        <img src="https://cdn-icons-png.flaticon.com/512/8097/8097408.png" alt="Аудит и Видеонаблюдение">
+                    </div>
+                    <div class="bratva-service-content">
+                        <h3 class="bratva-service-title">Аудит и Видеонаблюдение</h3>
+                        <p class="bratva-service-description">
+                            Помогаем вам не только подобрать камеры, но и разместить их в правильных места. Техническое обслуживание, что и ремонт.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="bratva-service-item">
+                    <div class="bratva-service-icon">
+                        <img src="https://cdn-icons-png.flaticon.com/512/2093/2093388.png" alt="Системы Контроля Доступа">
+                    </div>
+                    <div class="bratva-service-content">
+                        <h3 class="bratva-service-title">Системы Контроля Доступа (СКУД)</h3>
+                        <p class="bratva-service-description">
+                            Обеспечиваем ограничение и контроль прохождения на вашу территорию, для повышения безопасности и организации учёта и т.д.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="bratva-service-item">
+                    <div class="bratva-service-icon">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3668/3668512.png" alt="Ворота и шлагбаумы">
+                    </div>
+                    <div class="bratva-service-content">
+                        <h3 class="bratva-service-title">Ворота и шлагбаумы</h3>
+                        <p class="bratva-service-description">
+                            Умные дома, офис, подключение техники к умной версии - ключ защита от нелегальных гостей.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="bratva-service-item">
+                    <div class="bratva-service-icon">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3198/3198456.png" alt="Пожарная безопасность">
+                    </div>
+                    <div class="bratva-service-content">
+                        <h3 class="bratva-service-title">Пожарная безопасность</h3>
+                        <p class="bratva-service-description">
+                            Создаём систему для пространств, включает в себя меры по обеспечению. Использование для своевременного обнаружения пожара (дым-газ).
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="contact-info">
+                <p class="contact-title">По всем вопросам обращайтесь наши удобным номером</p>
+                <div class="contact-phone">+996 312 123 456</div>
+                <div class="contact-site">БРАТВА.KG</div>
+            </div>
         </div>
     </div>
 
@@ -651,11 +1057,11 @@
 $(document).ready(function() {
     // Обработка переключения табов
     $('.tab').on('click', function() {
-        const target = $(this).data('target');
+        const tabId = $(this).data('tab');
         $('.tab').removeClass('active');
         $(this).addClass('active');
         $('.tab-content').removeClass('active');
-        $('#' + target).addClass('active');
+        $('#' + tabId).addClass('active');
     });
     
     // Обработка аккордеона FAQ
@@ -720,5 +1126,12 @@ $(document).ready(function() {
             }
         });
     });
+    
+    // Эффект вращения для 3D объекта
+    let rotationAngle = 0;
+    setInterval(function() {
+        rotationAngle += 5;
+        $('.rotate-icon').css('transform', 'translate(-50%, -50%) rotate(' + rotationAngle + 'deg)');
+    }, 100);
 });
 </script>

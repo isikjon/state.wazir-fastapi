@@ -10,7 +10,7 @@ services:
       - ./media:/app/media
       - ./logs:/app/logs
     environment:
-      - DATABASE_URL=mysql+pymysql://wazir:c:ICx9Pr{48y>6BmBc3r@localhost/wazir
+      - DATABASE_URL=mysql+pymysql://wazir:c:ICx9Pr{48y>6BmBc3r@%/wazir
       - SECRET_KEY=CdKxf8AKid3xI9QIPgJUGzgJFsDRXaBW1AcmZUvcP8llHN6Bmr5jWP
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=1440

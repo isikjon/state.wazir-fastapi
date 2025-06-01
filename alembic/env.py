@@ -12,10 +12,14 @@ config = context.config
 # Import the project's settings and database URL
 from database import Base
 
-# Импортируем все модели (но в правильном порядке)
-from app.models.user import User
-from models.chat import ChatModel, ChatMessageModel
-from models.support import SupportTicket, SupportMessage
+# Import all models
+from app.models.user import User, UserRole, UserStatus
+from app.models.property import Property, PropertyImage, Category, Favorite, PropertyStatus, PropertyCategory
+from app.models.message import AppMessage, MessageStatus
+from app.models.request import Request, RequestStatus, RequestType
+from app.models.chat import AppChatModel, AppChatMessageModel
+from app.models.chat_message import ChatMessage
+from app.models.support import TicketStatus, SupportTicket, TicketResponse
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

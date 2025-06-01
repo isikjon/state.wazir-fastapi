@@ -3,6 +3,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.staticfiles import StaticFiles as StarletteStaticFiles
 import os
 from config import settings
 from api.v1.api import api_router
@@ -183,22 +185,34 @@ class CustomJSONEncoder(json.JSONEncoder):
             return obj.strftime("%Y-%m-%d %H:%M:%S")
         return super().default(obj)
 
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json"
-)
+app = FastAPI()
 
-# Используем импортированный chat_manager вместо создания нового экземпляра
-
+# Настройка CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["Authorization", "Content-Type", "Set-Cookie"],
+    allow_headers=["*"],
+    expose_headers=["*"],
 )
 
-app.add_middleware(SessionMiddleware, secret_key="wazir_super_secret_key")
+# Настройка шаблонов
+templates = Jinja2Templates(directory="templates")
+
+# Монтирование статических файлов с расширенными настройками
+app.mount("/static", StaticFiles(
+    directory="static",
+    check_dir=True,
+    html=True
+), name="static")
+
+# Монтирование медиа файлов
+app.mount("/media", StaticFiles(
+    directory="media",
+    check_dir=True,
+    html=True
+), name="media")
 
 # Функция для сериализации объектов в JSON, используя CustomJSONEncoder
 def json_serialize(obj):
@@ -213,16 +227,44 @@ async def type_error_handler(request, exc):
         )
     raise exc
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/media", StaticFiles(directory="media"), name="media")
-
-templates = Jinja2Templates(directory="templates")
-
 # Регистрация API роутеров
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 # Добавляем мидлвар для проверки авторизации
 app.add_middleware(AuthenticationMiddleware)
+
+class StaticFilesMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        
+        # Проверяем, является ли запрос к статическим файлам
+        if path.startswith(('/static/', '/media/')):
+            # Проверяем расширение файла
+            file_extension = path.split('.')[-1].lower() if '.' in path else ''
+            
+            # Устанавливаем правильные заголовки в зависимости от типа файла
+            headers = {}
+            if file_extension in ['jpg', 'jpeg', 'png', 'gif', 'webp']:
+                headers['Cache-Control'] = 'public, max-age=31536000'
+                headers['Content-Type'] = f'image/{file_extension}'
+            elif file_extension in ['css', 'js']:
+                headers['Cache-Control'] = 'public, max-age=86400'
+                headers['Content-Type'] = 'text/css' if file_extension == 'css' else 'application/javascript'
+            elif file_extension in ['html']:
+                headers['Cache-Control'] = 'no-cache'
+                headers['Content-Type'] = 'text/html; charset=utf-8'
+                
+            response = await call_next(request)
+            
+            # Добавляем заголовки к ответу
+            for key, value in headers.items():
+                response.headers[key] = value
+                
+            return response
+            
+        return await call_next(request)
+
+app.add_middleware(StaticFilesMiddleware)  # Добавляем наш новый middleware
 
 # WebSocket Manager class
 class ConnectionManager:
@@ -938,7 +980,7 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
             "image_url": main_image.url if main_image else "/static/layout/assets/img/property-placeholder.jpg"
         })
     
-    # Получаем погоду и курс валюты для отображения в шапке
+    # Получаем погоду и курс валюты для отображения in шапке
     weather = None
     currency = None
     try:
@@ -1412,7 +1454,6 @@ async def admin_properties(request: Request, db: Session = Depends(deps.get_db))
         enhanced_properties.append({
             "id": prop.id,
             "title": prop.title or f"Объект #{prop.id}",
-            "description": prop.description,
             "price": prop.price,
             "price_formatted": price_formatted,
             "address": prop.address or "Адрес не указан",
@@ -2341,11 +2382,3 @@ async def reset_settings(request: Request, db: Session = Depends(deps.get_db)):
     except Exception as e:
         print(f"DEBUG: Ошибка при сбросе настроек: {str(e)}")
         return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
-
-if __name__ == "__main__":
-    # Исправляем изображения при старте
-    from fix_images import fix_missing_images
-    fix_missing_images()
-    
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) 

@@ -175,19 +175,19 @@
         <div class="min-h-screen flex flex-col">
             <!-- Верхний блок: Лого, Погода, Валюта -->
             <header class="bg-white shadow-sm">
-                <div class="container mx-auto px-4 py-3">
+                <div class="container mx-auto px-4 py-1">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <img
-                                src="{{ url_for('static', path='layout/assets/img/logo_non.png') }}"
-                                alt="Wazir Logo"
-                                class="h-10">
+                        <div class="flex items-center"
+                            style="box-shadow: 0px 6px 6px 0px rgba(0,0,0,0.21); padding: 0px 13px; border-radius: 8px; border: 1px solid #ccc;">
+                            <p class="font-playfair"
+                                style="font-size: 24px;">WAZIR</p>
                         </div>
                         <div class="flex items-center">
-                            <div class="flex items-center weather-currency">
+                            <div class="flex items-center weather-currency"
+                                style="box-shadow: 0px 6px 6px 0px rgba(0,0,0,0.21); padding: 5px 12px; border-radius: 8px; border: 1px solid #ccc;">
                                 <img src="https://flagcdn.com/w20/us.png"
                                     alt="USD" class="h-5 mr-2">
-                                <span id="currency-rate">Загрузка...</span>
+                                <span id="currency-rate">87.45</span>
                             </div>
                         </div>
                     </div>
@@ -196,8 +196,9 @@
 
             <main class="flex-grow pb-20">
                 <div class="container mx-auto px-4">
-                    <h1 class="text-2xl font-semibold mt-6 mb-4">Создание объявления</h1>
-                    
+                    <h1 class="text-2xl font-semibold mt-6 mb-4">Создание
+                        объявления</h1>
+
                     <form id="create-listing-form">
                         <!-- Загрузка фото -->
                         <div class="form-section shadow-sm">
@@ -205,52 +206,66 @@
                                 Фотографии объекта
                                 <span class="required-indicator">*</span>
                             </div>
-                            <p class="text-gray-500 text-sm mb-4">Добавьте минимум 2 фотографии вашего объекта.</p>
-                            
-                            <div class="photo-upload-area" id="photo-upload-trigger">
-                                <i class="fas fa-camera text-gray-400 text-4xl mb-2"></i>
-                                <p class="text-gray-600">Нажмите, чтобы загрузить фото</p>
-                                <input type="file" id="photo-upload" class="hidden" multiple accept="image/*">
+                            <p class="text-gray-500 text-sm mb-4">Добавьте
+                                минимум 2 фотографии вашего объекта.</p>
+
+                            <div class="photo-upload-area"
+                                id="photo-upload-trigger">
+                                <i
+                                    class="fas fa-camera text-gray-400 text-4xl mb-2"></i>
+                                <p class="text-gray-600">Нажмите, чтобы
+                                    загрузить фото</p>
+                                <input type="file" id="photo-upload"
+                                    class="hidden" multiple accept="image/*">
                             </div>
-                            
-                            <div class="uploaded-photos mt-4" id="uploaded-photos">
+
+                            <div class="uploaded-photos mt-4"
+                                id="uploaded-photos">
                                 <!-- Здесь будут отображаться загруженные фото -->
                             </div>
-                            
-                            <div class="photo-validation-error text-red-500 text-sm mt-2 hidden">
+
+                            <div
+                                class="photo-validation-error text-red-500 text-sm mt-2 hidden">
                                 Пожалуйста, загрузите минимум 2 фотографии
                             </div>
                         </div>
-                        
+
                         <!-- Категория и тип недвижимости -->
                         <div class="form-section shadow-sm">
                             <div class="section-title">
                                 Категория и тип
                                 <span class="required-indicator">*</span>
                             </div>
-                            
+
                             <div class="mb-4">
-                                <label for="category" class="form-label">Категория</label>
+                                <label for="category"
+                                    class="form-label">Категория</label>
                                 <select id="category" class="form-select">
-                                    <option value="">Выберите категорию</option>
+                                    <option value>Выберите категорию</option>
                                     <option value="sale">Продажа</option>
                                     <option value="rent">Аренда</option>
                                 </select>
-                                <div class="category-validation-error text-red-500 text-sm mt-2 hidden">
+                                <div
+                                    class="category-validation-error text-red-500 text-sm mt-2 hidden">
                                     Пожалуйста, выберите категорию
                                 </div>
                             </div>
-                            
+
                             <div>
-                                <label for="property-type" class="form-label">Тип недвижимости</label>
+                                <label for="property-type"
+                                    class="form-label">Тип недвижимости</label>
                                 <select id="property-type" class="form-select">
-                                    <option value="">Выберите тип недвижимости</option>
+                                    <option value>Выберите тип
+                                        недвижимости</option>
                                     <option value="apartment">Квартира</option>
                                     <option value="house">Дом</option>
-                                    <option value="commercial">Коммерческая недвижимость</option>
-                                    <option value="land">Земельный участок</option>
+                                    <option value="commercial">Коммерческая
+                                        недвижимость</option>
+                                    <option value="land">Земельный
+                                        участок</option>
                                 </select>
-                                <div class="property-type-validation-error text-red-500 text-sm mt-2 hidden">
+                                <div
+                                    class="property-type-validation-error text-red-500 text-sm mt-2 hidden">
                                     Пожалуйста, выберите тип недвижимости
                                 </div>
                             </div>
@@ -262,218 +277,299 @@
                                 Адрес
                                 <span class="required-indicator">*</span>
                             </div>
-                            
+
                             <div class="mb-4">
-                                <label for="city" class="form-label">Город</label>
+                                <label for="city"
+                                    class="form-label">Город</label>
                                 <select id="city" class="form-select">
-                                    <option value="">Выберите город</option>
+                                    <option value>Выберите город</option>
                                     <option value="bishkek">Бишкек</option>
                                     <option value="osh">Ош</option>
-                                    <option value="jalal-abad">Жалал-Абад</option>
+                                    <option
+                                        value="jalal-abad">Жалал-Абад</option>
                                     <option value="karakol">Каракол</option>
                                     <option value="tokmok">Токмок</option>
                                 </select>
-                                <div class="city-validation-error text-red-500 text-sm mt-2 hidden">
+                                <div
+                                    class="city-validation-error text-red-500 text-sm mt-2 hidden">
                                     Пожалуйста, выберите город
                                 </div>
                             </div>
-                            
+
                             <div class="mb-4">
-                                <label for="street" class="form-label">Улица</label>
-                                <input type="text" id="street" class="form-input" placeholder="Введите название улицы">
-                                <div class="street-validation-error text-red-500 text-sm mt-2 hidden">
+                                <label for="street"
+                                    class="form-label">Улица</label>
+                                <input type="text" id="street"
+                                    class="form-input"
+                                    placeholder="Введите название улицы">
+                                <div
+                                    class="street-validation-error text-red-500 text-sm mt-2 hidden">
                                     Пожалуйста, укажите улицу
                                 </div>
                             </div>
-                            
+
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="mb-4">
-                                    <label for="house-number" class="form-label">Номер дома</label>
-                                    <input type="text" id="house-number" class="form-input" placeholder="Номер дома">
-                                    <div class="house-number-validation-error text-red-500 text-sm mt-2 hidden">
+                                    <label for="house-number"
+                                        class="form-label">Номер дома</label>
+                                    <input type="text" id="house-number"
+                                        class="form-input"
+                                        placeholder="Номер дома">
+                                    <div
+                                        class="house-number-validation-error text-red-500 text-sm mt-2 hidden">
                                         Пожалуйста, укажите номер дома
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-4">
-                                    <label for="apartment-number" class="form-label">Номер квартиры (при наличии)</label>
-                                    <input type="text" id="apartment-number" class="form-input" placeholder="Номер квартиры">
+                                    <label for="apartment-number"
+                                        class="form-label">Номер квартиры (при
+                                        наличии)</label>
+                                    <input type="text" id="apartment-number"
+                                        class="form-input"
+                                        placeholder="Номер квартиры">
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Параметры помещения -->
                         <div class="form-section shadow-sm">
                             <div class="section-title">
                                 Параметры помещения
                                 <span class="required-indicator">*</span>
                             </div>
-                            
+
                             <div id="apartment-params">
                                 <div class="mb-4">
-                                    <label class="form-label">Количество комнат</label>
+                                    <label class="form-label">Количество
+                                        комнат</label>
                                     <div class="flex space-x-2 mt-2">
-                                        <button type="button" class="room-btn" data-rooms="1">1</button>
-                                        <button type="button" class="room-btn" data-rooms="2">2</button>
-                                        <button type="button" class="room-btn" data-rooms="3">3</button>
-                                        <button type="button" class="room-btn" data-rooms="4">4</button>
-                                        <button type="button" class="room-btn" data-rooms="5+">5+</button>
+                                        <button type="button" class="room-btn"
+                                            data-rooms="1">1</button>
+                                        <button type="button" class="room-btn"
+                                            data-rooms="2">2</button>
+                                        <button type="button" class="room-btn"
+                                            data-rooms="3">3</button>
+                                        <button type="button" class="room-btn"
+                                            data-rooms="4">4</button>
+                                        <button type="button" class="room-btn"
+                                            data-rooms="5+">5+</button>
                                     </div>
-                                    <div class="rooms-validation-error text-red-500 text-sm mt-2 hidden">
+                                    <div
+                                        class="rooms-validation-error text-red-500 text-sm mt-2 hidden">
                                         Пожалуйста, выберите количество комнат
                                     </div>
                                 </div>
-                                
+
                                 <div class="grid grid-cols-2 gap-4">
                                     <div class="mb-4">
-                                        <label for="area" class="form-label">Площадь, м²</label>
-                                        <input type="number" id="area" class="form-input" placeholder="Площадь">
-                                        <div class="area-validation-error text-red-500 text-sm mt-2 hidden">
+                                        <label for="area"
+                                            class="form-label">Площадь,
+                                            м²</label>
+                                        <input type="number" id="area"
+                                            class="form-input"
+                                            placeholder="Площадь">
+                                        <div
+                                            class="area-validation-error text-red-500 text-sm mt-2 hidden">
                                             Пожалуйста, укажите площадь
                                         </div>
                                     </div>
-                                    
+
                                     <div class="mb-4">
-                                        <label for="floor" class="form-label">Этаж</label>
-                                        <input type="number" id="floor" class="form-input" placeholder="Этаж">
-                                        <div class="floor-validation-error text-red-500 text-sm mt-2 hidden">
+                                        <label for="floor"
+                                            class="form-label">Этаж</label>
+                                        <input type="number" id="floor"
+                                            class="form-input"
+                                            placeholder="Этаж">
+                                        <div
+                                            class="floor-validation-error text-red-500 text-sm mt-2 hidden">
                                             Пожалуйста, укажите этаж
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-4">
-                                    <label for="total-floors" class="form-label">Всего этажей в доме</label>
-                                    <input type="number" id="total-floors" class="form-input" placeholder="Всего этажей">
-                                    <div class="total-floors-validation-error text-red-500 text-sm mt-2 hidden">
-                                        Пожалуйста, укажите общее количество этажей
+                                    <label for="total-floors"
+                                        class="form-label">Всего этажей в
+                                        доме</label>
+                                    <input type="number" id="total-floors"
+                                        class="form-input"
+                                        placeholder="Всего этажей">
+                                    <div
+                                        class="total-floors-validation-error text-red-500 text-sm mt-2 hidden">
+                                        Пожалуйста, укажите общее количество
+                                        этажей
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Цена -->
                         <div class="form-section shadow-sm">
                             <div class="section-title">
                                 Цена
                                 <span class="required-indicator">*</span>
                             </div>
-                            
+
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="mb-4">
-                                    <label for="price" class="form-label">Стоимость</label>
-                                    <input type="number" id="price" class="form-input" placeholder="Стоимость">
-                                    <div class="price-validation-error text-red-500 text-sm mt-2 hidden">
+                                    <label for="price"
+                                        class="form-label">Стоимость</label>
+                                    <input type="number" id="price"
+                                        class="form-input"
+                                        placeholder="Стоимость">
+                                    <div
+                                        class="price-validation-error text-red-500 text-sm mt-2 hidden">
                                         Пожалуйста, укажите стоимость
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-4">
-                                    <label for="currency" class="form-label">Валюта</label>
+                                    <label for="currency"
+                                        class="form-label">Валюта</label>
                                     <select id="currency" class="form-select">
                                         <option value="KGS">Сом (KGS)</option>
-                                        <option value="USD">Доллар (USD)</option>
+                                        <option value="USD">Доллар
+                                            (USD)</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Общая информация -->
                         <div class="form-section shadow-sm">
                             <div class="section-title">
                                 Общая информация
                             </div>
-                            
+
                             <div class="mb-4">
-                                <label for="title" class="form-label">Заголовок объявления</label>
-                                <input type="text" id="title" class="form-input" placeholder="Например: Просторная квартира в центре города">
-                                <div class="title-validation-error text-red-500 text-sm mt-2 hidden">
+                                <label for="title" class="form-label">Заголовок
+                                    объявления</label>
+                                <input type="text" id="title" class="form-input"
+                                    placeholder="Например: Просторная квартира в центре города">
+                                <div
+                                    class="title-validation-error text-red-500 text-sm mt-2 hidden">
                                     Пожалуйста, укажите заголовок
                                 </div>
                             </div>
-                            
+
                             <div class="mb-4">
                                 <label class="form-label">Удобства</label>
                                 <div class="grid grid-cols-2 gap-2 mt-2">
                                     <div class="checkbox-container">
-                                        <input type="checkbox" id="furniture" class="form-checkbox">
-                                        <label for="furniture" class="text-gray-700">Мебель</label>
+                                        <input type="checkbox" id="furniture"
+                                            class="form-checkbox">
+                                        <label for="furniture"
+                                            class="text-gray-700">Мебель</label>
                                     </div>
                                     <div class="checkbox-container">
-                                        <input type="checkbox" id="refrigerator" class="form-checkbox">
-                                        <label for="refrigerator" class="text-gray-700">Холодильник</label>
+                                        <input type="checkbox" id="refrigerator"
+                                            class="form-checkbox">
+                                        <label for="refrigerator"
+                                            class="text-gray-700">Холодильник</label>
                                     </div>
                                     <div class="checkbox-container">
-                                        <input type="checkbox" id="washing-machine" class="form-checkbox">
-                                        <label for="washing-machine" class="text-gray-700">Стиральная машина</label>
+                                        <input type="checkbox"
+                                            id="washing-machine"
+                                            class="form-checkbox">
+                                        <label for="washing-machine"
+                                            class="text-gray-700">Стиральная
+                                            машина</label>
                                     </div>
                                     <div class="checkbox-container">
-                                        <input type="checkbox" id="internet" class="form-checkbox">
-                                        <label for="internet" class="text-gray-700">Интернет</label>
+                                        <input type="checkbox" id="internet"
+                                            class="form-checkbox">
+                                        <label for="internet"
+                                            class="text-gray-700">Интернет</label>
                                     </div>
                                     <div class="checkbox-container">
-                                        <input type="checkbox" id="air-conditioner" class="form-checkbox">
-                                        <label for="air-conditioner" class="text-gray-700">Кондиционер</label>
+                                        <input type="checkbox"
+                                            id="air-conditioner"
+                                            class="form-checkbox">
+                                        <label for="air-conditioner"
+                                            class="text-gray-700">Кондиционер</label>
                                     </div>
                                     <div class="checkbox-container">
-                                        <input type="checkbox" id="tv" class="form-checkbox">
-                                        <label for="tv" class="text-gray-700">Телевизор</label>
+                                        <input type="checkbox" id="tv"
+                                            class="form-checkbox">
+                                        <label for="tv"
+                                            class="text-gray-700">Телевизор</label>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Описание -->
                         <div class="form-section shadow-sm">
                             <div class="section-title">
                                 Описание
                                 <span class="required-indicator">*</span>
                             </div>
-                            
+
                             <div class="mb-4">
-                                <textarea id="description" class="form-textarea" placeholder="Опишите ваш объект подробнее. Укажите преимущества, состояние, удаленность от транспорта и другую важную информацию."></textarea>
-                                <div class="flex justify-between items-center mt-2">
-                                    <div class="description-validation-error text-red-500 text-sm hidden">
-                                        Пожалуйста, добавьте описание (минимум 50 символов)
+                                <textarea id="description" class="form-textarea"
+                                    placeholder="Опишите ваш объект подробнее. Укажите преимущества, состояние, удаленность от транспорта и другую важную информацию."></textarea>
+                                <div
+                                    class="flex justify-between items-center mt-2">
+                                    <div
+                                        class="description-validation-error text-red-500 text-sm hidden">
+                                        Пожалуйста, добавьте описание (минимум
+                                        50 символов)
                                     </div>
-                                    <div class="char-counter" id="description-counter">0/2000</div>
+                                    <div class="char-counter"
+                                        id="description-counter">0/2000</div>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Запрос съемки 360 -->
                         <div class="form-section shadow-sm">
                             <div class="section-title">
                                 Запрос съемки 360° тура
                             </div>
-                            
+
                             <div class="checkbox-container">
-                                <input type="checkbox" id="request-360" class="form-checkbox">
-                                <label for="request-360" class="text-gray-700">Заказать съемку 360° тура для моего объекта</label>
+                                <input type="checkbox" id="request-360"
+                                    class="form-checkbox">
+                                <label for="request-360"
+                                    class="text-gray-700">Заказать съемку 360°
+                                    тура для моего объекта</label>
                             </div>
-                            
+
                             <div class="warning-block mt-3">
-                                <p>Заказывая съемку 360° тура, вы соглашаетесь на выезд нашего специалиста по адресу объекта. После публикации объявления, наш менеджер свяжется с вами для уточнения деталей.</p>
+                                <p>Заказывая съемку 360° тура, вы соглашаетесь
+                                    на выезд нашего специалиста по адресу
+                                    объекта. После публикации объявления, наш
+                                    менеджер свяжется с вами для уточнения
+                                    деталей.</p>
                             </div>
                         </div>
-                        
+
                         <!-- Контактная информация -->
                         <div class="form-section shadow-sm">
                             <div class="section-title">
                                 Контактная информация
                             </div>
-                            
+
                             <div class="mb-4">
-                                <label for="contact-name" class="form-label">ФИО</label>
-                                <input type="text" id="contact-name" class="form-input" value="{{ user.full_name if user.full_name else '' }}" readonly>
+                                <label for="contact-name"
+                                    class="form-label">ФИО</label>
+                                <input type="text" id="contact-name"
+                                    class="form-input"
+                                    value="{{ user.full_name if user.full_name else '' }}"
+                                    readonly>
                             </div>
-                            
+
                             <div class="mb-4">
-                                <label for="contact-phone" class="form-label">Телефон</label>
-                                <input type="text" id="contact-phone" class="form-input" value="{{ user.phone if user.phone else '' }}" readonly>
+                                <label for="contact-phone"
+                                    class="form-label">Телефон</label>
+                                <input type="text" id="contact-phone"
+                                    class="form-input"
+                                    value="{{ user.phone if user.phone else '' }}"
+                                    readonly>
                             </div>
                         </div>
-                        
+
                         <!-- Кнопка отправки -->
                         <button type="submit" id="publish-button"
                             class="btn-primary w-full py-4 rounded-lg text-lg font-medium mb-16">
@@ -513,7 +609,10 @@
                             height="24" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="1.75"
                             stroke-linecap="round" stroke-linejoin="round"
-                            class="nav-icons"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                            class="nav-icons"><circle cx="12" cy="12"
+                                r="10"></circle><line x1="12" y1="8" x2="12"
+                                y2="16"></line><line x1="8" y1="12" x2="16"
+                                y2="12"></line></svg>
                     </a>
                     <a href="{{ url_for('chats') }}"
                         class="nav-item text-gray-500">

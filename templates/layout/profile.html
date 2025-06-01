@@ -200,21 +200,20 @@
     </head>
     <body class="bg-gray-100 font-sans">
         <div class="min-h-screen flex flex-col">
-            <!-- Верхний блок: Лого, Погода, Валюта -->
             <header class="bg-white shadow-sm">
-                <div class="container mx-auto px-4 py-3">
+                <div class="container mx-auto px-4 py-1">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <img
-                                src="{{ url_for('static', path='layout/assets/img/logo_non.png') }}"
-                                alt="Wazir Logo"
-                                class="h-10">
+                        <div class="flex items-center"
+                            style="box-shadow: 0px 6px 6px 0px rgba(0,0,0,0.21); padding: 0px 13px; border-radius: 8px; border: 1px solid #ccc;">
+                            <p class="font-playfair"
+                                style="font-size: 24px;">WAZIR</p>
                         </div>
-                        <div class="flex items-center space-x-6">
-                            <div class="flex items-center weather-currency">
+                        <div class="flex items-center">
+                            <div class="flex items-center weather-currency"
+                                style="box-shadow: 0px 6px 6px 0px rgba(0,0,0,0.21); padding: 5px 12px; border-radius: 8px; border: 1px solid #ccc;">
                                 <img src="https://flagcdn.com/w20/us.png"
                                     alt="USD" class="h-5 mr-2">
-                                <span id="currency-rate">Загрузка...</span>
+                                <span id="currency-rate">87.45</span>
                             </div>
                         </div>
                     </div>
@@ -227,7 +226,8 @@
                 <div class="profile-section flex items-center">
                     <div class="profile-avatar mr-4">
                         {% if user.avatar_url %}
-                        <img src="{{ user.avatar_url }}" alt="Аватар пользователя">
+                        <img src="{{ user.avatar_url }}"
+                            alt="Аватар пользователя">
                         {% else %}
                         <i class="far fa-user"></i>
                         {% endif %}
@@ -244,7 +244,8 @@
                     <div class="flex justify-between items-center mb-3">
                         <div>
                             <div class="profile-label">ID пользователя</div>
-                            <div class="profile-value"><span id="user-id">{{ user.id }}</span></div>
+                            <div class="profile-value"><span id="user-id">{{
+                                    user.id }}</span></div>
                         </div>
                         <div>
                             <button onclick="copyUserId()"
@@ -289,93 +290,126 @@
                 <!-- Содержимое табов -->
                 <div id="listings" class="tab-content active">
                     {% if user_listings %}
-                        <div class="user-listings">
-                            {% for listing in user_listings %}
-                            <a href="{{ url_for('property', property_id=listing.id) }}" class="property-card bg-white rounded-lg shadow-sm mb-4 block hover:shadow-md transition-shadow no-underline">
-                                <div class="grid grid-cols-3 gap-3">
-                                    <div class="col-span-1">
-                                        {% if listing.image_url %}
-                                            <img src="{{ listing.image_url }}" alt="{{ listing.title }}"
-                                                class="w-full h-full object-cover rounded-l-lg listing-image">
-                                        {% else %}
-                                            <!-- Заглушка, если нет изображения -->
-                                            <div class="w-full h-full bg-gray-200 flex items-center justify-center rounded-l-lg image-placeholder">
-                                                <i class="fas fa-image text-gray-400 text-3xl"></i>
-                                            </div>
-                                        {% endif %}
+                    <div class="user-listings">
+                        {% for listing in user_listings %}
+                        <a
+                            href="{{ url_for('property', property_id=listing.id) }}"
+                            class="property-card bg-white rounded-lg shadow-sm mb-4 block hover:shadow-md transition-shadow no-underline">
+                            <div class="grid grid-cols-3 gap-3">
+                                <div class="col-span-1">
+                                    {% if listing.image_url %}
+                                    <img src="{{ listing.image_url }}"
+                                        alt="{{ listing.title }}"
+                                        class="w-full h-full object-cover rounded-l-lg listing-image">
+                                    {% else %}
+                                    <!-- Заглушка, если нет изображения -->
+                                    <div
+                                        class="w-full h-full bg-gray-200 flex items-center justify-center rounded-l-lg image-placeholder">
+                                        <i
+                                            class="fas fa-image text-gray-400 text-3xl"></i>
                                     </div>
-                                    <div class="col-span-2 p-3">
-                                        <div class="flex justify-between items-start">
-                                            <div class="text-base font-semibold text-gray-900 mb-1">{{ '{:,}'.format(listing.price).replace(',', ' ') }} KGZ</div>
-                                            <div class="status-badge {% if listing.status == 'active' %}bg-green-100 text-green-800{% elif listing.status == 'rejected' %}bg-red-100 text-red-800{% else %}property-status-pending{% endif %}">
-                                                {% if listing.status == 'active' %}
-                                                    Опубликовано
-                                                {% elif listing.status == 'rejected' %}
-                                                    Отклонено
-                                                {% elif listing.status == 'processing' %}
-                                                    Съемка 360
-                                                {% else %}
-                                                    На модерации
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                        <div class="text-sm text-gray-600 mb-1">{{ listing.description }}</div>
-<div class="property-address">{{ listing.address|replace("bishkek", "Бишкек")|replace(", bishkek", "") }}</div>
-                                        {% if listing.notes %}
-                                        <div class="text-sm text-green-600 font-medium mt-1">
-                                            <i class="fas fa-calendar-check mr-1"></i> Дата съемки 360: {{ listing.notes }}
-                                        </div>
-                                        {% endif %}
-                                    </div>
+                                    {% endif %}
                                 </div>
-                            </a>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="far fa-list-alt"></i>
+                                <div class="col-span-2 p-3">
+                                    <div
+                                        class="flex justify-between items-start">
+                                        <div
+                                            class="text-base font-semibold text-gray-900 mb-1">{{
+                                            '{:,}'.format(listing.price).replace(',',
+                                            ' ') }} KGZ</div>
+                                        <div
+                                            class="status-badge {% if listing.status == 'active' %}bg-green-100 text-green-800{% elif listing.status == 'rejected' %}bg-red-100 text-red-800{% else %}property-status-pending{% endif %}">
+                                            {% if listing.status == 'active' %}
+                                            Опубликовано
+                                            {% elif listing.status == 'rejected'
+                                            %}
+                                            Отклонено
+                                            {% elif listing.status ==
+                                            'processing' %}
+                                            Съемка 360
+                                            {% else %}
+                                            На модерации
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="text-sm text-gray-600 mb-1">{{
+                                        listing.description }}</div>
+                                    <div class="property-address">{{
+                                        listing.address|replace("bishkek",
+                                        "Бишкек")|replace(", bishkek", "")
+                                        }}</div>
+                                    {% if listing.notes %}
+                                    <div
+                                        class="text-sm text-green-600 font-medium mt-1">
+                                        <i
+                                            class="fas fa-calendar-check mr-1"></i>
+                                        Дата съемки 360: {{ listing.notes }}
+                                    </div>
+                                    {% endif %}
+                                </div>
                             </div>
-                            <div>У вас пока нет объявлений</div>
-                            <div class="mt-2 text-sm">Нажмите "+" чтобы создать новое</div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="far fa-list-alt"></i>
                         </div>
+                        <div>У вас пока нет объявлений</div>
+                        <div class="mt-2 text-sm">Нажмите "+" чтобы создать
+                            новое</div>
+                    </div>
                     {% endif %}
                 </div>
 
                 <div id="saved" class="tab-content">
                     {% if saved_listings %}
-                        <div class="saved-listings">
-                            {% for listing in saved_listings %}
-                            <a href="{{ url_for('property', property_id=listing.id) }}" class="property-card bg-white rounded-lg shadow-sm mb-4 block hover:shadow-md transition-shadow no-underline">
-                                <div class="grid grid-cols-3 gap-3">
-                                    <div class="col-span-1">
-                                        {% if listing.image_url %}
-                                            <img src="{{ listing.image_url }}" alt="{{ listing.title }}"
-                                                class="w-full h-full object-cover rounded-l-lg listing-image">
-                                        {% else %}
-                                            <!-- Заглушка, если нет изображения -->
-                                            <div class="w-full h-full bg-gray-200 flex items-center justify-center rounded-l-lg image-placeholder">
-                                                <i class="fas fa-image text-gray-400 text-3xl"></i>
-                                            </div>
-                                        {% endif %}
+                    <div class="saved-listings">
+                        {% for listing in saved_listings %}
+                        <a
+                            href="{{ url_for('property', property_id=listing.id) }}"
+                            class="property-card bg-white rounded-lg shadow-sm mb-4 block hover:shadow-md transition-shadow no-underline">
+                            <div class="grid grid-cols-3 gap-3">
+                                <div class="col-span-1">
+                                    {% if listing.image_url %}
+                                    <img src="{{ listing.image_url }}"
+                                        alt="{{ listing.title }}"
+                                        class="w-full h-full object-cover rounded-l-lg listing-image">
+                                    {% else %}
+                                    <!-- Заглушка, если нет изображения -->
+                                    <div
+                                        class="w-full h-full bg-gray-200 flex items-center justify-center rounded-l-lg image-placeholder">
+                                        <i
+                                            class="fas fa-image text-gray-400 text-3xl"></i>
                                     </div>
-                                    <div class="col-span-2 p-3">
-                                        <div class="text-base font-semibold text-gray-900 mb-1">{{ '{:,}'.format(listing.price).replace(',', ' ') }} KGZ</div>
-                                        <div class="text-sm text-gray-600 mb-1">{{ listing.description }}</div>
-                                        <div class="property-address">{{ listing.address|replace('bishkek', 'Бишкек')|replace(', bishkek', '') }}</div>
-                                    </div>
+                                    {% endif %}
                                 </div>
-                            </a>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="far fa-bookmark"></i>
+                                <div class="col-span-2 p-3">
+                                    <div
+                                        class="text-base font-semibold text-gray-900 mb-1">{{
+                                        '{:,}'.format(listing.price).replace(',',
+                                        ' ') }} KGZ</div>
+                                    <div class="text-sm text-gray-600 mb-1">{{
+                                        listing.description }}</div>
+                                    <div class="property-address">{{
+                                        listing.address|replace('bishkek',
+                                        'Бишкек')|replace(', bishkek', '')
+                                        }}</div>
+                                </div>
                             </div>
-                            <div>У вас пока нет сохраненных объявлений</div>
-                            <div class="mt-2 text-sm">Сохраняйте понравившиеся объявления</div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="far fa-bookmark"></i>
                         </div>
+                        <div>У вас пока нет сохраненных объявлений</div>
+                        <div class="mt-2 text-sm">Сохраняйте понравившиеся
+                            объявления</div>
+                    </div>
                     {% endif %}
                 </div>
 
@@ -418,7 +452,7 @@
                             class="nav-icons"><path
                                 d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                     </a>
-                    <a href="{{ url_for('support') }}" 
+                    <a href="{{ url_for('support') }}"
                         class="nav-item text-gray-500">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24"
                             height="24" viewBox="0 0 24 24" fill="none"
@@ -443,7 +477,8 @@
             </nav>
         </div>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script src="{{ url_for('static', path='layout/assets/js/weather-currency-cache.js') }}"></script>
+        <script
+            src="{{ url_for('static', path='layout/assets/js/weather-currency-cache.js') }}"></script>
         <script>
             // Функция для копирования ID пользователя в буфер обмена
             function copyUserId() {

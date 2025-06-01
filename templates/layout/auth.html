@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,19 +20,16 @@
         <div
             class="min-h-screen flex flex-col items-center justify-center px-4 fade-in">
             <div class="w-full max-w-md">
-                <div class="text-center mb-8">
-                    <div class="flex justify-center mb-4">
+                <div class="text-center mb-8 mt-4"> <div
+                        class="flex justify-center mb-4">
                         <img
-                            src="{{ url_for('static', path='layout/assets/img/logo.png') }}"
-                            alt="Wazir Logo"
-                            style="width: 120px;">
+                            style="box-shadow: 0px 0px 25px 3px rgba(0,0,0,0.22); border-radius: 35%; max-width: 100px; max-height: 120px; height: 100px; width: 120px;"
+                            src="https://wazir.kg/static/logo.png"
+                            alt="Wazir Logo">
                     </div>
                     <h1
-                        class="text-2xl font-semibold text-gray-700 mb-2 font-playfair">Войдите
+                        class="text-2xl font-semibold text-gray-700 mb-2 font-montserrat">Войдите
                         с Wazir ID</h1>
-                    <h2
-                        class="text-xl font-medium text-gray-600 font-playfair">Wazir
-                        Недвижимость</h2>
                 </div>
 
                 <div class="bg-white rounded-lg shadow-sm p-6 mb-4">
@@ -49,7 +46,8 @@
                     </div>
 
                     <form id="login-form">
-                        <input type="hidden" name="contact_type" id="contact-type-input">
+                        <input type="hidden" name="contact_type"
+                            id="contact-type-input">
                         <div class="mb-5">
                             <label for="user-id"
                                 class="block text-sm font-medium text-gray-500 mb-1 font-montserrat">
@@ -83,7 +81,7 @@
                         <div id="error-message"
                             class="hidden mb-4 text-sm text-red-500 font-montserrat"></div>
 
-                        <div class="flex justify-end mb-6">
+                        <div class="flex justify-center mb-3">
                             <a href="{{ url_for('mobile_reset') }}"
                                 class="text-sm text-gray-500 hover:text-gray-700 font-montserrat">Не
                                 помню пароль</a>
@@ -266,9 +264,13 @@
                         $submitBtn.html('Войти');
                         $submitBtn.prop('disabled', false);
                     }
-                });
-            });
+                });            });
         });
     </script>
+
+        <div class="text-center mt-4 mb-4">
+            <p class="text-sm text-gray-500 font-montserrat">Проект MTT.Inc
+                (c)</p>
+        </div>
     </body>
 </html>

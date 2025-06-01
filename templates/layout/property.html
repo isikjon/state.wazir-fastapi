@@ -13,7 +13,8 @@
         <link
             href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
             rel="stylesheet">
-        <link rel="stylesheet" href="{{ url_for('static', path='layout/assets/scss/main.css') }}">
+        <link rel="stylesheet"
+            href="{{ url_for('static', path='layout/assets/scss/main.css') }}">
         <link rel="stylesheet"
             href="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.css" />
         <style>
@@ -319,19 +320,19 @@
         <div class="min-h-screen flex flex-col">
             <!-- Верхний блок: Лого, Погода, Валюта -->
             <header class="bg-white shadow-sm">
-                <div class="container mx-auto px-4 py-3">
+                <div class="container mx-auto px-4 py-1">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <img
-                                src="{{ url_for('static', path='layout/assets/img/logo_non.png') }}"
-                                alt="Wazir Logo"
-                                class="h-10">
+                        <div class="flex items-center"
+                            style="box-shadow: 0px 6px 6px 0px rgba(0,0,0,0.21); padding: 0px 13px; border-radius: 8px; border: 1px solid #ccc;">
+                            <p class="font-playfair"
+                                style="font-size: 24px;">WAZIR</p>
                         </div>
                         <div class="flex items-center">
-                            <div class="flex items-center weather-currency">
+                            <div class="flex items-center weather-currency"
+                                style="box-shadow: 0px 6px 6px 0px rgba(0,0,0,0.21); padding: 5px 12px; border-radius: 8px; border: 1px solid #ccc;">
                                 <img src="https://flagcdn.com/w20/us.png"
                                     alt="USD" class="h-5 mr-2">
-                                <span id="currency-rate">Загрузка...</span>
+                                <span id="currency-rate">87.45</span>
                             </div>
                         </div>
                     </div>
@@ -339,20 +340,25 @@
             </header>
 
             <main class="flex-grow pb-20">
+                <div class="ads">
+                    <img src="https://wazir.kg/static/reklama.png" alt="wazir">
+                </div>
                 <!-- Слайдер изображений -->
                 <div class="property-slider">
                     <div class="swiper main-swiper">
                         <div class="swiper-wrapper">
                             {% if property.images %}
-                                {% for image in property.images %}
-                                <div class="swiper-slide">
-                                    <img src="{{ image.url }}" alt="Фото объекта">
-                                </div>
-                                {% endfor %}
+                            {% for image in property.images %}
+                            <div class="swiper-slide">
+                                <img src="{{ image.url }}" alt="Фото объекта">
+                            </div>
+                            {% endfor %}
                             {% else %}
-                                <div class="swiper-slide">
-                                    <img src="{{ url_for('static', path='layout/assets/img/property-placeholder.jpg') }}" alt="Фото отсутствует">
-                                </div>
+                            <div class="swiper-slide">
+                                <img
+                                    src="{{ url_for('static', path='layout/assets/img/property-placeholder.jpg') }}"
+                                    alt="Фото отсутствует">
+                            </div>
                             {% endif %}
                         </div>
                         <div
@@ -365,32 +371,46 @@
                     <div class="container mx-auto px-4">
                         <div class="thumbnails-container">
                             {% if property.images %}
-                                {% for image in property.images %}
-                                <div class="thumbnail {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
-                                    <img src="{{ image.url }}" alt="Миниатюра">
-                                </div>
-                                {% endfor %}
+                            {% for image in property.images %}
+                            <div
+                                class="thumbnail {% if loop.first %}active{% endif %}"
+                                data-index="{{ loop.index0 }}">
+                                <img src="{{ image.url }}" alt="Миниатюра">
+                            </div>
+                            {% endfor %}
                             {% else %}
-                                <div class="thumbnail active" data-index="0">
-                                    <img src="{{ url_for('static', path='layout/assets/img/property-placeholder.jpg') }}" alt="Миниатюра">
-                                </div>
+                            <div class="thumbnail active" data-index="0">
+                                <img
+                                    src="{{ url_for('static', path='layout/assets/img/property-placeholder.jpg') }}"
+                                    alt="Миниатюра">
+                            </div>
                             {% endif %}
                         </div>
 
                         <!-- Кнопки действий -->
-                        <div class="action-buttons flex justify-between mt-4 mb-6" style="gap: 12px;">
-                            <button class="btn favorite-btn {% if property.is_favorite %}active{% endif %}" id="favorite-btn" data-property-id="{{ property.id }}">
-                                <i class="{% if property.is_favorite %}fas{% else %}far{% endif %} fa-heart mr-1"></i> 
-                                <span id="favorite-text">{% if property.is_favorite %}В избранном{% else %}В избранное{% endif %}</span>
+                        <div
+                            class="action-buttons flex justify-between mt-4 mb-6"
+                            style="gap: 12px;">
+                            <button
+                                class="btn favorite-btn {% if property.is_favorite %}active{% endif %}"
+                                id="favorite-btn"
+                                data-property-id="{{ property.id }}">
+                                <i
+                                    class="{% if property.is_favorite %}fas{% else %}far{% endif %} fa-heart mr-1"></i>
+                                <span id="favorite-text">{% if
+                                    property.is_favorite %}В избранном{% else
+                                    %}В избранное{% endif %}</span>
                             </button>
                             <!-- Показываем кнопку с разными стилями в зависимости от наличия панорамы -->
                             {% if property.tour_360_url %}
                             <button class="btn" id="view-360-btn">
-                                <i class="fas fa-vr-cardboard mr-1"></i> 360° Просмотр
+                                <i class="fas fa-vr-cardboard mr-1"></i> 360°
+                                Просмотр
                             </button>
                             {% else %}
                             <button class="btn tour-360-disabled" disabled>
-                                <i class="fas fa-vr-cardboard mr-1"></i> 360° Недоступно
+                                <i class="fas fa-vr-cardboard mr-1"></i> 360°
+                                Недоступно
                             </button>
                             {% endif %}
                         </div>
@@ -400,34 +420,40 @@
                         <!-- Информация об объявлении -->
                         <div class="property-header mb-4">
                             <div class="property-id">#{{ property.id }}</div>
-                            <h1 class="text-2xl font-semibold text-gray-900 mt-1">
+                            <h1
+                                class="text-2xl font-semibold text-gray-900 mt-1">
                                 {{ property.title }}
                             </h1>
                             <div class="property-price mt-2">
-                                {{ '{:,.0f}'.format(property.price) }} <span class="text-gray-600">KGZ</span>
+                                {{ '{:,.0f}'.format(property.price) }} <span
+                                    class="text-gray-600">KGZ</span>
                             </div>
 
                             <!-- Дата съемки 360 (только для владельца) -->
                             {% if property.is_owner and property.notes %}
                             <div class="mt-2 text-green-600">
-                                <i class="fas fa-calendar-check mr-1"></i> Дата съемки 360: {{ property.notes }}
+                                <i class="fas fa-calendar-check mr-1"></i> Дата
+                                съемки 360: {{ property.notes }}
                             </div>
                             {% endif %}
 
                             <div class="property-specs">
                                 {% if property.rooms %}
                                 <div class="property-spec">
-                                    <i class="fas fa-door-open mr-1"></i> {{ property.rooms }} комн.
+                                    <i class="fas fa-door-open mr-1"></i> {{
+                                    property.rooms }} комн.
                                 </div>
                                 {% endif %}
                                 {% if property.area %}
                                 <div class="property-spec">
-                                    <i class="fas fa-vector-square mr-1"></i> {{ property.area }} м²
+                                    <i class="fas fa-vector-square mr-1"></i> {{
+                                    property.area }} м²
                                 </div>
                                 {% endif %}
                                 {% if property.floor %}
                                 <div class="property-spec">
-                                    <i class="fas fa-building mr-1"></i> {{ property.floor }} этаж
+                                    <i class="fas fa-building mr-1"></i> {{
+                                    property.floor }} этаж
                                 </div>
                                 {% endif %}
                             </div>
@@ -451,56 +477,61 @@
                             <div class="info-grid">
                                 {% if property.type %}
                                 <div class="info-item">
-                                    <i class="fas fa-home"></i> 
+                                    <i class="fas fa-home"></i>
                                     <span>{{ property.type|capitalize }}</span>
                                 </div>
                                 {% endif %}
                                 {% if property.rooms %}
                                 <div class="info-item">
-                                    <i class="fas fa-door-open"></i> 
+                                    <i class="fas fa-door-open"></i>
                                     <span>{{ property.rooms }} комнат</span>
                                 </div>
                                 {% endif %}
                                 {% if property.area %}
                                 <div class="info-item">
-                                    <i class="fas fa-vector-square"></i> 
+                                    <i class="fas fa-vector-square"></i>
                                     <span>{{ property.area }} м²</span>
                                 </div>
                                 {% endif %}
                                 {% if property.floor %}
                                 <div class="info-item">
-                                    <i class="fas fa-level-up-alt"></i> 
+                                    <i class="fas fa-level-up-alt"></i>
                                     <span>{{ property.floor }} этаж</span>
                                 </div>
                                 {% endif %}
                                 {% if property.building_floors %}
                                 <div class="info-item">
-                                    <i class="fas fa-building"></i> 
-                                    <span>Этажность: {{ property.building_floors }}</span>
+                                    <i class="fas fa-building"></i>
+                                    <span>Этажность: {{ property.building_floors
+                                        }}</span>
                                 </div>
                                 {% endif %}
                                 {% if property.has_balcony is defined %}
                                 <div class="info-item">
-                                    <i class="fas fa-border-all"></i> 
-                                    <span>Балкон: {% if property.has_balcony %}Есть{% else %}Нет{% endif %}</span>
+                                    <i class="fas fa-border-all"></i>
+                                    <span>Балкон: {% if property.has_balcony
+                                        %}Есть{% else %}Нет{% endif %}</span>
                                 </div>
                                 {% endif %}
                                 {% if property.has_furniture is defined %}
                                 <div class="info-item">
-                                    <i class="fas fa-couch"></i> 
-                                    <span>Мебель: {% if property.has_furniture %}Есть{% else %}Нет{% endif %}</span>
+                                    <i class="fas fa-couch"></i>
+                                    <span>Мебель: {% if property.has_furniture
+                                        %}Есть{% else %}Нет{% endif %}</span>
                                 </div>
                                 {% endif %}
                                 {% if property.has_renovation is defined %}
                                 <div class="info-item">
-                                    <i class="fas fa-paint-roller"></i> 
-                                    <span>Ремонт: {% if property.has_renovation %}Есть{% else %}Нет{% endif %}</span>
+                                    <i class="fas fa-paint-roller"></i>
+                                    <span>Ремонт: {% if property.has_renovation
+                                        %}Есть{% else %}Нет{% endif %}</span>
                                 </div>
                                 {% endif %}
                                 {% if property.has_parking is defined %}
                                 <div class="info-item">
-                                    <i class="fas fa-parking"></i> 
-                                    <span>Парковка: {% if property.has_parking %}Есть{% else %}Нет{% endif %}</span>
+                                    <i class="fas fa-parking"></i>
+                                    <span>Парковка: {% if property.has_parking
+                                        %}Есть{% else %}Нет{% endif %}</span>
                                 </div>
                                 {% endif %}
                             </div>
@@ -514,10 +545,13 @@
                                     alt="Фото продавца">
                             </div>
                             <div>
-                                <div class="seller-name">{{ property.owner.full_name }}</div>
-                                <div class="text-gray-500 text-sm">Продавец</div>
+                                <div class="seller-name">{{
+                                    property.owner.full_name }}</div>
+                                <div
+                                    class="text-gray-500 text-sm">Продавец</div>
                             </div>
-                            <a href="tel:{{ property.owner.phone }}" class="call-btn">
+                            <a href="tel:{{ property.owner.phone }}"
+                                class="call-btn">
                                 <i class="fas fa-phone-alt mr-1"></i> Позвонить
                             </a>
                         </div>
@@ -525,8 +559,11 @@
                         <!-- Кнопки действий -->
                         <div class="grid grid-cols-1 gap-3 mb-6">
                             {% if property.owner and property.owner.id %}
-                            <a href="{{ url_for('chat', user_id=property.owner.id) }}?property_id={{ property.id }}" class="action-btn primary">
-                                <i class="far fa-comments mr-2"></i> Написать сообщение
+                            <a
+                                href="{{ url_for('chat', user_id=property.owner.id) }}?property_id={{ property.id }}"
+                                class="action-btn primary">
+                                <i class="far fa-comments mr-2"></i> Написать
+                                сообщение
                             </a>
                             {% endif %}
                         </div>
@@ -546,7 +583,8 @@
                                     </div>
                                     <div class="property-card-body">
                                         <div class="property-card-price">
-                                            {{ '{:,.0f}'.format(prop.price) }} KGZ
+                                            {{ '{:,.0f}'.format(prop.price) }}
+                                            KGZ
                                         </div>
                                         <div class="property-card-title">
                                             {{ prop.title }}
@@ -557,12 +595,15 @@
                                         <div class="property-card-specs">
                                             {% if prop.rooms %}
                                             <div class="property-card-spec">
-                                                <i class="fas fa-door-open"></i> {{ prop.rooms }}
+                                                <i class="fas fa-door-open"></i>
+                                                {{ prop.rooms }}
                                             </div>
                                             {% endif %}
                                             {% if prop.area %}
                                             <div class="property-card-spec">
-                                                <i class="fas fa-vector-square"></i> {{ prop.area }} м²
+                                                <i
+                                                    class="fas fa-vector-square"></i>
+                                                {{ prop.area }} м²
                                             </div>
                                             {% endif %}
                                         </div>
@@ -608,7 +649,7 @@
                             class="nav-icons"><path
                                 d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                     </a>
-                    <a href="{{ url_for('support') }}" 
+                    <a href="{{ url_for('support') }}"
                         class="nav-item text-gray-500">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24"
                             height="24" viewBox="0 0 24 24" fill="none"
@@ -634,22 +675,30 @@
         </div>
 
         <!-- Модальное окно для 360 просмотра -->
-        <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden" id="modal-360">
-            <div class="bg-white rounded-lg w-full h-full md:w-4/5 md:h-4/5 relative overflow-hidden flex flex-col">
+        <div
+            class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden"
+            id="modal-360">
+            <div
+                class="bg-white rounded-lg w-full h-full md:w-4/5 md:h-4/5 relative overflow-hidden flex flex-col">
                 <div class="p-4 border-b flex justify-between items-center">
                     <h3 class="text-lg font-medium">360° Просмотр</h3>
-                    <button id="close-360-modal" class="text-gray-500 hover:text-gray-700">
+                    <button id="close-360-modal"
+                        class="text-gray-500 hover:text-gray-700">
                         <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
                 <div class="flex-grow">
                     {% if property.tour_360_url %}
-                    <iframe src="{{ property.tour_360_url }}" allowfullscreen class="w-full h-full"></iframe>
+                    <iframe src="{{ property.tour_360_url }}" allowfullscreen
+                        class="w-full h-full"></iframe>
                     {% else %}
-                    <div class="flex items-center justify-center h-full bg-gray-100">
+                    <div
+                        class="flex items-center justify-center h-full bg-gray-100">
                         <div class="text-center p-5">
-                            <i class="fas fa-vr-cardboard text-gray-400 text-5xl mb-3"></i>
-                            <p class="text-gray-500">360° панорама недоступна для этого объявления</p>
+                            <i
+                                class="fas fa-vr-cardboard text-gray-400 text-5xl mb-3"></i>
+                            <p class="text-gray-500">360° панорама недоступна
+                                для этого объявления</p>
                         </div>
                     </div>
                     {% endif %}
@@ -663,9 +712,9 @@
         <script
             src="{{ url_for('static', path='layout/assets/js/weather-currency-cache.js') }}"></script>
         <!-- Скрытый элемент для передачи данных из Jinja в JavaScript -->
-        <div id="page-data" 
-             data-has-tour360="{% if property.tour_360_url %}true{% else %}false{% endif %}" 
-             style="display:none;"></div>
+        <div id="page-data"
+            data-has-tour360="{% if property.tour_360_url %}true{% else %}false{% endif %}"
+            style="display:none;"></div>
 
         <script>
             // Получаем данные из скрытого элемента

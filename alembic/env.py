@@ -11,6 +11,10 @@ config = context.config
 
 # Import the project's settings and database URL
 from database import Base
+import os
+
+# Используем URL из переменной окружения
+config.set_main_option('sqlalchemy.url', os.environ.get('DATABASE_URL'))
 
 # Import all models
 from app.models.user import User, UserRole, UserStatus
@@ -67,15 +71,25 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    configuration = config.get_section(config.config_ini_section)
+    if not configuration:
+        configuration = {}
+    url = os.environ.get('DATABASE_URL')
+    if not url:
+        raise Exception("DATABASE_URL environment variable is required")
+    
+    configuration["sqlalchemy.url"] = url
+    
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata
         )
 
         with context.begin_transaction():

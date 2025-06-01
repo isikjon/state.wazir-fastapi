@@ -15,7 +15,7 @@ from database import Base
 # Import all models
 from app.models.user import User, UserRole, UserStatus
 from app.models.property import Property, PropertyImage, Category, Favorite, PropertyStatus, PropertyCategory
-from app.models.message import AppMessage, MessageStatus
+from app.models.message import Message, MessageStatus
 from app.models.request import Request, RequestStatus, RequestType
 from app.models.chat import AppChatModel, AppChatMessageModel
 from app.models.chat_message import ChatMessage

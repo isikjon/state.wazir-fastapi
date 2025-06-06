@@ -29,6 +29,61 @@
             </div>
         </div>
 
+        <!-- Блок с фильтрами -->
+        <div class="p-4 bg-white border-b">
+            <form action="{{ url_for('admin_properties') }}" method="get" class="flex flex-wrap gap-4" id="filter-form">
+                <!-- Поле поиска -->
+                <div class="w-full md:w-auto flex-grow">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <input type="text" name="search" placeholder="Поиск объявлений..." 
+                               value="{{ search_query }}" 
+                               class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+
+                <!-- Фильтр по статусу -->
+                <div class="w-full md:w-auto">
+                    <select name="status" class="property-filters w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white">
+                        <option value="">Все статусы</option>
+                        <option value="pending" {% if status == 'pending' %}selected{% endif %}>На проверке</option>
+                        <option value="active" {% if status == 'active' %}selected{% endif %}>Активно</option>
+                        <option value="rejected" {% if status == 'rejected' %}selected{% endif %}>Отклонено</option>
+                        <option value="draft" {% if status == 'draft' %}selected{% endif %}>Черновик</option>
+                        <option value="sold" {% if status == 'sold' %}selected{% endif %}>Продано</option>
+                    </select>
+                </div>
+
+                <!-- Фильтр по категории -->
+                <div class="w-full md:w-auto">
+                    <select name="property_type" class="property-filters w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white">
+                        <option value="">Все категории</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" {% if property_type|string == category.id|string %}selected{% endif %}>{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Кнопка применения фильтров -->
+                <div class="w-auto">
+                    <button type="submit" class="w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-150 ease-in-out">
+                        <i class="fas fa-filter mr-2"></i>Применить
+                    </button>
+                </div>
+
+                <!-- Кнопка сброса фильтров -->
+                {% if status or property_type or search_query %}
+                <div class="w-auto">
+                    <a href="{{ url_for('admin_properties') }}" class="inline-block px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors duration-150 ease-in-out">
+                        <i class="fas fa-times mr-2"></i>Сбросить
+                    </a>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+        
         <div class="overflow-x-auto">
             <table class="min-w-full">
                 <thead>
@@ -123,7 +178,6 @@
                                     data-property-status="{{ property.status_display }}"
                                     data-property-owner="{{ property.owner_name }}"
                                     data-property-image="{{ property.image_url }}"
-                                    data-property-description="{{ property.description }}"
                                     data-property-rooms="{{ property.rooms }}"
                                     data-property-floor="{{ property.floor }}"
                                     data-property-building-floors="{{ property.building_floors }}"
@@ -131,6 +185,7 @@
                                     data-property-created="{{ property.created_at }}">
                                     <i class="fas fa-eye"></i>
                                 </button>
+                                <input type="hidden" class="property-description-hidden" value="{{ property.description|replace('\n', ' ')|e }}">
                                 <button
                                     class="p-1.5 bg-green-100 rounded-md text-green-600 hover:bg-green-200 upload-360-btn"
                                     title="Загрузить 360° панораму"
@@ -162,12 +217,12 @@
         {% if total_pages > 1 %}
         <div class="p-4 bg-gray-50 border-t flex items-center justify-between">
             <div class="text-sm text-gray-500">
-                Показано {{ start_item }}-{{ end_item }} из {{ total }}
+                Показано {{ start_item }}-{{ end_item }} из {{ total_properties }}
                 объявлений
             </div>
             <div class="flex space-x-1">
                 {% if page > 1 %}
-                <a href="{{ url_for('admin_properties', page=page-1) }}"
+                <a href="{{ url_for('admin_properties', page=page-1) }}{% if query_params %}{{ query_params }}{% endif %}"
                     class="w-8 h-8 flex items-center justify-center rounded border text-gray-600 hover:bg-gray-100">
                     <i class="fas fa-chevron-left text-xs"></i>
                 </a>
@@ -178,17 +233,15 @@
                 </span>
                 {% endif %}
 
-                {% for p in range(1, total_pages + 1) %}
-                {% if p >= page - 2 and p <= page + 2 %}
-                <a href="{{ url_for('admin_properties', page=p) }}"
-                    class="w-8 h-8 flex items-center justify-center rounded border {% if p == page %}bg-orange-500 text-white border-orange-500{% else %}text-gray-600 hover:bg-gray-100{% endif %}">
+                {% for p in pages %}
+                <a href="{{ url_for('admin_properties', page=p) }}{% if query_params %}{{ query_params }}{% endif %}"
+                    class="w-8 h-8 flex items-center justify-center rounded border {% if p == current_page %}bg-orange-500 text-white border-orange-500{% else %}text-gray-600 hover:bg-gray-100{% endif %}">
                     {{ p }}
                 </a>
-                {% endif %}
                 {% endfor %}
 
                 {% if page < total_pages %}
-                <a href="{{ url_for('admin_properties', page=page+1) }}"
+                <a href="{{ url_for('admin_properties', page=page+1) }}{% if query_params %}{{ query_params }}{% endif %}"
                     class="w-8 h-8 flex items-center justify-center rounded border text-gray-600 hover:bg-gray-100">
                     <i class="fas fa-chevron-right text-xs"></i>
                 </a>
@@ -268,7 +321,7 @@ $(document).ready(function() {
         const status = $(this).data('property-status');
         const owner = $(this).data('property-owner');
         const image = $(this).data('property-image');
-        const description = $(this).data('property-description') || 'Нет описания';
+        const description = $(this).closest('tr').find('.property-description-hidden').val() || 'Нет описания';
         const rooms = $(this).data('property-rooms') || 'Н/Д';
         const floor = $(this).data('property-floor') || 'Н/Д';
         const buildingFloors = $(this).data('property-building-floors') || 'Н/Д';

@@ -13,7 +13,8 @@
         <link
             href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
             rel="stylesheet">
-        <link rel="stylesheet" href="{{ url_for('static', path='layout/assets/scss/main.css') }}">
+        <link rel="stylesheet"
+            href="{{ url_for('static', path='layout/assets/scss/main.css') }}">
         <style>
             .category-card {
                 transition: all 0.3s ease;
@@ -168,28 +169,37 @@
                 color: #9ca3af;
             }
         </style>
+        <link
+            href="https://db.onlinewebfonts.com/c/7330cea698bc9dfd4bd024a38ea56a9a?family=Trajan+Pro+3"
+            rel="stylesheet">
+        <link
+            href="https://db.onlinewebfonts.com/c/c777ff7746751b04b384029cdbb12b04?family=AGAvalancheC"
+            rel="stylesheet">
     </head>
-    <body class="bg-white font-sans">
+    <body style="font-family: 'AGAvalancheC';">
         <div class="min-h-screen flex flex-col">
             <header class="bg-white shadow-sm">
-                <div class="container mx-auto px-4 py-3">
+                <div class="container mx-auto px-4 py-1">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <img
-                                src="{{ url_for('static', path='layout/assets/img/logo_non.png') }}"
-                                alt="Wazir Logo"
-                                class="h-10">
-                        </div>
-                        <div class="flex items-center">
-                            <div class="flex items-center weather-currency">
-                                <img src="https://flagcdn.com/w20/us.png"
-                                    alt="USD" class="h-5 mr-2">
-                                <span id="currency-rate">Загрузка...</span>
+                        <a href="/mobile/">
+                            <div class="flex items-center"
+                                style="box-shadow: 0px 6px 6px 0px rgba(0,0,0,0.21); padding: 0px 13px; border-radius: 8px; border: 1px solid #ccc;">
+                                <p
+                                    style="font-family: 'Trajan Pro 3';, sans-serif; font-size: 22px;">WAZIR</p>
+                            </div>
+                        </a>
+                        <div class="flex items-center" style="gap: 24px;">
+                            <div class="flex items-center weather-currency" style="box-shadow: 0px 6px 6px 0px rgba(0,0,0,0.21); padding: 5px 12px; border-radius: 8px; border: 1px solid #ccc;">
+                                <img src="https://wazir.kg/static/weather.png" alt="weather" class="" style="height: 25px;width: 35px;">
+                                <span id="weather" style="font-size: 17px">+30°</span>
+                            </div><div class="flex items-center weather-currency" style="box-shadow: 0px 6px 6px 0px rgba(0,0,0,0.21); padding: 5px 12px; border-radius: 8px; border: 1px solid #ccc;">
+                                <img src="https://flagcdn.com/w20/us.png" alt="USD" class="h-5 mr-2">
+                                <span id="currency-rate">87.5</span>
                             </div>
                         </div>
                     </div>
                 </div>
-            </header> 
+            </header>
 
             <!-- Шапка страницы -->
             <div class="chat-header px-4 py-4">
@@ -204,7 +214,8 @@
                     stroke-linejoin="round" class="search-icon"><circle cx="11"
                         cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65"
                         y2="16.65"></line></svg>
-                <input type="text" class="search-input" placeholder="Поиск" id="searchInput">
+                <input type="text" class="search-input" placeholder="Поиск"
+                    id="searchInput">
             </div>
 
             <!-- Список чатов -->

@@ -10,7 +10,9 @@
     <div class="bg-white rounded-lg shadow-sm mb-6">
         <div class="flex border-b">
             <a href="{{ url_for('admin_requests') }}?tab=listings"
-                class="tab-link {{ 'active' if tab == 'listings' else '' }}">
+                class="tab-link active">
+                <!-- <a href="{{ url_for('admin_requests') }}?tab=listings"
+                class="tab-link {{ 'active' if tab == 'listings' else '' }} active"> -->
                 <div class="flex items-center gap-2">
                     <i class="fas fa-building"></i>
                     <span>Новые объявления</span>
@@ -27,40 +29,17 @@
             <div class="filter-select">
                 <select id="statusFilter" class="filter-select-input">
                     <option value>Все статусы</option>
-                    <option value="new" {{ 'selected' if status == 'new' else ''
-                        }}>Новые</option>
-                    <option value="in_progress" {{ 'selected' if status ==
-                        'in_progress' else '' }}>В работе</option>
-                    <option value="completed" {{ 'selected' if status ==
-                        'completed' else '' }}>Завершенные</option>
-                    <option value="rejected" {{ 'selected' if status ==
-                        'rejected' else '' }}>Отклоненные</option>
+                    <option value="new" {{ 'selected' if status == 'new' else '' }}>Ожидающие</option>
                 </select>
             </div>
 
             <div class="filter-select">
                 <select id="typeFilter" class="filter-select-input">
                     <option value>Все типы</option>
-                    <option value="apartment" {{ 'selected' if property_type ==
-                        'apartment' else '' }}>Квартиры</option>
-                    <option value="house" {{ 'selected' if property_type ==
-                        'house' else '' }}>Дома</option>
-                    <option value="commercial" {{ 'selected' if property_type ==
-                        'commercial' else '' }}>Коммерческая</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {{ 'selected' if property_type == cat.id|string else '' }}>{{ cat.name }}</option>
+                    {% endfor %}
                 </select>
-            </div>
-
-            <button id="moreFiltersBtn" class="more-filters-btn">
-                <i class="fas fa-sliders-h"></i>
-                <span>Еще фильтры</span>
-            </button>
-
-            <div class="flex-grow"></div>
-
-            <div class="search-box">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" id="searchInput"
-                    placeholder="Поиск заявок..." value="{{ search }}">
             </div>
         </div>
 
@@ -937,14 +916,9 @@
         function applyFilters() {
             const status = $('#statusFilter').val();
             const type = $('#typeFilter').val();
-            const search = $('#searchInput').val();
-            
             let url = `{{ url_for('admin_requests') }}?tab={{ tab }}`;
-            
             if (status) url += `&status=${status}`;
-            if (type) url += `&type=${type}`;
-            if (search) url += `&search=${search}`;
-            
+            if (type) url += `&property_type=${type}`;
             window.location.href = url;
         }
         

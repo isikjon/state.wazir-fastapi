@@ -3,9 +3,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
-from starlette.staticfiles import StaticFiles as StarletteStaticFiles
-import os
 from config import settings
 from api.v1.api import api_router
 from sqlalchemy.orm import Session, joinedload
@@ -32,6 +29,7 @@ from app.models.chat import AppChatModel, AppChatMessageModel
 from app.models.chat_message import ChatMessage
 from app.websockets.chat_manager import ConnectionManager as WebSocketManager
 from app.utils.image_helper import get_valid_image_url
+from app.models.property import PropertyCategory
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
@@ -88,20 +86,16 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             ]):
                 return await call_next(request)
                 
-            # Проверяем токен в заголовке Authorization
             auth_token = None
             auth_header = request.headers.get('Authorization')
             
-            # Если есть заголовок, используем его
             if auth_header and auth_header.startswith('Bearer '):
                 auth_token = auth_header.split(' ')[1]
             
-            # Если заголовка нет, проверяем cookie
             if not auth_token:
                 auth_token = request.cookies.get('access_token')
                 print(f"DEBUG: Используем токен из cookie: {auth_token is not None}")
             
-            # Если нашли токен, проверяем его
             if auth_token:
                 try:
                     payload = pyjwt.decode(auth_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
@@ -112,7 +106,6 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                             content={"detail": "Токен истек"}
                         )
                     
-                    # Добавляем токен в заголовок Authorization, если его там нет
                     if not auth_header:
                         request.headers.__dict__["_list"].append((b"authorization", f"Bearer {auth_token}".encode()))
                         print("DEBUG: Добавлен заголовок Authorization из cookie")
@@ -129,11 +122,9 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                 content={"detail": "Требуется авторизация"}
             )
             
-        # Проверяем, является ли путь публичным
         if any(request.url.path.startswith(path) for path in public_paths) or '/api/v1/chat/' in request.url.path:
             return await call_next(request)
             
-        # Проверяем наличие токена в cookies и заголовке Authorization
         auth_token = request.cookies.get('access_token')
         auth_header = request.headers.get('Authorization')
         
@@ -145,10 +136,8 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             auth_token = auth_header.split(' ')[1]
             print(f"DEBUG: Using token from header: {auth_token}")
         
-        # Если токена нет или сессия недействительна
         if not auth_token:
             print("DEBUG: No token found")
-            # Для админ-маршрутов перенаправляем на страницу входа в админку
             if request.url.path.startswith('/admin/'):
                 return RedirectResponse('/admin/login', status_code=303)
             # Для остальных маршрутов перенаправляем на страницу авторизации
@@ -185,34 +174,25 @@ class CustomJSONEncoder(json.JSONEncoder):
             return obj.strftime("%Y-%m-%d %H:%M:%S")
         return super().default(obj)
 
-app = FastAPI()
-
-# Настройка CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
-# Настройка шаблонов
-templates = Jinja2Templates(directory="templates")
+# Монтируем статические файлы
+app.mount("/static", StaticFiles(directory="static", html=True, check_dir=True), name="static")
 
-# Монтирование статических файлов с расширенными настройками
-app.mount("/static", StaticFiles(
-    directory="static",
-    check_dir=True,
-    html=True
-), name="static")
+# Используем импортированный chat_manager вместо создания нового экземпляра
 
-# Монтирование медиа файлов
-app.mount("/media", StaticFiles(
-    directory="media",
-    check_dir=True,
-    html=True
-), name="media")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["Authorization", "Content-Type", "Set-Cookie"],
+)
+
+app.add_middleware(SessionMiddleware, secret_key="wazir_super_secret_key")
 
 # Функция для сериализации объектов в JSON, используя CustomJSONEncoder
 def json_serialize(obj):
@@ -227,44 +207,16 @@ async def type_error_handler(request, exc):
         )
     raise exc
 
+# Монтируем директорию media
+app.mount("/media", StaticFiles(directory="media", check_dir=True), name="media")
+
+templates = Jinja2Templates(directory="templates")
+
 # Регистрация API роутеров
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 # Добавляем мидлвар для проверки авторизации
 app.add_middleware(AuthenticationMiddleware)
-
-class StaticFilesMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        path = request.url.path
-        
-        # Проверяем, является ли запрос к статическим файлам
-        if path.startswith(('/static/', '/media/')):
-            # Проверяем расширение файла
-            file_extension = path.split('.')[-1].lower() if '.' in path else ''
-            
-            # Устанавливаем правильные заголовки в зависимости от типа файла
-            headers = {}
-            if file_extension in ['jpg', 'jpeg', 'png', 'gif', 'webp']:
-                headers['Cache-Control'] = 'public, max-age=31536000'
-                headers['Content-Type'] = f'image/{file_extension}'
-            elif file_extension in ['css', 'js']:
-                headers['Cache-Control'] = 'public, max-age=86400'
-                headers['Content-Type'] = 'text/css' if file_extension == 'css' else 'application/javascript'
-            elif file_extension in ['html']:
-                headers['Cache-Control'] = 'no-cache'
-                headers['Content-Type'] = 'text/html; charset=utf-8'
-                
-            response = await call_next(request)
-            
-            # Добавляем заголовки к ответу
-            for key, value in headers.items():
-                response.headers[key] = value
-                
-            return response
-            
-        return await call_next(request)
-
-app.add_middleware(StaticFilesMiddleware)  # Добавляем наш новый middleware
 
 # WebSocket Manager class
 class ConnectionManager:
@@ -980,7 +932,7 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
             "image_url": main_image.url if main_image else "/static/layout/assets/img/property-placeholder.jpg"
         })
     
-    # Получаем погоду и курс валюты для отображения in шапке
+    # Получаем погоду и курс валюты для отображения в шапке
     weather = None
     currency = None
     try:
@@ -1398,7 +1350,14 @@ async def admin_users(request: Request, db: Session = Depends(deps.get_db)):
     )
 
 @app.get("/admin/properties", response_class=HTMLResponse)
-async def admin_properties(request: Request, db: Session = Depends(deps.get_db)):
+async def admin_properties(
+    request: Request, 
+    status: str = Query(None), 
+    property_type: str = Query(None),
+    search: str = Query(None),
+    page: int = Query(1, ge=1),
+    db: Session = Depends(deps.get_db)
+):
     auth_token = request.cookies.get('access_token')
     if not auth_token:
         return RedirectResponse(url="/admin/login", status_code=303)
@@ -1409,16 +1368,62 @@ async def admin_properties(request: Request, db: Session = Depends(deps.get_db))
     except:
         return RedirectResponse(url="/admin/login", status_code=303)
         
-    # Получаем объекты недвижимости с присоединением связанных таблиц
+    # Получаем категории для фильтра
+    categories = db.query(models.Category).all()
+    
+    # Создаем базовый запрос к объектам недвижимости
     properties_query = db.query(models.Property).options(
         joinedload(models.Property.owner),
         joinedload(models.Property.images)
-    ).all()
+    )
+    
+    # Применяем фильтры
+    if status:
+        properties_query = properties_query.filter(models.Property.status == status)
+    
+    if property_type:
+        try:
+            property_type_id = int(property_type)
+            # Фильтруем по категории (связь с таблицей categories через PropertyCategory)
+            properties_query = properties_query.join(models.PropertyCategory).filter(
+                models.PropertyCategory.category_id == property_type_id
+            )
+        except (ValueError, TypeError):
+            # Если не удалось преобразовать в число, игнорируем фильтр
+            pass
+            
+    if search:
+        search_term = f"%{search}%"
+        properties_query = properties_query.filter(
+            or_(
+                models.Property.title.ilike(search_term),
+                models.Property.description.ilike(search_term),
+                models.Property.address.ilike(search_term)
+            )
+        )
+    
+    # Получаем общее количество записей после применения фильтров
+    total_items = properties_query.count()
+    
+    # Настройка пагинации
+    items_per_page = 10
+    total_pages = (total_items + items_per_page - 1) // items_per_page if total_items > 0 else 1
+    
+    # Проверка корректности номера страницы
+    if page > total_pages and total_pages > 0:
+        page = total_pages
+        
+    # Получаем данные с пагинацией
+    start_idx = (page - 1) * items_per_page
+    properties_query = properties_query.order_by(desc(models.Property.created_at)).offset(start_idx).limit(items_per_page)
+    
+    # Получаем результаты запроса
+    properties_results = properties_query.all()
     
     # Подготавливаем данные для отображения в шаблоне
     enhanced_properties = []
     
-    for prop in properties_query:
+    for prop in properties_results:
         # Находим главное изображение или используем заглушку
         image_url = "/static/layout/assets/img/property-placeholder.jpg"
         if prop.images:
@@ -1440,26 +1445,26 @@ async def admin_properties(request: Request, db: Session = Depends(deps.get_db))
             "sold": "Продано"
         }
         
-        status = prop.status.value if prop.status else "draft"
-        status_display = status_map.get(status, "Неизвестно")
+        status_val = prop.status.value if prop.status else "draft"
+        status_display = status_map.get(status_val, "Неизвестно")
         
         # Проверяем наличие 360° тура
-        # Устанавливаем в фолс т.к. не реализовано
-        has_tour = False
+        has_tour = bool(prop.tour_360_url) if hasattr(prop, 'tour_360_url') and prop.tour_360_url else False
         
         # Количество просмотров для объектов на модерации - 0
-        views = 0 if status == "pending" else prop.views if hasattr(prop, 'views') and prop.views else 0
+        views = 0 if status_val == "pending" else prop.views if hasattr(prop, 'views') and prop.views else 0
         
         # Добавляем данные в массив
         enhanced_properties.append({
             "id": prop.id,
             "title": prop.title or f"Объект #{prop.id}",
+            "description": prop.description,
             "price": prop.price,
             "price_formatted": price_formatted,
             "address": prop.address or "Адрес не указан",
             "city": prop.city,
             "area": prop.area,
-            "status": status,
+            "status": status_val,
             "status_display": status_display,
             "owner_id": prop.owner_id,
             "owner_name": prop.owner.full_name if prop.owner else "Нет данных",
@@ -1476,21 +1481,38 @@ async def admin_properties(request: Request, db: Session = Depends(deps.get_db))
             "has_parking": prop.has_parking
         })
     
+    # Вычисляем начальный и конечный индексы для пагинации
+    start_item = start_idx + 1 if total_items > 0 else 0
+    end_item = min(start_idx + len(enhanced_properties), total_items)
+    
+    # Формируем параметры запроса для пагинации
+    query_params = ""
+    if status:
+        query_params += f"&status={status}"
+    if property_type:
+        query_params += f"&property_type={property_type}"
+    if search:
+        query_params += f"&search={search}"
+    
+    # Генерируем список страниц для навигации
+    page_range = range(max(1, page - 2), min(total_pages + 1, page + 3))
+    
     return templates.TemplateResponse(
         "admin/properties.html",
         {
             "request": request,
             "properties": enhanced_properties,
-            "total_pages": 1,
-            "current_page": 1,
-            "pages": [1],
-            "show_ellipsis": False,
-            "start_item": 1,
-            "end_item": len(enhanced_properties),
-            "total_properties": len(enhanced_properties),
-            "search_query": "",
-            "status": None,
-            "property_type": None,
+            "total_pages": total_pages,
+            "current_page": page,
+            "pages": page_range,
+            "show_ellipsis": total_pages > 5,
+            "start_item": start_item,
+            "end_item": end_item,
+            "total_properties": total_items,
+            "search_query": search or "",
+            "status": status,
+            "property_type": property_type,
+            "categories": categories,  # Передаем категории для выпадающего списка
         }
     )
 
@@ -1520,7 +1542,7 @@ async def check_admin_access(request: Request, db: Session):
         return RedirectResponse(url="/admin/login", status_code=303)
 
 @app.get("/admin/requests", response_class=HTMLResponse, name="admin_requests")
-async def admin_requests(request: Request, tab: str = Query('tours'), status: str = Query(None), 
+async def admin_requests(request: Request, tab: str = Query('listings'), status: str = Query(None), 
                     property_type: str = Query(None), search: str = Query(None), 
                     page: int = Query(1, ge=1), db: Session = Depends(deps.get_db)):
     # Проверяем авторизацию и доступ администратора
@@ -1569,20 +1591,30 @@ async def admin_requests(request: Request, tab: str = Query('tours'), status: st
             
         # Фильтрация по статусу, если указан
         if status:
-            # Маппинг статусов из интерфейса в значения БД
-            status_map = {
-                'new': 'NEW',             # В БД статус хранится в верхнем регистре
-                'in_progress': 'PROCESSING',
-                'completed': 'ACTIVE',     # Для недвижимости завершенный статус - ACTIVE
-                'rejected': 'REJECTED'
-            }
-            if status in status_map:
-                query = query.filter(models.Property.status == status_map[status])
+            if status == 'new':
+                query = query.filter(models.Property.status.in_(['NEW', 'PENDING']))
+            else:
+                status_map = {
+                    'in_progress': 'PROCESSING',
+                    'completed': 'ACTIVE',
+                    'rejected': 'REJECTED'
+                }
+                if status in status_map:
+                    query = query.filter(models.Property.status == status_map[status])
         
         # Фильтрация по типу недвижимости, если указан
         if property_type:
-            query = query.filter(models.Property.type == property_type)
-            
+            # Преобразуем property_type в int, если это возможно
+            try:
+                property_type_id = int(property_type)
+                # Фильтруем по категории (связь с таблицей categories)
+                query = query.join(models.PropertyCategory).filter(
+                    models.PropertyCategory.category_id == property_type_id
+                )
+            except (ValueError, TypeError):
+                # Если property_type не является числом, фильтруем по типу как обычно
+                query = query.filter(models.Property.type == property_type)
+        
         # Поиск
         if search:
             search_term = f"%{search}%"
@@ -1782,6 +1814,18 @@ async def admin_requests(request: Request, tab: str = Query('tours'), status: st
     # Генерируем список страниц для навигации
     page_range = range(max(1, page - 2), min(total_pages + 1, page + 3))
     
+    # Получаем все категории для фильтра
+    categories = db.query(models.Category).all()
+    
+    # Логируем выбранные фильтры
+    print(f"[DEBUG] admin_requests: status={status}, property_type={property_type}, tab={tab}")
+    # Логируем все связи property_category
+    property_category_rows = db.query(PropertyCategory).all()
+    print(f"[DEBUG] property_category rows: {[{'property_id': r.property_id, 'category_id': r.category_id} for r in property_category_rows]}")
+    # Логируем количество объявлений до фильтрации
+    all_props_count = db.query(models.Property).count()
+    print(f"[DEBUG] Всего объявлений в базе: {all_props_count}")
+    
     return templates.TemplateResponse("admin/requests.html", {
         "request": request,
         "user": user,
@@ -1800,7 +1844,8 @@ async def admin_requests(request: Request, tab: str = Query('tours'), status: st
         "start_item": start_idx + 1 if total_items > 0 else 0,
         "end_item": end_idx,
         "pages": page_range,
-        "query_params": query_params
+        "query_params": query_params,
+        "categories": categories,
     })
 
 @app.get("/admin/settings", response_class=HTMLResponse, name="admin_settings")
@@ -2382,3 +2427,11 @@ async def reset_settings(request: Request, db: Session = Depends(deps.get_db)):
     except Exception as e:
         print(f"DEBUG: Ошибка при сбросе настроек: {str(e)}")
         return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
+
+if __name__ == "__main__":
+    # Исправляем изображения при старте
+    from fix_images import fix_missing_images
+    fix_missing_images()
+    
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

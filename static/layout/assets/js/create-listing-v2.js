@@ -381,10 +381,7 @@ $(document).ready(function() {
                     }
                     
                     // Определяем ID категории
-                    var categoryId = 1; // По умолчанию "Продажа"
-                    if ($('#category').val() === 'rent') {
-                        categoryId = 2; // "Аренда"
-                    }
+                    var categoryId = parseInt($('#category').val());
                     
                     // Создаем объект с данными для API
                     var propertyData = {

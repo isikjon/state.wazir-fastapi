@@ -46,31 +46,30 @@ class CRUDProperty(CRUDBase[Property, PropertyCreate, PropertyUpdate]):
         
     def _ensure_categories_exist(self, db: Session):
         """Проверяет и создает базовые категории, если они отсутствуют"""
-        # Проверяем категорию с ID 1 (Продажа)
-        category1 = db.query(Category).filter(Category.id == 1).first()
-        if not category1:
-            print("DEBUG: Создание категории 'Продажа' с ID 1")
-            category1 = Category(
-                id=1, 
-                name="Продажа", 
-                description="Объекты недвижимости для продажи"
-            )
-            db.add(category1)
+        # Список категорий для создания
+        categories = [
+            {"id": 1, "name": "Продажа", "description": "Объекты недвижимости для продажи"},
+            {"id": 2, "name": "Аренда", "description": "Объекты недвижимости для аренды"},
+            {"id": 3, "name": "Новостройки", "description": "Новые объекты недвижимости"},
+            {"id": 4, "name": "Посуточная", "description": "Объекты недвижимости для посуточной аренды"},
+            {"id": 5, "name": "Коммерческая", "description": "Коммерческие объекты недвижимости"},
+            {"id": 6, "name": "Ипотека", "description": "Объекты недвижимости с ипотекой"}
+        ]
         
-        # Проверяем категорию с ID 2 (Аренда)
-        category2 = db.query(Category).filter(Category.id == 2).first()
-        if not category2:
-            print("DEBUG: Создание категории 'Аренда' с ID 2")
-            category2 = Category(
-                id=2, 
-                name="Аренда", 
-                description="Объекты недвижимости для аренды"
-            )
-            db.add(category2)
+        # Проверяем и создаем каждую категорию
+        for cat in categories:
+            category = db.query(Category).filter(Category.id == cat["id"]).first()
+            if not category:
+                print(f"DEBUG: Создание категории '{cat['name']}' с ID {cat['id']}")
+                category = Category(
+                    id=cat["id"],
+                    name=cat["name"],
+                    description=cat["description"]
+                )
+                db.add(category)
         
         # Сохраняем изменения, если были созданы новые категории
-        if not category1 or not category2:
-            db.commit()
+        db.commit()
     
     def get_multi_by_owner(
         self, db: Session, *, owner_id: int, skip: int = 0, limit: int = 100

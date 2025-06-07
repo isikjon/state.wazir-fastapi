@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Wazir SuperAdmin{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#8b5cf6',
+                        accent: '#06b6d4',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                    }
+                }
+            }
+        }
+    </script>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="flex h-screen bg-gray-50">
+        <!-- Sidebar -->
+        <div class="w-64 bg-white shadow-sm border-r border-gray-200">
+            <!-- Logo -->
+            <div class="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                        <i class="fas fa-crown text-white text-sm"></i>
+                    </div>
+                    <h1 class="text-xl font-semibold text-gray-900">SuperAdmin</h1>
+                </div>
+                <a href="/superadmin/logout" 
+                   class="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                   title="Выйти">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+            
+            <!-- Navigation -->
+            <nav class="mt-6">
+                <div class="px-4">
+                    <a href="/superadmin/dashboard" 
+                       class="flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {% if request.url.path == '/superadmin/dashboard' %}bg-primary text-white{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                        <i class="fas fa-tachometer-alt w-5"></i>
+                        <span>Дашборд</span>
+                    </a>
+                    
+                    <a href="/superadmin/admins" 
+                       class="flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 mt-1 {% if 'admins' in request.url.path %}bg-primary text-white{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                        <i class="fas fa-user-shield w-5"></i>
+                        <span>Администраторы</span>
+                    </a>
+                    
+                    <a href="/superadmin/users" 
+                       class="flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 mt-1 {% if 'users' in request.url.path %}bg-primary text-white{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                        <i class="fas fa-users w-5"></i>
+                        <span>Пользователи</span>
+                    </a>
+                    
+                    <a href="/superadmin/properties" 
+                       class="flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 mt-1 {% if 'properties' in request.url.path %}bg-primary text-white{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                        <i class="fas fa-building w-5"></i>
+                        <span>Объявления</span>
+                    </a>
+                    
+                    <a href="/superadmin/analytics" 
+                       class="flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 mt-1 {% if 'analytics' in request.url.path %}bg-primary text-white{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                        <i class="fas fa-chart-line w-5"></i>
+                        <span>Аналитика</span>
+                    </a>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm border-b border-gray-200">
+                <div class="flex items-center justify-between h-16 px-6">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900">{% block page_title %}SuperAdmin Panel{% endblock %}</h2>
+                        <p class="text-sm text-gray-500">{% block page_subtitle %}Панель управления суперадминистратора{% endblock %}</p>
+                    </div>
+                    
+                    <!-- User Info -->
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                {% if current_user and current_user.avatar_url %}
+                                    <img src="{{ current_user.avatar_url }}" alt="Avatar" class="w-full h-full rounded-full object-cover">
+                                {% else %}
+                                    <i class="fas fa-user text-gray-500 text-sm"></i>
+                                {% endif %}
+                            </div>
+                            <div class="hidden md:block">
+                                <p class="text-sm font-medium text-gray-900">{{ current_user.full_name if current_user and current_user.full_name else 'SuperAdmin' }}</p>
+                                <p class="text-xs text-gray-500">{{ current_user.email if current_user and current_user.email else 'superadmin@wazir.kg' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="flex-1 overflow-y-auto">
+                <div class="p-6">
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

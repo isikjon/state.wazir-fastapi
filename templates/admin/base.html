@@ -237,13 +237,15 @@
                             <div
                                 class="w-10 h-10 rounded-full flex items-center justify-center"
                                 style="background-color: var(--color-secondary); color: var(--header-text);">
-                                <i class="fas fa-user"></i>
+                                {% if current_admin and current_admin.avatar_url %}
+                                    <img src="{{ current_admin.avatar_url }}" alt="Avatar" class="w-full h-full rounded-full object-cover">
+                                {% else %}
+                                    <i class="fas fa-user"></i>
+                                {% endif %}
                             </div>
                             <div style="color: var(--header-text);">
-                                <p class="font-medium">Администратор</p>
-                                <p
-                                    class="text-xs"
-                                    style="color: var(--hint-color);">admin@wazir.ru</p>
+                                <p class="font-medium">{{ current_admin.full_name if current_admin and current_admin.full_name else 'Администратор' }}</p>
+                                <p class="text-xs" style="color: var(--hint-color);">{{ current_admin.email if current_admin and current_admin.email else 'admin@wazir.kg' }}</p>
                             </div>
                         </div>
                     </div>

@@ -1,0 +1,499 @@
+{% extends "superadmin/base.html" %}
+
+{% block title %}Пользователи - SuperAdmin{% endblock %}
+{% block page_title %}Управление пользователями{% endblock %}
+{% block page_subtitle %}Просмотр, блокировка и управление пользователями{% endblock %}
+
+{% block content %}
+<!-- Статистика -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
+                <i class="fas fa-users text-white"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-sm font-medium text-gray-500">Всего пользователей</h3>
+                <p class="text-2xl font-semibold text-gray-900">{{ users_total }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-success rounded-lg flex items-center justify-center">
+                <i class="fas fa-check-circle text-white"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-sm font-medium text-gray-500">Активных</h3>
+                <p class="text-2xl font-semibold text-gray-900">{{ users_active }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-danger rounded-lg flex items-center justify-center">
+                <i class="fas fa-ban text-white"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-sm font-medium text-gray-500">Заблокированных</h3>
+                <p class="text-2xl font-semibold text-gray-900">{{ users_blocked }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-warning rounded-lg flex items-center justify-center">
+                <i class="fas fa-building text-white"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-sm font-medium text-gray-500">Объявлений</h3>
+                <p class="text-2xl font-semibold text-gray-900">{{ total_properties }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Фильтры и поиск -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+    <div class="p-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex-1 max-w-lg">
+                <input type="text" id="searchInput" placeholder="Поиск по имени, email, телефону..." 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+            </div>
+            <div class="flex gap-3">
+                <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                    <option value="">Все статусы</option>
+                    <option value="active">Активные</option>
+                    <option value="blocked">Заблокированные</option>
+                </select>
+                <select id="propertiesFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                    <option value="">Все пользователи</option>
+                    <option value="with">С объявлениями</option>
+                    <option value="without">Без объявлений</option>
+                </select>
+                <button onclick="exportUsers()" 
+                        class="px-4 py-2 bg-success text-white rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center">
+                    <i class="fas fa-download mr-2"></i>
+                    Экспорт
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Таблица пользователей -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">Список пользователей</h3>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Пользователь</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Контакты</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Объявлений</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Регистрация</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for user in users %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 w-10 h-10">
+                                {% if user.avatar_url %}
+                                    <img src="{{ user.avatar_url }}" alt="Avatar" class="w-10 h-10 rounded-full object-cover">
+                                {% else %}
+                                    <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-user text-gray-500"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">{{ user.full_name or 'Без имени' }}</div>
+                                <div class="text-sm text-gray-500">ID: {{ user.id }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-900">{{ user.email }}</div>
+                        <div class="text-sm text-gray-500">{{ user.phone or 'Телефон не указан' }}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm font-medium text-gray-900">{{ user.properties_count }}</div>
+                        {% if user.properties_count > 0 %}
+                        <button class="view-user-properties-btn text-xs text-primary hover:text-indigo-600" data-user-id="{{ user.id }}" data-user-name="{{ user.full_name or user.email }}">
+                            Посмотреть
+                        </button>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                            {% if user.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                            {% if user.is_active %}Активный{% else %}Заблокирован{% endif %}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ user.created_at }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div class="flex space-x-2">
+                            <button class="view-user-details-btn text-primary hover:text-indigo-600" title="Просмотр" data-user-id="{{ user.id }}">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            {% if user.is_active %}
+                            <button class="toggle-user-status-btn text-danger hover:text-red-600" title="Заблокировать" data-user-id="{{ user.id }}" data-user-name="{{ user.full_name or user.email }}" data-action="false">
+                                <i class="fas fa-ban"></i>
+                            </button>
+                            {% else %}
+                            <button class="toggle-user-status-btn text-success hover:text-green-600" title="Разблокировать" data-user-id="{{ user.id }}" data-user-name="{{ user.full_name or user.email }}" data-action="true">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            {% endif %}
+                            {% if user.properties_count > 0 %}
+                            <button class="delete-user-properties-btn text-warning hover:text-yellow-600" title="Удалить все объявления" data-user-id="{{ user.id }}" data-user-name="{{ user.full_name or user.email }}">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Модальное окно деталей пользователя -->
+<div id="userDetailsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Детали пользователя</h3>
+            <button onclick="closeModal('userDetailsModal')" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-6" id="userDetailsContent">
+            <!-- Содержимое загружается динамически -->
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно объявлений пользователя -->
+<div id="userPropertiesModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-screen overflow-y-auto">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900" id="userPropertiesTitle">Объявления пользователя</h3>
+            <button onclick="closeModal('userPropertiesModal')" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-6" id="userPropertiesContent">
+            <!-- Содержимое загружается динамически -->
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportUsers() {
+    window.location.href = '/api/v1/superadmin/export/users';
+}
+
+function viewUserDetails(userId) {
+    fetch(`/api/v1/superadmin/users/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const user = data.user;
+                document.getElementById('userDetailsContent').innerHTML = `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">ID</label>
+                            <p class="text-sm text-gray-900">${user.id}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Полное имя</label>
+                            <p class="text-sm text-gray-900">${user.full_name || 'Не указано'}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Email</label>
+                            <p class="text-sm text-gray-900">${user.email || 'Не указан'}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Телефон</label>
+                            <p class="text-sm text-gray-900">${user.phone || 'Не указан'}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Статус</label>
+                            <p class="text-sm text-gray-900">${user.is_active ? 'Активный' : 'Заблокирован'}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Объявлений</label>
+                            <p class="text-sm text-gray-900">${user.properties_count}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Дата регистрации</label>
+                            <p class="text-sm text-gray-900">${user.created_at || 'Неизвестно'}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Последний вход</label>
+                            <p class="text-sm text-gray-900">${user.last_login || 'Нет данных'}</p>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('userDetailsModal').classList.remove('hidden');
+                document.getElementById('userDetailsModal').classList.add('flex');
+            } else {
+                Swal.fire('Ошибка', 'Не удалось загрузить данные пользователя', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire('Ошибка', 'Произошла ошибка при загрузке данных', 'error');
+        });
+}
+
+function viewUserProperties(userId, userName) {
+    document.getElementById('userPropertiesTitle').textContent = `Объявления пользователя: ${userName}`;
+    
+    fetch(`/api/v1/superadmin/users/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.user.properties) {
+                let content = '<div class="space-y-4">';
+                
+                data.user.properties.forEach(property => {
+                    content += `
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-gray-900">${property.title || 'Без названия'}</h4>
+                                    <p class="text-sm text-gray-500">${property.address || 'Адрес не указан'}</p>
+                                    <p class="text-sm text-gray-600">Цена: ${property.price ? property.price.toLocaleString() + ' сом' : 'Не указана'}</p>
+                                    <p class="text-xs text-gray-400">Создано: ${property.created_at || 'Неизвестно'}</p>
+                                </div>
+                                <div class="ml-4">
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                                        ${property.status === 'active' ? 'bg-green-100 text-green-800' : 
+                                          property.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                                          'bg-red-100 text-red-800'}">
+                                        ${property.status_display}
+                                    </span>
+                                    <div class="mt-2 space-x-2">
+                                        <button onclick="window.open('/mobile/property/${property.id}', '_blank')" 
+                                                class="text-xs text-primary hover:text-indigo-600">
+                                            Просмотр
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                content += '</div>';
+                
+                if (data.user.properties.length === 0) {
+                    content = '<p class="text-gray-500 text-center py-8">У пользователя нет объявлений</p>';
+                }
+                
+                document.getElementById('userPropertiesContent').innerHTML = content;
+                document.getElementById('userPropertiesModal').classList.remove('hidden');
+                document.getElementById('userPropertiesModal').classList.add('flex');
+            } else {
+                Swal.fire('Ошибка', 'Не удалось загрузить объявления пользователя', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire('Ошибка', 'Произошла ошибка при загрузке объявлений', 'error');
+        });
+}
+
+function toggleUserStatus(userId, userName, activate) {
+    const action = activate ? 'разблокировать' : 'заблокировать';
+    const title = activate ? 'Разблокировать пользователя?' : 'Заблокировать пользователя?';
+    
+    Swal.fire({
+        title: title,
+        text: `Вы действительно хотите ${action} пользователя "${userName}"?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: activate ? '#10b981' : '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: activate ? 'Разблокировать' : 'Заблокировать',
+        cancelButtonText: 'Отмена'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/api/v1/superadmin/users/${userId}/toggle-status`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const actionDone = activate ? 'разблокирован' : 'заблокирован';
+                    Swal.fire('Успех', `Пользователь ${actionDone} успешно`, 'success').then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Ошибка', data.message || 'Не удалось изменить статус', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('Ошибка', 'Произошла ошибка при изменении статуса', 'error');
+            });
+        }
+    });
+}
+
+function deleteAllUserProperties(userId, userName) {
+    Swal.fire({
+        title: 'Удалить все объявления?',
+        text: `Вы действительно хотите удалить ВСЕ объявления пользователя "${userName}"? Это действие нельзя отменить.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Удалить все',
+        cancelButtonText: 'Отмена'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/api/v1/superadmin/users/${userId}/properties`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Удалены', `Удалено ${data.deleted_count} объявлений`, 'success').then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Ошибка', data.message || 'Не удалось удалить объявления', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('Ошибка', 'Произошла ошибка при удалении', 'error');
+            });
+        }
+    });
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+    document.getElementById(modalId).classList.remove('flex');
+}
+
+// Поиск и фильтрация
+document.getElementById('searchInput').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        const name = row.cells[0].textContent.toLowerCase();
+        const contacts = row.cells[1].textContent.toLowerCase();
+        
+        if (name.includes(searchTerm) || contacts.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+document.getElementById('statusFilter').addEventListener('change', function() {
+    const filterValue = this.value;
+    const rows = document.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        const statusCell = row.cells[3];
+        const isActive = statusCell.textContent.includes('Активный');
+        
+        if (!filterValue || 
+            (filterValue === 'active' && isActive) || 
+            (filterValue === 'blocked' && !isActive)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+document.getElementById('propertiesFilter').addEventListener('change', function() {
+    const filterValue = this.value;
+    const rows = document.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        const propertiesCell = row.cells[2];
+        const propertiesCount = parseInt(propertiesCell.textContent.trim());
+        
+        if (!filterValue || 
+            (filterValue === 'with' && propertiesCount > 0) || 
+            (filterValue === 'without' && propertiesCount === 0)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// Закрытие модальных окон по клику вне области
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('fixed')) {
+        closeModal(e.target.id);
+    }
+});
+
+// Обработчики событий для кнопок управления пользователями
+document.addEventListener('DOMContentLoaded', function() {
+    // Обработчик для кнопок просмотра деталей пользователя
+    document.querySelectorAll('.view-user-details-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            viewUserDetails(userId);
+        });
+    });
+    
+    // Обработчик для кнопок просмотра объявлений пользователя
+    document.querySelectorAll('.view-user-properties-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            const userName = this.getAttribute('data-user-name');
+            viewUserProperties(userId, userName);
+        });
+    });
+    
+    // Обработчик для кнопок изменения статуса пользователя
+    document.querySelectorAll('.toggle-user-status-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            const userName = this.getAttribute('data-user-name');
+            const action = this.getAttribute('data-action') === 'true';
+            toggleUserStatus(userId, userName, action);
+        });
+    });
+    
+    // Обработчик для кнопок удаления объявлений пользователя
+    document.querySelectorAll('.delete-user-properties-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            const userName = this.getAttribute('data-user-name');
+            deleteAllUserProperties(userId, userName);
+        });
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,280 @@
+{% extends "superadmin/base.html" %}
+
+{% block title %}Дашборд - SuperAdmin{% endblock %}
+{% block page_title %}Дашборд{% endblock %}
+{% block page_subtitle %}Обзор системы и основные метрики{% endblock %}
+
+{% block content %}
+<!-- Статистические карточки -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
+                    <i class="fas fa-user-shield text-white"></i>
+                </div>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-sm font-medium text-gray-500">Администраторов</h3>
+                <p class="text-2xl font-semibold text-gray-900">{{ stats.admins_count }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-success rounded-lg flex items-center justify-center">
+                    <i class="fas fa-users text-white"></i>
+                </div>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-sm font-medium text-gray-500">Пользователей</h3>
+                <p class="text-2xl font-semibold text-gray-900">{{ stats.users_count }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-warning rounded-lg flex items-center justify-center">
+                    <i class="fas fa-building text-white"></i>
+                </div>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-sm font-medium text-gray-500">Объявлений</h3>
+                <p class="text-2xl font-semibold text-gray-900">{{ stats.properties_count }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-danger rounded-lg flex items-center justify-center">
+                    <i class="fas fa-clock text-white"></i>
+                </div>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-sm font-medium text-gray-500">На модерации</h3>
+                <p class="text-2xl font-semibold text-gray-900">{{ stats.pending_requests }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Быстрые действия -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-bolt text-primary mr-2"></i>
+            Быстрые действия
+        </h3>
+    </div>
+    <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <a href="/superadmin/admins?action=create" 
+               class="flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-indigo-600 transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>
+                Создать админа
+            </a>
+            <button onclick="showSystemInfo()" 
+                    class="flex items-center justify-center px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200">
+                <i class="fas fa-info-circle mr-2"></i>
+                Системная информация
+            </button>
+            <button onclick="exportData()" 
+                    class="flex items-center justify-center px-4 py-3 bg-success text-white rounded-lg hover:bg-green-600 transition-colors duration-200">
+                <i class="fas fa-download mr-2"></i>
+                Экспорт данных
+            </button>
+            <button onclick="showLogs()" 
+                    class="flex items-center justify-center px-4 py-3 bg-warning text-white rounded-lg hover:bg-yellow-600 transition-colors duration-200">
+                <i class="fas fa-file-alt mr-2"></i>
+                Логи системы
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Две колонки для активности и уведомлений -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Последние действия -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-history text-primary mr-2"></i>
+                Последние действия
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="space-y-4">
+                {% for activity in recent_activities %}
+                <div class="flex items-center space-x-4">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                            <i class="{{ activity.icon }} text-white text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">{{ activity.action }}</p>
+                        <p class="text-sm text-gray-500">{{ activity.admin_name }} • {{ activity.time }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Системные уведомления -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-bell text-primary mr-2"></i>
+                Системные уведомления
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="space-y-4">
+                {% for notification in system_notifications %}
+                <div class="border-l-4 pl-4 py-2 notification-item" data-color="{{ notification.color }}" data-bg="{{ notification.bg_color }}">
+                    <div class="flex items-center mb-1">
+                        <i class="{{ notification.icon }} mr-2 notification-icon" data-color="{{ notification.color }}"></i>
+                        <span class="text-sm font-medium text-gray-900">{{ notification.title }}</span>
+                    </div>
+                    <p class="text-sm text-gray-600">{{ notification.message }}</p>
+                    <p class="text-xs text-gray-400 mt-1">{{ notification.time }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно системной информации -->
+<div id="systemInfoModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-server mr-2 text-primary"></i>
+                Системная информация
+            </h3>
+            <button onclick="closeModal('systemInfoModal')" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Версия Python</p>
+                    <p class="text-sm text-gray-900">{{ system_info.python_version }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Версия FastAPI</p>
+                    <p class="text-sm text-gray-900">{{ system_info.fastapi_version }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Использование памяти</p>
+                    <p class="text-sm text-gray-900">{{ system_info.memory_usage }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Время работы</p>
+                    <p class="text-sm text-gray-900">{{ system_info.uptime }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.notification-item {
+    border-left-width: 4px;
+}
+.notification-item[data-color="#f59e0b"] {
+    border-left-color: #f59e0b;
+    background-color: #fefbf3;
+}
+.notification-item[data-color="#10b981"] {
+    border-left-color: #10b981;
+    background-color: #f0fdf4;
+}
+.notification-item[data-color="#ef4444"] {
+    border-left-color: #ef4444;
+    background-color: #fef2f2;
+}
+.notification-icon[data-color="#f59e0b"] {
+    color: #f59e0b;
+}
+.notification-icon[data-color="#10b981"] {
+    color: #10b981;
+}
+.notification-icon[data-color="#ef4444"] {
+    color: #ef4444;
+}
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showSystemInfo() {
+    document.getElementById('systemInfoModal').classList.remove('hidden');
+    document.getElementById('systemInfoModal').classList.add('flex');
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+    document.getElementById(modalId).classList.remove('flex');
+}
+
+function exportData() {
+    Swal.fire({
+        title: 'Экспорт данных',
+        text: 'Выберите тип данных для экспорта:',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Все данные',
+        cancelButtonText: 'Отмена',
+        showDenyButton: true,
+        denyButtonText: 'Только пользователи'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = '/api/v1/superadmin/export/all';
+        } else if (result.isDenied) {
+            window.location.href = '/api/v1/superadmin/export/users';
+        }
+    });
+}
+
+function showLogs() {
+    window.open('/superadmin/logs', '_blank');
+}
+
+// Закрытие модальных окон по клику вне области
+document.addEventListener('click', function(e) {
+    if (e.target.id === 'systemInfoModal') {
+        closeModal('systemInfoModal');
+    }
+});
+
+// Обновление статистики каждые 30 секунд
+setInterval(function() {
+    fetch('/api/v1/superadmin/stats')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Обновляем статистические карточки
+                const cards = document.querySelectorAll('.grid .bg-white p');
+                if (cards.length >= 4) {
+                    cards[0].textContent = data.stats.admins_count;
+                    cards[1].textContent = data.stats.users_count;
+                    cards[2].textContent = data.stats.properties_count;
+                    cards[3].textContent = data.stats.pending_requests;
+                }
+            }
+        })
+        .catch(error => console.log('Ошибка обновления статистики:', error));
+}, 30000);
+</script>
+{% endblock %} 

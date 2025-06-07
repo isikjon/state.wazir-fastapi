@@ -57,11 +57,11 @@
     </div>
 
     <!-- Заголовок и действия -->
-    <div class="bg-gradient-to-r from-[#144b44] to-[#0f3b36] rounded-xl p-6 text-white">
+    <div class="bg-gradient-to-r from-green-800 to-green-900 rounded-xl p-6 text-white">
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-xl font-semibold text-white">Управление пользователями</h2>
-                <p class="text-gray-200 mt-1">Просмотр и модерация пользователей системы</p>
+                <p class="text-green-100 mt-1">Просмотр и модерация пользователей системы</p>
             </div>
             <div class="flex space-x-3">
                 <button onclick="exportUsers()" class="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-medium transition-all duration-200">
@@ -249,22 +249,6 @@
 </div>
 {% endif %}
 
-<!-- Модальные окна остаются без изменений -->
-<!-- Модальное окно просмотра пользователя -->
-<div id="userDetailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div class="p-6 border-b border-gray-200 flex justify-between items-center">
-            <h3 class="text-lg font-semibold text-gray-900">Информация о пользователе</h3>
-            <button onclick="closeUserDetailsModal()" class="text-gray-400 hover:text-gray-600">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-        </div>
-        <div id="userDetailsContent" class="p-6">
-            <!-- Содержимое загружается динамически -->
-        </div>
-    </div>
-</div>
-
 <!-- Модальное окно массовых действий -->
 <div id="bulkActionsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-xl max-w-md w-full mx-4">
@@ -272,26 +256,27 @@
             <h3 class="text-lg font-semibold text-gray-900">Массовые действия</h3>
         </div>
         <div class="p-6 space-y-4">
-            <button onclick="bulkAction('activate')" class="w-full btn btn-green">
+            <button onclick="bulkAction('activate')" class="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
                 <i class="fas fa-check mr-2"></i>
                 Активировать всех пользователей
             </button>
-            <button onclick="bulkAction('deactivate')" class="w-full btn btn-red">
+            <button onclick="bulkAction('deactivate')" class="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
                 <i class="fas fa-ban mr-2"></i>
                 Заблокировать всех пользователей
             </button>
-            <button onclick="bulkAction('export')" class="w-full btn btn-blue">
+            <button onclick="bulkAction('export')" class="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
                 <i class="fas fa-download mr-2"></i>
                 Экспортировать выбранных
             </button>
         </div>
         <div class="p-6 border-t border-gray-200 text-right">
-            <button onclick="closeBulkActionsModal()" class="btn btn-secondary">
+            <button onclick="closeBulkActionsModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
                 Отмена
             </button>
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}

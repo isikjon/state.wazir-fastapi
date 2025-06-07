@@ -2765,6 +2765,17 @@ async def create_admin(
         return user
     
     try:
+        # Проверяем уникальность email
+        existing_email = db.query(models.User).filter(models.User.email == email).first()
+        if existing_email:
+            return JSONResponse(status_code=400, content={"success": False, "message": "Пользователь с таким email уже существует"})
+        
+        # Проверяем уникальность телефона (если указан)
+        if phone:
+            existing_phone = db.query(models.User).filter(models.User.phone == phone).first()
+            if existing_phone:
+                return JSONResponse(status_code=400, content={"success": False, "message": "Пользователь с таким телефоном уже существует"})
+        
         # Хешируем пароль
         hashed_password = pwd_context.hash(password)
         
@@ -3401,7 +3412,7 @@ async def export_admins(request: Request, db: Session = Depends(deps.get_db)):
         admins = db.query(models.User).filter(
             or_(
                 models.User.role == models.UserRole.ADMIN,
-                models.User.role == models.UserRole.SUPER_ADMIN
+                models.User.role == models.UserRole.MANAGER
             )
         ).all()
         

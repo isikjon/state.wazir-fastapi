@@ -57,18 +57,18 @@
     </div>
 
     <!-- Заголовок и действия -->
-    <div class="bg-gradient-to-r from-primary to-primary-600 rounded-xl p-6 text-white">
+    <div class="bg-gradient-to-r from-primary-600 to-primary-800 rounded-xl p-6 text-white">
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-xl font-semibold">Управление пользователями</h2>
                 <p class="text-primary-100 mt-1">Просмотр и модерация пользователей системы</p>
             </div>
             <div class="flex space-x-3">
-                <button onclick="exportUsers()" class="btn btn-white">
+                <button onclick="exportUsers()" class="px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-lg font-medium hover:bg-white/30 transition-all duration-200">
                     <i class="fas fa-download mr-2"></i>
                     Экспорт XLSX
                 </button>
-                <button onclick="showBulkActions()" class="btn btn-yellow">
+                <button onclick="showBulkActions()" class="px-4 py-2 bg-yellow-500 text-white rounded-lg font-medium hover:bg-yellow-600 transition-all duration-200">
                     <i class="fas fa-tasks mr-2"></i>
                     Массовые действия
                 </button>
@@ -187,19 +187,18 @@
                         
                         <!-- Действия -->
                         <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                            <div class="flex justify-center space-x-2">
+                            <div class="flex flex-col space-y-1">
                                 <button onclick="viewUserDetails({{ user.id }})" 
-                                        class="text-blue-600 hover:text-blue-900" title="Просмотр">
-                                    <i class="fas fa-eye"></i>
+                                        class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors">
+                                    Просмотр
                                 </button>
                                 <button onclick="toggleUserStatus({{ user.id }})" 
-                                        class="{% if user.is_active %}text-red-600 hover:text-red-900{% else %}text-green-600 hover:text-green-900{% endif %}" 
-                                        title="{% if user.is_active %}Заблокировать{% else %}Разблокировать{% endif %}">
-                                    <i class="fas fa-{% if user.is_active %}ban{% else %}check{% endif %}"></i>
+                                        class="px-3 py-1 text-xs {% if user.is_active %}bg-red-100 text-red-700 hover:bg-red-200{% else %}bg-green-100 text-green-700 hover:bg-green-200{% endif %} rounded transition-colors">
+                                    {% if user.is_active %}Заблокировать{% else %}Разблокировать{% endif %}
                                 </button>
                                 <button onclick="deleteUserProperties({{ user.id }})" 
-                                        class="text-orange-600 hover:text-orange-900" title="Удалить объявления">
-                                    <i class="fas fa-home"></i>
+                                        class="px-3 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors">
+                                    Удалить объявления
                                 </button>
                             </div>
                         </td>
@@ -217,6 +216,48 @@
         </div>
     </div>
 </div>
+
+<!-- Пагинация -->
+{% if total_pages > 1 %}
+<div class="bg-white rounded-xl border border-gray-200 p-6 mt-6">
+    <div class="flex items-center justify-between">
+        <div class="text-sm text-gray-700">
+            Показано <span class="font-medium">{{ start_item }}</span> - 
+            <span class="font-medium">{{ end_item }}</span> из 
+            <span class="font-medium">{{ total_items }}</span> результатов
+        </div>
+        <div class="flex items-center space-x-2">
+            <!-- Предыдущая страница -->
+            {% if current_page > 1 %}
+                <a href="?page={{ current_page - 1 }}{{ query_params }}" 
+                   class="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                    Предыдущая
+                </a>
+            {% endif %}
+            
+            <!-- Номера страниц -->
+            {% for page_num in page_range %}
+                {% if page_num == current_page %}
+                    <span class="px-3 py-2 text-sm bg-primary text-white rounded-md">{{ page_num }}</span>
+                {% else %}
+                    <a href="?page={{ page_num }}{{ query_params }}" 
+                       class="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                        {{ page_num }}
+                    </a>
+                {% endif %}
+            {% endfor %}
+            
+            <!-- Следующая страница -->
+            {% if current_page < total_pages %}
+                <a href="?page={{ current_page + 1 }}{{ query_params }}" 
+                   class="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                    Следующая
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Модальные окна остаются без изменений -->
 <!-- Модальное окно просмотра пользователя -->
@@ -266,7 +307,18 @@
 {% block scripts %}
 <script>
 function exportUsers() {
-    window.open('/api/v1/superadmin/export/users', '_blank');
+    // Добавляем текущие параметры фильтров к URL экспорта
+    const params = new URLSearchParams();
+    const search = document.getElementById('searchInput').value;
+    const status = document.getElementById('statusFilter').value;
+    const propertyFilter = document.getElementById('propertyFilter').value;
+    
+    if (search) params.append('search', search);
+    if (status) params.append('status', status);
+    if (propertyFilter) params.append('property_filter', propertyFilter);
+    
+    const url = '/api/v1/superadmin/export/users' + (params.toString() ? '?' + params.toString() : '');
+    window.open(url, '_blank');
 }
 
 function showBulkActions() {
@@ -372,18 +424,75 @@ function resetFilters() {
     document.getElementById('searchInput').value = '';
     document.getElementById('statusFilter').value = '';
     document.getElementById('propertyFilter').value = '';
-    location.reload();
+    applyFilters();
 }
 
 function bulkAction(action) {
-    // Реализация массовых действий
-    console.log('Bulk action:', action);
+    if (action === 'activate') {
+        if (confirm('Активировать всех пользователей?')) {
+            // Реализация массовой активации
+            alert('Функция массовой активации будет реализована');
+        }
+    } else if (action === 'deactivate') {
+        if (confirm('Заблокировать всех пользователей?')) {
+            // Реализация массовой блокировки
+            alert('Функция массовой блокировки будет реализована');
+        }
+    } else if (action === 'export') {
+        exportUsers();
+    }
     closeBulkActionsModal();
 }
 
-// Поиск и фильтрация
-document.getElementById('searchInput').addEventListener('input', function() {
-    // Реализация поиска
+// Фильтрация и поиск в реальном времени
+function applyFilters() {
+    const search = document.getElementById('searchInput').value;
+    const status = document.getElementById('statusFilter').value;
+    const propertyFilter = document.getElementById('propertyFilter').value;
+    
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (status) params.append('status', status);
+    if (propertyFilter) params.append('property_filter', propertyFilter);
+    
+    const url = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+    window.location.href = url;
+}
+
+// Debounce функция для поиска
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Инициализация событий
+document.addEventListener('DOMContentLoaded', function() {
+    // Поиск с задержкой
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.value = '{{ search }}';
+        searchInput.addEventListener('input', debounce(applyFilters, 500));
+    }
+    
+    // Фильтры без задержки
+    const statusFilter = document.getElementById('statusFilter');
+    if (statusFilter) {
+        statusFilter.value = '{{ status }}';
+        statusFilter.addEventListener('change', applyFilters);
+    }
+    
+    const propertyFilter = document.getElementById('propertyFilter');
+    if (propertyFilter) {
+        propertyFilter.value = '{{ property_filter }}';
+        propertyFilter.addEventListener('change', applyFilters);
+    }
 });
 
 function getCSRFToken() {
@@ -392,7 +501,11 @@ function getCSRFToken() {
 
 function showNotification(message, type) {
     // Простая реализация уведомлений
-    alert(message);
+    if (type === 'success') {
+        alert('✅ ' + message);
+    } else {
+        alert('❌ ' + message);
+    }
 }
 </script>
 {% endblock %} 

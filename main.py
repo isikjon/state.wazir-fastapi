@@ -2310,19 +2310,61 @@ async def superadmin_admins(request: Request, db: Session = Depends(deps.get_db)
     )
 
 @app.get("/superadmin/users", response_class=HTMLResponse)
-async def superadmin_users(request: Request, db: Session = Depends(deps.get_db)):
+async def superadmin_users(
+    request: Request, 
+    search: str = Query(None),
+    status: str = Query(None),
+    property_filter: str = Query(None),
+    page: int = Query(1, ge=1),
+    db: Session = Depends(deps.get_db)
+):
     # Проверяем доступ суперадмина
     user = await check_superadmin_access(request, db)
     if isinstance(user, RedirectResponse):
         return user
     
-    # Получаем всех пользователей
-    users = db.query(models.User).filter(models.User.role == models.UserRole.USER).all()
+    # Базовый запрос
+    query = db.query(models.User).filter(models.User.role == models.UserRole.USER)
+    
+    # Применяем фильтры
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                models.User.full_name.ilike(search_term),
+                models.User.email.ilike(search_term),
+                models.User.phone.ilike(search_term)
+            )
+        )
+    
+    if status:
+        if status == "active":
+            query = query.filter(models.User.is_active == True)
+        elif status == "blocked":
+            query = query.filter(models.User.is_active == False)
+    
+    # Пагинация
+    total_items = query.count()
+    items_per_page = 50
+    total_pages = (total_items + items_per_page - 1) // items_per_page if total_items > 0 else 1
+    
+    if page > total_pages and total_pages > 0:
+        page = total_pages
+    
+    start_idx = (page - 1) * items_per_page
+    users_results = query.order_by(desc(models.User.created_at)).offset(start_idx).limit(items_per_page).all()
     
     # Подготавливаем данные для отображения
     enhanced_users = []
-    for u in users:
+    for u in users_results:
         properties_count = db.query(models.Property).filter(models.Property.owner_id == u.id).count()
+        
+        # Применяем фильтр по недвижимости после получения данных
+        if property_filter:
+            if property_filter == "with" and properties_count == 0:
+                continue
+            elif property_filter == "without" and properties_count > 0:
+                continue
         
         enhanced_users.append({
             "id": u.id,
@@ -2334,12 +2376,36 @@ async def superadmin_users(request: Request, db: Session = Depends(deps.get_db))
             "registered_at": u.created_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(u, 'created_at') and u.created_at else "Нет данных",
         })
     
+    # Параметры запроса для пагинации
+    query_params = ""
+    if search:
+        query_params += f"&search={search}"
+    if status:
+        query_params += f"&status={status}"
+    if property_filter:
+        query_params += f"&property_filter={property_filter}"
+    
+    start_item = start_idx + 1 if len(enhanced_users) > 0 else 0
+    end_item = start_idx + len(enhanced_users)
+    page_range = range(max(1, page - 2), min(total_pages + 1, page + 3))
+    
     return templates.TemplateResponse(
-        "superadmin/users.html",  # Используем собственный шаблон суперадмина
+        "superadmin/users.html",
         {
             "request": request,
             "current_user": user,
-            "users": enhanced_users
+            "users": enhanced_users,
+            "total_items": total_items,
+            "items_per_page": items_per_page,
+            "current_page": page,
+            "total_pages": total_pages,
+            "start_item": start_item,
+            "end_item": end_item,
+            "page_range": page_range,
+            "query_params": query_params,
+            "search": search or "",
+            "status": status or "",
+            "property_filter": property_filter or ""
         }
     )
 
@@ -3140,15 +3206,65 @@ async def export_properties(request: Request, db: Session = Depends(deps.get_db)
         return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка экспорта: {str(e)}"})
 
 @app.get("/api/v1/superadmin/export/users")
-async def export_users(request: Request, db: Session = Depends(deps.get_db)):
+async def export_users(
+    request: Request, 
+    search: str = Query(None),
+    status: str = Query(None),
+    property_filter: str = Query(None),
+    db: Session = Depends(deps.get_db)
+):
     # Проверяем доступ суперадмина
     user = await check_superadmin_access(request, db)
     if isinstance(user, RedirectResponse):
         return JSONResponse(status_code=401, content={"success": False, "message": "Доступ запрещен"})
     
     try:
-        # Получаем всех пользователей
-        users = db.query(models.User).all()
+        # Базовый запрос с фильтрами (тот же что и в основной функции)
+        query = db.query(models.User).filter(models.User.role == models.UserRole.USER)
+        
+        # Применяем фильтры
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                or_(
+                    models.User.full_name.ilike(search_term),
+                    models.User.email.ilike(search_term),
+                    models.User.phone.ilike(search_term)
+                )
+            )
+        
+        if status:
+            if status == "active":
+                query = query.filter(models.User.is_active == True)
+            elif status == "blocked":
+                query = query.filter(models.User.is_active == False)
+        
+        users = query.all()
+        
+        # Подготавливаем данные для экспорта
+        data = []
+        for user in users:
+            properties_count = db.query(models.Property).filter(models.Property.owner_id == user.id).count()
+            
+            # Применяем фильтр по недвижимости
+            if property_filter:
+                if property_filter == "with" and properties_count == 0:
+                    continue
+                elif property_filter == "without" and properties_count > 0:
+                    continue
+            
+            data.append({
+                'ID': user.id,
+                'ФИО': user.full_name or f"Пользователь {user.id}",
+                'Email': user.email or "Не указан",
+                'Телефон': user.phone or "Не указан",
+                'Статус': "Активный" if user.is_active else "Заблокирован",
+                'Объявлений': properties_count,
+                'Дата регистрации': user.created_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(user, 'created_at') and user.created_at else "Нет данных"
+            })
+        
+        if not data:
+            return JSONResponse(status_code=404, content={"success": False, "message": "Нет данных для экспорта"})
         
         # Создаем Excel файл
         output = BytesIO()
@@ -3157,38 +3273,39 @@ async def export_users(request: Request, db: Session = Depends(deps.get_db)):
         worksheet.title = "Пользователи"
         
         # Заголовки
-        headers = ["ID", "ФИО", "Email", "Телефон", "Роль", "Статус", "Количество объявлений", "Дата регистрации"]
+        headers = list(data[0].keys())
         for col, header in enumerate(headers, 1):
             worksheet.cell(row=1, column=col, value=header)
         
         # Данные
-        for row, user_item in enumerate(users, 2):
-            # Считаем объявления пользователя
-            properties_count = db.query(models.Property).filter(models.Property.owner_id == user_item.id).count()
-            
-            worksheet.cell(row=row, column=1, value=user_item.id)
-            worksheet.cell(row=row, column=2, value=user_item.full_name or f"Пользователь {user_item.id}")
-            worksheet.cell(row=row, column=3, value=user_item.email or "")
-            worksheet.cell(row=row, column=4, value=user_item.phone or "")
-            worksheet.cell(row=row, column=5, value=user_item.role.value if user_item.role else "user")
-            worksheet.cell(row=row, column=6, value="Активный" if user_item.is_active else "Неактивный")
-            worksheet.cell(row=row, column=7, value=properties_count)
-            worksheet.cell(row=row, column=8, value=user_item.created_at.strftime("%d.%m.%Y %H:%M") if hasattr(user_item, 'created_at') and user_item.created_at else "")
+        for row, item in enumerate(data, 2):
+            for col, key in enumerate(headers, 1):
+                worksheet.cell(row=row, column=col, value=item[key])
         
         workbook.save(output)
         output.seek(0)
         
+        # Формируем имя файла с фильтрами
+        filename = "users"
+        if search:
+            filename += f"_search-{search[:10]}"
+        if status:
+            filename += f"_status-{status}"
+        if property_filter:
+            filename += f"_property-{property_filter}"
+        filename += f"_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        
         headers = {
-            'Content-Disposition': f'attachment; filename="users_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
+            'Content-Disposition': f'attachment; filename="{filename}"'
         }
+        
         return Response(
             content=output.getvalue(),
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             headers=headers
         )
         
     except Exception as e:
-        print(f"ERROR: Ошибка экспорта пользователей: {e}")
         return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка экспорта: {str(e)}"})
 
 @app.get("/api/v1/superadmin/export/all")

@@ -2297,6 +2297,12 @@ async def superadmin_admins(request: Request, db: Session = Depends(deps.get_db)
             "created_at": admin.created_at.strftime("%d.%m.%Y") if hasattr(admin, 'created_at') and admin.created_at else "Нет данных"
         })
     
+    # Добавляем переменные пагинации (даже если пагинация не нужна)
+    total_pages = 1
+    current_page = 1
+    per_page = len(enhanced_admins)
+    total_items = len(enhanced_admins)
+    
     return templates.TemplateResponse(
         "superadmin/admins.html",
         {
@@ -2305,7 +2311,11 @@ async def superadmin_admins(request: Request, db: Session = Depends(deps.get_db)
             "admins": enhanced_admins,
             "admins_total": admins_total,
             "admins_active": admins_active,
-            "admins_inactive": admins_inactive
+            "admins_inactive": admins_inactive,
+            "total_pages": total_pages,
+            "current_page": current_page,
+            "per_page": per_page,
+            "total_items": total_items
         }
     )
 

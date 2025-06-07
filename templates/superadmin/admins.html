@@ -5,75 +5,64 @@
 {% block page_subtitle %}Управление администраторами системы{% endblock %}
 
 {% block content %}
-<!-- Заголовок и статистика -->
-<div class="mb-8">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Всего администраторов -->
-        <div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative overflow-hidden group">
-            <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full -mr-10 -mt-10"></div>
-            <div class="relative">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-3xl font-bold font-display text-gray-800">{{ admins_total }}</p>
-                        <p class="text-lg font-semibold text-gray-700 mt-1">Всего админов</p>
-                    </div>
-                    <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
-                        <i class="fas fa-users-cog text-white text-2xl"></i>
-                    </div>
-                </div>
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <!-- Всего администраторов -->
+    <div class="card bg-white rounded-lg border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-2xl font-semibold text-gray-900">{{ admins_total }}</p>
+                <p class="text-sm text-muted mt-1">Всего админов</p>
+            </div>
+            <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                <i class="fas fa-users-cog text-primary"></i>
             </div>
         </div>
-        
-        <!-- Активные -->
-        <div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative overflow-hidden group">
-            <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-500/10 to-blue-500/10 rounded-full -mr-10 -mt-10"></div>
-            <div class="relative">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-3xl font-bold font-display text-gray-800">{{ admins_active }}</p>
-                        <p class="text-lg font-semibold text-gray-700 mt-1">Активные</p>
-                    </div>
-                    <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg">
-                        <i class="fas fa-check-circle text-white text-2xl"></i>
-                    </div>
-                </div>
+    </div>
+    
+    <!-- Активные -->
+    <div class="card bg-white rounded-lg border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-2xl font-semibold text-gray-900">{{ admins_active }}</p>
+                <p class="text-sm text-muted mt-1">Активные</p>
+            </div>
+            <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-check-circle text-green-600"></i>
             </div>
         </div>
-        
-        <!-- Неактивные -->
-        <div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative overflow-hidden group">
-            <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-500/10 to-orange-500/10 rounded-full -mr-10 -mt-10"></div>
-            <div class="relative">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-3xl font-bold font-display text-gray-800">{{ admins_inactive }}</p>
-                        <p class="text-lg font-semibold text-gray-700 mt-1">Неактивные</p>
-                    </div>
-                    <div class="w-16 h-16 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
-                        <i class="fas fa-times-circle text-white text-2xl"></i>
-                    </div>
-                </div>
+    </div>
+    
+    <!-- Неактивные -->
+    <div class="card bg-white rounded-lg border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-2xl font-semibold text-gray-900">{{ admins_inactive }}</p>
+                <p class="text-sm text-muted mt-1">Неактивные</p>
+            </div>
+            <div class="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-times-circle text-red-600"></i>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Панель управления -->
-<div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 mb-8 overflow-hidden">
-    <div class="bg-gradient-to-r from-purple-500 to-pink-500 p-6">
+<!-- Actions Panel -->
+<div class="bg-white rounded-lg border border-gray-200 mb-8">
+    <div class="px-6 py-4 border-b border-gray-200">
         <div class="flex items-center justify-between">
             <div>
-                <h3 class="text-2xl font-bold font-display text-white">Управление администраторами</h3>
-                <p class="text-purple-100 mt-1">Создание и редактирование учетных записей</p>
+                <h3 class="text-lg font-semibold text-gray-900">Управление администраторами</h3>
+                <p class="text-sm text-muted">Создание и редактирование учетных записей</p>
             </div>
-            <div class="flex space-x-4">
+            <div class="flex space-x-3">
                 <button onclick="createAdmin()" 
-                        class="px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all duration-300 shadow-lg">
+                        class="btn-primary text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-150">
                     <i class="fas fa-plus mr-2"></i>
                     Создать администратора
                 </button>
                 <button onclick="exportAdmins()" 
-                        class="px-6 py-3 bg-yellow-500 text-white rounded-xl font-semibold hover:bg-yellow-600 transition-all duration-300 shadow-lg">
+                        class="bg-gray-100 hover:bg-gray-200 text-gray-900 px-4 py-2 rounded-lg font-medium transition-colors duration-150">
                     <i class="fas fa-download mr-2"></i>
                     Экспорт XLSX
                 </button>
@@ -82,311 +71,268 @@
     </div>
 </div>
 
-<!-- Таблица администраторов -->
-<div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-    <div class="p-6">
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="border-b border-gray-200">
-                        <th class="text-left py-4 px-4 font-bold text-gray-700">
-                            <div class="flex items-center space-x-2">
-                                <i class="fas fa-user text-purple-500"></i>
-                                <span>Администратор</span>
-                            </div>
-                        </th>
-                        <th class="text-left py-4 px-4 font-bold text-gray-700">
-                            <div class="flex items-center space-x-2">
-                                <i class="fas fa-envelope text-blue-500"></i>
-                                <span>Контакты</span>
-                            </div>
-                        </th>
-                        <th class="text-left py-4 px-4 font-bold text-gray-700">
-                            <div class="flex items-center space-x-2">
-                                <i class="fas fa-toggle-on text-green-500"></i>
-                                <span>Статус</span>
-                            </div>
-                        </th>
-                        <th class="text-left py-4 px-4 font-bold text-gray-700">
-                            <div class="flex items-center space-x-2">
-                                <i class="fas fa-calendar text-orange-500"></i>
-                                <span>Дата создания</span>
-                            </div>
-                        </th>
-                        <th class="text-center py-4 px-4 font-bold text-gray-700">
-                            <div class="flex items-center justify-center space-x-2">
-                                <i class="fas fa-cogs text-gray-500"></i>
-                                <span>Действия</span>
-                            </div>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    {% for admin in admins %}
-                    <tr class="hover:bg-gray-50/50 transition-colors duration-200">
-                        <!-- Администратор -->
-                        <td class="py-6 px-4">
-                            <div class="flex items-center space-x-4">
-                                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-md">
-                                    {% if admin.avatar_url %}
-                                        <img src="{{ admin.avatar_url }}" alt="Avatar" class="w-full h-full rounded-xl object-cover">
-                                    {% else %}
-                                        <i class="fas fa-user text-white"></i>
-                                    {% endif %}
-                                </div>
-                                <div>
-                                    <p class="font-semibold text-gray-900">{{ admin.full_name or 'Администратор' }}</p>
-                                    <p class="text-sm text-gray-500">ID: {{ admin.id }}</p>
-                                </div>
-                            </div>
-                        </td>
-                        
-                        <!-- Контакты -->
-                        <td class="py-6 px-4">
-                            <div class="space-y-1">
-                                <div class="flex items-center space-x-2">
-                                    <i class="fas fa-envelope text-blue-500 text-sm"></i>
-                                    <span class="text-sm text-gray-900">{{ admin.email or 'Не указан' }}</span>
-                                </div>
-                                {% if admin.phone %}
-                                <div class="flex items-center space-x-2">
-                                    <i class="fas fa-phone text-green-500 text-sm"></i>
-                                    <span class="text-sm text-gray-600">{{ admin.phone }}</span>
-                                </div>
+<!-- Admins Table -->
+<div class="bg-white rounded-lg border border-gray-200">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">Список администраторов</h3>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="text-left py-3 px-6 text-sm font-medium text-gray-500 uppercase tracking-wider">
+                        Администратор
+                    </th>
+                    <th class="text-left py-3 px-6 text-sm font-medium text-gray-500 uppercase tracking-wider">
+                        Контакты
+                    </th>
+                    <th class="text-left py-3 px-6 text-sm font-medium text-gray-500 uppercase tracking-wider">
+                        Статус
+                    </th>
+                    <th class="text-left py-3 px-6 text-sm font-medium text-gray-500 uppercase tracking-wider">
+                        Дата создания
+                    </th>
+                    <th class="text-center py-3 px-6 text-sm font-medium text-gray-500 uppercase tracking-wider">
+                        Действия
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for admin in admins %}
+                <tr class="hover:bg-gray-50 transition-colors duration-150">
+                    <!-- Администратор -->
+                    <td class="py-4 px-6">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                                {% if admin.avatar_url %}
+                                    <img src="{{ admin.avatar_url }}" alt="Avatar" class="w-full h-full rounded-lg object-cover">
+                                {% else %}
+                                    <i class="fas fa-user text-gray-500"></i>
                                 {% endif %}
                             </div>
-                        </td>
-                        
-                        <!-- Статус -->
-                        <td class="py-6 px-4">
-                            {% if admin.is_active %}
-                                <span class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-green-100 text-green-800 font-semibold">
-                                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                    <span>Активный</span>
-                                </span>
-                            {% else %}
-                                <span class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-red-100 text-red-800 font-semibold">
-                                    <div class="w-2 h-2 bg-red-500 rounded-full"></div>
-                                    <span>Неактивный</span>
-                                </span>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">{{ admin.full_name or 'Администратор' }}</p>
+                                <p class="text-xs text-muted">ID: {{ admin.id }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    
+                    <!-- Контакты -->
+                    <td class="py-4 px-6">
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-envelope text-muted text-xs"></i>
+                                <span class="text-sm text-gray-900">{{ admin.email or 'Не указан' }}</span>
+                            </div>
+                            {% if admin.phone %}
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-phone text-muted text-xs"></i>
+                                <span class="text-sm text-muted">{{ admin.phone }}</span>
+                            </div>
                             {% endif %}
-                        </td>
-                        
-                        <!-- Дата создания -->
-                        <td class="py-6 px-4">
-                            <span class="text-sm text-gray-600">{{ admin.created_at }}</span>
-                        </td>
-                        
-                        <!-- Действия -->
-                        <td class="py-6 px-4">
-                            <div class="flex items-center justify-center space-x-2">
-                                <button class="edit-admin-btn w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all duration-300" 
-                                        title="Редактировать" data-admin-id="{{ admin.id }}">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                {% if admin.id != current_user.id %}
-                                <button class="delete-admin-btn w-10 h-10 bg-gradient-to-br from-red-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-300" 
-                                        title="Удалить" data-admin-id="{{ admin.id }}" data-admin-name="{{ admin.full_name or admin.email }}">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                        </div>
+                    </td>
+                    
+                    <!-- Статус -->
+                    <td class="py-4 px-6">
+                        {% if admin.is_active %}
+                            <span class="inline-flex items-center space-x-2 px-2 py-1 rounded-full bg-green-50 text-green-800 text-xs font-medium">
+                                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span>Активный</span>
+                            </span>
+                        {% else %}
+                            <span class="inline-flex items-center space-x-2 px-2 py-1 rounded-full bg-red-50 text-red-800 text-xs font-medium">
+                                <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                                <span>Неактивный</span>
+                            </span>
+                        {% endif %}
+                    </td>
+                    
+                    <!-- Дата создания -->
+                    <td class="py-4 px-6">
+                        <span class="text-sm text-muted">{{ admin.created_at }}</span>
+                    </td>
+                    
+                    <!-- Действия -->
+                    <td class="py-4 px-6">
+                        <div class="flex items-center justify-center space-x-2">
+                            <button class="edit-admin-btn w-8 h-8 bg-primary hover:bg-primary-light text-white rounded-lg transition-colors duration-150" 
+                                    title="Редактировать" data-admin-id="{{ admin.id }}">
+                                <i class="fas fa-edit text-xs"></i>
+                            </button>
+                            {% if admin.id != current_user.id %}
+                            <button class="delete-admin-btn w-8 h-8 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-150" 
+                                    title="Удалить" data-admin-id="{{ admin.id }}" data-admin-name="{{ admin.full_name or admin.email }}">
+                                <i class="fas fa-trash text-xs"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination if needed -->
+    {% if total_pages > 1 %}
+    <div class="px-6 py-4 border-t border-gray-200">
+        <div class="flex items-center justify-between">
+            <div class="text-sm text-muted">
+                Показано {{ (current_page - 1) * per_page + 1 }} - {{ min(current_page * per_page, total_items) }} из {{ total_items }}
+            </div>
+            <div class="flex space-x-2">
+                {% if current_page > 1 %}
+                <a href="?page={{ current_page - 1 }}" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded text-sm transition-colors duration-150">
+                    Назад
+                </a>
+                {% endif %}
+                {% for page_num in range(1, total_pages + 1) %}
+                    {% if page_num == current_page %}
+                    <span class="px-3 py-1 bg-primary text-white rounded text-sm">{{ page_num }}</span>
+                    {% else %}
+                    <a href="?page={{ page_num }}" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded text-sm transition-colors duration-150">{{ page_num }}</a>
+                    {% endif %}
+                {% endfor %}
+                {% if current_page < total_pages %}
+                <a href="?page={{ current_page + 1 }}" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded text-sm transition-colors duration-150">
+                    Вперед
+                </a>
+                {% endif %}
+            </div>
         </div>
     </div>
+    {% endif %}
 </div>
 
-<!-- Модальное окно создания администратора -->
-<div id="createAdminModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
-        <div class="bg-gradient-to-r from-purple-500 to-pink-500 p-6">
-            <div class="flex items-center justify-between">
-                <h3 class="text-xl font-bold font-display text-white">Создать администратора</h3>
-                <button onclick="closeModal('createAdminModal')" class="text-white/80 hover:text-white">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            <p class="text-purple-100 text-sm mt-1">Добавление нового администратора</p>
+<!-- Create/Edit Admin Modal -->
+<div id="adminModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 id="modalTitle" class="text-lg font-semibold text-gray-900">Создать администратора</h3>
         </div>
-        <form id="createAdminForm" class="p-6">
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">ФИО</label>
-                    <input type="text" id="createFullName" 
-                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 transition-colors" 
-                           placeholder="Введите полное имя" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Email</label>
-                    <input type="email" id="createEmail" 
-                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 transition-colors" 
-                           placeholder="admin@example.com" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Телефон</label>
-                    <input type="tel" id="createPhone" 
-                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 transition-colors" 
-                           placeholder="+996 XXX XXX XXX">
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Пароль</label>
-                    <div class="relative">
-                        <input type="text" id="createPassword" 
-                               class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 transition-colors pr-24" 
-                               placeholder="Пароль будет сгенерирован" readonly>
-                        <button type="button" onclick="generatePassword()" 
-                                class="absolute right-2 top-2 px-3 py-2 text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all">
-                            Генерировать
-                        </button>
-                    </div>
-                </div>
+        <form id="adminForm" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Полное имя</label>
+                <input type="text" id="adminFullName" name="full_name" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
             </div>
-            <div class="flex space-x-3 mt-8">
-                <button type="button" onclick="closeModal('createAdminModal')" 
-                        class="flex-1 py-3 text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 font-semibold transition-colors">
-                    Отмена
-                </button>
-                <button type="submit" 
-                        class="flex-1 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 font-semibold transition-all">
-                    Создать
-                </button>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" id="adminEmail" name="email" required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
+                <input type="tel" id="adminPhone" name="phone"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+            </div>
+            
+            <div id="passwordField">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
+                <input type="password" id="adminPassword" name="password"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+            </div>
+            
+            <div class="flex items-center">
+                <input type="checkbox" id="adminIsActive" name="is_active" checked
+                       class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary">
+                <label for="adminIsActive" class="ml-2 text-sm text-gray-700">Активный</label>
             </div>
         </form>
-    </div>
-</div>
-
-<!-- Модальное окно редактирования -->
-<div id="editAdminModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
-        <div class="bg-gradient-to-r from-blue-500 to-purple-500 p-6">
-            <div class="flex items-center justify-between">
-                <h3 class="text-xl font-bold font-display text-white">Редактировать администратора</h3>
-                <button onclick="closeModal('editAdminModal')" class="text-white/80 hover:text-white">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            <p class="text-blue-100 text-sm mt-1">Изменение данных администратора</p>
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+            <button onclick="closeAdminModal()" class="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors duration-150">
+                Отмена
+            </button>
+            <button onclick="saveAdmin()" class="btn-primary text-white px-4 py-2 rounded-lg transition-all duration-150">
+                Сохранить
+            </button>
         </div>
-        <form id="editAdminForm" class="p-6">
-            <input type="hidden" id="editAdminId">
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">ФИО</label>
-                    <input type="text" id="editFullName" 
-                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-colors" 
-                           required>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Email</label>
-                    <input type="email" id="editEmail" 
-                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-colors" 
-                           required>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Телефон</label>
-                    <input type="tel" id="editPhone" 
-                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-colors">
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Статус</label>
-                    <select id="editStatus" 
-                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-colors">
-                        <option value="true">Активный</option>
-                        <option value="false">Неактивный</option>
-                    </select>
-                </div>
-            </div>
-            <div class="flex space-x-3 mt-8">
-                <button type="button" onclick="closeModal('editAdminModal')" 
-                        class="flex-1 py-3 text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 font-semibold transition-colors">
-                    Отмена
-                </button>
-                <button type="submit" 
-                        class="flex-1 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 font-semibold transition-all">
-                    Сохранить
-                </button>
-            </div>
-        </form>
     </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function createAdmin() {
-    generatePassword(); // Генерируем пароль сразу
-    document.getElementById('createAdminModal').classList.remove('hidden');
-    document.getElementById('createAdminModal').classList.add('flex');
-}
+let editingAdminId = null;
 
-function generatePassword() {
-    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-    let password = "";
-    for (let i = 0; i < 12; i++) {
-        password += charset.charAt(Math.floor(Math.random() * charset.length));
-    }
-    document.getElementById('createPassword').value = password;
+function createAdmin() {
+    editingAdminId = null;
+    document.getElementById('modalTitle').textContent = 'Создать администратора';
+    document.getElementById('adminForm').reset();
+    document.getElementById('passwordField').style.display = 'block';
+    document.getElementById('adminModal').classList.remove('hidden');
+    document.getElementById('adminModal').classList.add('flex');
 }
 
 function editAdmin(adminId) {
+    editingAdminId = adminId;
+    document.getElementById('modalTitle').textContent = 'Редактировать администратора';
+    document.getElementById('passwordField').style.display = 'none';
+    
+    // Load admin data (this would typically be an AJAX call)
     fetch(`/api/v1/superadmin/admins/${adminId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                const admin = data.admin;
-                document.getElementById('editAdminId').value = admin.id;
-                document.getElementById('editFullName').value = admin.full_name || '';
-                document.getElementById('editEmail').value = admin.email || '';
-                document.getElementById('editPhone').value = admin.phone || '';
-                document.getElementById('editStatus').value = admin.is_active.toString();
-                
-                document.getElementById('editAdminModal').classList.remove('hidden');
-                document.getElementById('editAdminModal').classList.add('flex');
-            } else {
-                Swal.fire({
-                    title: 'Ошибка',
-                    text: 'Не удалось загрузить данные администратора',
-                    icon: 'error',
-                    confirmButtonText: 'OK',
-                    customClass: {
-                        confirmButton: 'bg-red-500 hover:bg-red-600'
-                    }
-                });
+                document.getElementById('adminFullName').value = data.admin.full_name || '';
+                document.getElementById('adminEmail').value = data.admin.email || '';
+                document.getElementById('adminPhone').value = data.admin.phone || '';
+                document.getElementById('adminIsActive').checked = data.admin.is_active;
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.fire({
-                title: 'Ошибка',
-                text: 'Произошла ошибка при загрузке данных',
-                icon: 'error',
-                confirmButtonText: 'OK',
-                customClass: {
-                    confirmButton: 'bg-red-500 hover:bg-red-600'
-                }
-            });
         });
+    
+    document.getElementById('adminModal').classList.remove('hidden');
+    document.getElementById('adminModal').classList.add('flex');
+}
+
+function closeAdminModal() {
+    document.getElementById('adminModal').classList.add('hidden');
+    document.getElementById('adminModal').classList.remove('flex');
+    editingAdminId = null;
+}
+
+function saveAdmin() {
+    const formData = new FormData(document.getElementById('adminForm'));
+    const url = editingAdminId 
+        ? `/api/v1/superadmin/admins/${editingAdminId}` 
+        : '/api/v1/superadmin/admins';
+    const method = editingAdminId ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(
+                editingAdminId ? 'Администратор обновлен' : 'Администратор создан', 
+                'success'
+            );
+            closeAdminModal();
+            location.reload();
+        } else {
+            showNotification(data.message || 'Ошибка при сохранении', 'error');
+        }
+    })
+    .catch(error => {
+        showNotification('Ошибка при сохранении', 'error');
+    });
 }
 
 function deleteAdmin(adminId, adminName) {
     Swal.fire({
-        title: '🗑️ Удалить администратора?',
-        text: `Вы действительно хотите удалить администратора "${adminName}"?`,
+        title: 'Удалить администратора?',
+        text: `Вы уверены, что хотите удалить ${adminName}?`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#ef4444',
+        confirmButtonColor: '#dc2626',
         cancelButtonColor: '#6b7280',
-        confirmButtonText: '🗑️ Удалить',
-        cancelButtonText: '❌ Отмена',
-        customClass: {
-            confirmButton: 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600',
-            cancelButton: 'bg-gray-500 hover:bg-gray-600'
-        }
+        confirmButtonText: 'Удалить',
+        cancelButtonText: 'Отмена'
     }).then((result) => {
         if (result.isConfirmed) {
             fetch(`/api/v1/superadmin/admins/${adminId}`, {
@@ -395,193 +341,42 @@ function deleteAdmin(adminId, adminName) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    Swal.fire({
-                        title: '✅ Удален',
-                        text: 'Администратор удален успешно',
-                        icon: 'success',
-                        confirmButtonText: 'OK',
-                        customClass: {
-                            confirmButton: 'bg-gradient-to-r from-green-500 to-blue-500'
-                        }
-                    }).then(() => {
-                        location.reload();
-                    });
+                    showNotification('Администратор удален', 'success');
+                    location.reload();
                 } else {
-                    Swal.fire({
-                        title: 'Ошибка',
-                        text: data.message || 'Не удалось удалить администратора',
-                        icon: 'error',
-                        confirmButtonText: 'OK',
-                        customClass: {
-                            confirmButton: 'bg-red-500 hover:bg-red-600'
-                        }
-                    });
+                    showNotification(data.message || 'Ошибка при удалении', 'error');
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Swal.fire({
-                    title: 'Ошибка',
-                    text: 'Произошла ошибка при удалении',
-                    icon: 'error',
-                    confirmButtonText: 'OK',
-                    customClass: {
-                        confirmButton: 'bg-red-500 hover:bg-red-600'
-                    }
-                });
             });
         }
     });
 }
 
 function exportAdmins() {
-    window.location.href = '/api/v1/superadmin/export/admins';
+    showNotification('Начинается экспорт данных...', 'info');
+    window.location.href = '/api/v1/superadmin/admins/export';
 }
 
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
-    document.getElementById(modalId).classList.remove('flex');
-}
-
-// Обработчики событий для кнопок
+// Event listeners
 document.addEventListener('DOMContentLoaded', function() {
-    // Анимация появления карточек
-    const cards = document.querySelectorAll('.card-hover');
-    cards.forEach((card, index) => {
-        card.style.animationDelay = `${index * 0.1}s`;
-        card.classList.add('animate-slide-up');
-    });
-    
-    // Обработчик для кнопок редактирования
-    document.querySelectorAll('.edit-admin-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const adminId = this.getAttribute('data-admin-id');
-            editAdmin(adminId);
+    // Edit buttons
+    document.querySelectorAll('.edit-admin-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            editAdmin(this.dataset.adminId);
         });
     });
     
-    // Обработчик для кнопок удаления
-    document.querySelectorAll('.delete-admin-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const adminId = this.getAttribute('data-admin-id');
-            const adminName = this.getAttribute('data-admin-name');
-            deleteAdmin(adminId, adminName);
+    // Delete buttons
+    document.querySelectorAll('.delete-admin-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            deleteAdmin(this.dataset.adminId, this.dataset.adminName);
         });
     });
     
-    // Закрытие модальных окон по клику вне области
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('fixed')) {
-            closeModal(e.target.id);
+    // Close modal on outside click
+    document.getElementById('adminModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeAdminModal();
         }
-    });
-    
-    // Обработчики форм
-    document.getElementById('createAdminForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        // Логика отправки формы создания
-        const formData = new FormData();
-        formData.append('full_name', document.getElementById('createFullName').value);
-        formData.append('email', document.getElementById('createEmail').value);
-        formData.append('phone', document.getElementById('createPhone').value);
-        formData.append('password', document.getElementById('createPassword').value);
-        
-        fetch('/api/v1/superadmin/admins', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                Swal.fire({
-                    title: '✅ Создан',
-                    text: 'Администратор создан успешно',
-                    icon: 'success',
-                    confirmButtonText: 'OK',
-                    customClass: {
-                        confirmButton: 'bg-gradient-to-r from-green-500 to-blue-500'
-                    }
-                }).then(() => {
-                    location.reload();
-                });
-            } else {
-                Swal.fire({
-                    title: 'Ошибка',
-                    text: data.message || 'Не удалось создать администратора',
-                    icon: 'error',
-                    confirmButtonText: 'OK',
-                    customClass: {
-                        confirmButton: 'bg-red-500 hover:bg-red-600'
-                    }
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.fire({
-                title: 'Ошибка',
-                text: 'Произошла ошибка при создании',
-                icon: 'error',
-                confirmButtonText: 'OK',
-                customClass: {
-                    confirmButton: 'bg-red-500 hover:bg-red-600'
-                }
-            });
-        });
-    });
-    
-    document.getElementById('editAdminForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        // Логика отправки формы редактирования
-        const adminId = document.getElementById('editAdminId').value;
-        const formData = new FormData();
-        formData.append('full_name', document.getElementById('editFullName').value);
-        formData.append('email', document.getElementById('editEmail').value);
-        formData.append('phone', document.getElementById('editPhone').value);
-        formData.append('is_active', document.getElementById('editStatus').value);
-        
-        fetch(`/api/v1/superadmin/admins/${adminId}`, {
-            method: 'PUT',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                Swal.fire({
-                    title: '✅ Обновлен',
-                    text: 'Данные администратора обновлены',
-                    icon: 'success',
-                    confirmButtonText: 'OK',
-                    customClass: {
-                        confirmButton: 'bg-gradient-to-r from-green-500 to-blue-500'
-                    }
-                }).then(() => {
-                    location.reload();
-                });
-            } else {
-                Swal.fire({
-                    title: 'Ошибка',
-                    text: data.message || 'Не удалось обновить данные',
-                    icon: 'error',
-                    confirmButtonText: 'OK',
-                    customClass: {
-                        confirmButton: 'bg-red-500 hover:bg-red-600'
-                    }
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.fire({
-                title: 'Ошибка',
-                text: 'Произошла ошибка при обновлении',
-                icon: 'error',
-                confirmButtonText: 'OK',
-                customClass: {
-                    confirmButton: 'bg-red-500 hover:bg-red-600'
-                }
-            });
-        });
     });
 });
 </script>

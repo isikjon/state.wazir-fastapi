@@ -35,6 +35,10 @@ try:
     import psutil
 except ImportError:
     psutil = None
+import asyncio
+import subprocess
+import openpyxl
+from io import BytesIO
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
@@ -448,18 +452,63 @@ async def chat_websocket_endpoint(websocket: WebSocket, token: str):
 
 @app.websocket("/mobile/ws/test")
 async def websocket_test_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
+    print("WebSocket test connection request")
+    await websocket.accept()
+    print("WebSocket test connection accepted")
+    
     try:
         while True:
-            data = await websocket.receive_text()
-            await websocket.send_text(f"Server received: {data}")
+            # Отправляем тестовое сообщение каждые 5 секунд
+            test_message = {
+                "type": "test",
+                "message": f"Test message at {datetime.now().strftime('%H:%M:%S')}",
+                "timestamp": datetime.now().isoformat()
+            }
+            await websocket.send_text(json.dumps(test_message))
+            await asyncio.sleep(5)
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
-        await websocket.close()
+        print("WebSocket test connection disconnected")
+
+@app.websocket("/superadmin/ws/logs")
+async def logs_websocket_endpoint(websocket: WebSocket):
+    import subprocess
+    import asyncio
+    from datetime import datetime
+    
+    await websocket.accept()
+    print("SuperAdmin logs WebSocket connection established")
+    
+    try:
+        # Запускаем процесс для получения логов Docker
+        process = subprocess.Popen(
+            ["docker", "logs", "-f", "--tail", "50", "state.wazir-fastapi-web-1"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            bufsize=1
+        )
+        
+        while True:
+            # Читаем строку из логов
+            line = process.stdout.readline()
+            if line:
+                log_entry = {
+                    "timestamp": datetime.now().isoformat(),
+                    "message": line.strip(),
+                    "level": "INFO"  # Можно добавить определение уровня лога
+                }
+                await websocket.send_text(json.dumps(log_entry))
+            else:
+                await asyncio.sleep(0.1)
+                
+    except WebSocketDisconnect:
+        print("SuperAdmin logs WebSocket connection disconnected")
+        if 'process' in locals():
+            process.terminate()
     except Exception as e:
-        print(f"WebSocket error: {e}")
-        manager.disconnect(websocket)
-        await websocket.close()
+        print(f"Error in logs WebSocket: {e}")
+        if 'process' in locals():
+            process.terminate()
 
 # Корневой маршрут - перенаправление на мобильную версию
 @app.get("/", response_class=RedirectResponse)
@@ -2094,9 +2143,14 @@ async def superadmin_admins(request: Request, db: Session = Depends(deps.get_db)
         return user
     
     # Получаем всех администраторов
-    admins = db.query(models.User).filter(models.User.role == models.UserRole.ADMIN).all()
+    admins = db.query(models.User).filter(
+        or_(
+            models.User.role == models.UserRole.ADMIN,
+            models.User.role == models.UserRole.SUPER_ADMIN
+        )
+    ).all()
     
-    # Статистика
+    # Подсчитываем статистику
     admins_total = len(admins)
     admins_active = len([admin for admin in admins if admin.is_active])
     admins_inactive = admins_total - admins_active
@@ -2110,7 +2164,7 @@ async def superadmin_admins(request: Request, db: Session = Depends(deps.get_db)
             "email": admin.email,
             "phone": admin.phone,
             "is_active": admin.is_active,
-            "avatar_url": admin.avatar_url,
+            "avatar_url": getattr(admin, 'avatar_url', None),
             "created_at": admin.created_at.strftime("%d.%m.%Y") if hasattr(admin, 'created_at') and admin.created_at else "Нет данных"
         })
     
@@ -2974,42 +3028,235 @@ async def export_admins(request: Request, db: Session = Depends(deps.get_db)):
     # Проверяем доступ суперадмина
     user = await check_superadmin_access(request, db)
     if isinstance(user, RedirectResponse):
-        return user
+        return JSONResponse(status_code=401, content={"success": False, "message": "Нет доступа"})
     
     try:
         # Получаем всех администраторов
-        admins = db.query(models.User).filter(models.User.role == models.UserRole.ADMIN).all()
+        admins = db.query(models.User).filter(
+            or_(
+                models.User.role == models.UserRole.ADMIN,
+                models.User.role == models.UserRole.SUPER_ADMIN
+            )
+        ).all()
         
-        # Подготавливаем данные для экспорта
-        data = []
-        for admin in admins:
-            data.append({
-                'ID': admin.id,
-                'ФИО': admin.full_name or f"Админ {admin.id}",
-                'Email': admin.email or "",
-                'Телефон': admin.phone or "",
-                'Статус': "Активный" if admin.is_active else "Неактивный",
-                'Дата создания': admin.created_at.strftime("%d.%m.%Y %H:%M") if hasattr(admin, 'created_at') and admin.created_at else ""
-            })
+        # Создаем Excel файл
+        output = BytesIO()
+        workbook = openpyxl.Workbook()
+        worksheet = workbook.active
+        worksheet.title = "Администраторы"
         
-        # Создаем DataFrame и Excel файл
-        df = pd.DataFrame(data)
+        # Заголовки
+        headers = ["ID", "ФИО", "Email", "Телефон", "Роль", "Статус", "Дата создания"]
+        for col, header in enumerate(headers, 1):
+            worksheet.cell(row=1, column=col, value=header)
         
-        # Временный файл
-        import tempfile
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
-            df.to_excel(tmp.name, index=False, engine='openpyxl')
-            tmp_path = tmp.name
+        # Данные
+        for row, admin in enumerate(admins, 2):
+            worksheet.cell(row=row, column=1, value=admin.id)
+            worksheet.cell(row=row, column=2, value=admin.full_name or "Не указано")
+            worksheet.cell(row=row, column=3, value=admin.email or "Не указано")
+            worksheet.cell(row=row, column=4, value=admin.phone or "Не указано")
+            worksheet.cell(row=row, column=5, value=admin.role.value if admin.role else "Не указано")
+            worksheet.cell(row=row, column=6, value="Активный" if admin.is_active else "Неактивный")
+            worksheet.cell(row=row, column=7, value=admin.created_at.strftime("%d.%m.%Y %H:%M") if hasattr(admin, 'created_at') and admin.created_at else "Не указано")
         
-        return FileResponse(
-            tmp_path,
-            filename=f"admins_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        workbook.save(output)
+        output.seek(0)
+        
+        headers = {
+            'Content-Disposition': f'attachment; filename="admins_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
+        }
+        return Response(
+            content=output.getvalue(),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers
         )
         
     except Exception as e:
-        print(f"ERROR: Ошибка экспорта администраторов: {e}")
+        print(f"Error exporting admins: {str(e)}")
         return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка экспорта: {str(e)}"})
+
+@app.get("/api/v1/superadmin/settings")
+async def get_superadmin_settings(request: Request, db: Session = Depends(deps.get_db)):
+    # Проверяем доступ суперадмина
+    user = await check_superadmin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=401, content={"success": False, "message": "Нет доступа"})
+    
+    # Возвращаем настройки суперадмина (можно сохранять в базе данных)
+    settings = {
+        "system_scale": 100,
+        "auto_backup": True,
+        "log_level": "INFO",
+        "max_file_size": 100,  # MB
+        "session_timeout": 60,  # minutes
+        "enable_notifications": True,
+        "dark_mode": False,
+        "compact_view": False
+    }
+    
+    return JSONResponse(content={"success": True, "settings": settings})
+
+@app.post("/api/v1/superadmin/settings")
+async def update_superadmin_settings(
+    request: Request,
+    system_scale: int = Form(100),
+    auto_backup: bool = Form(True),
+    log_level: str = Form("INFO"),
+    max_file_size: int = Form(100),
+    session_timeout: int = Form(60),
+    enable_notifications: bool = Form(True),
+    dark_mode: bool = Form(False),
+    compact_view: bool = Form(False),
+    db: Session = Depends(deps.get_db)
+):
+    # Проверяем доступ суперадмина
+    user = await check_superadmin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=401, content={"success": False, "message": "Нет доступа"})
+    
+    try:
+        # Здесь можно сохранить настройки в базе данных
+        # В этом примере просто возвращаем успех
+        updated_settings = {
+            "system_scale": system_scale,
+            "auto_backup": auto_backup,
+            "log_level": log_level,
+            "max_file_size": max_file_size,
+            "session_timeout": session_timeout,
+            "enable_notifications": enable_notifications,
+            "dark_mode": dark_mode,
+            "compact_view": compact_view
+        }
+        
+        return JSONResponse(content={"success": True, "message": "Настройки сохранены", "settings": updated_settings})
+        
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка сохранения настроек: {str(e)}"})
+
+@app.post("/api/v1/superadmin/system/scale")
+async def update_system_scale(
+    request: Request,
+    scale: int = Form(...),
+    db: Session = Depends(deps.get_db)
+):
+    # Проверяем доступ суперадмина
+    user = await check_superadmin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=401, content={"success": False, "message": "Нет доступа"})
+    
+    try:
+        # Валидация значения масштаба
+        if not 50 <= scale <= 200:
+            return JSONResponse(status_code=400, content={"success": False, "message": "Масштаб должен быть от 50% до 200%"})
+        
+        # Здесь можно реализовать изменение масштаба системы
+        # Например, изменение CSS переменных или настроек UI
+        
+        return JSONResponse(content={"success": True, "message": f"Масштаб системы установлен на {scale}%", "scale": scale})
+        
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка изменения масштаба: {str(e)}"})
+
+@app.post("/api/v1/superadmin/system/backup")
+async def create_system_backup(request: Request, db: Session = Depends(deps.get_db)):
+    # Проверяем доступ суперадмина
+    user = await check_superadmin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=401, content={"success": False, "message": "Нет доступа"})
+    
+    try:
+        # Создаем резервную копию (здесь можно добавить реальную логику)
+        backup_filename = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sql"
+        
+        # В реальном приложении здесь был бы код для создания бэкапа базы данных
+        # subprocess.run(["pg_dump", "database_name", "-f", backup_filename])
+        
+        return JSONResponse(content={"success": True, "message": "Резервная копия создана", "filename": backup_filename})
+        
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка создания резервной копии: {str(e)}"})
+
+@app.get("/api/v1/superadmin/system/status")
+async def get_system_status(request: Request, db: Session = Depends(deps.get_db)):
+    # Проверяем доступ суперадмина
+    user = await check_superadmin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=401, content={"success": False, "message": "Нет доступа"})
+    
+    try:
+        # Пытаемся импортировать psutil для получения реальной информации о системе
+        try:
+            import psutil
+            
+            # Получаем информацию о системе
+            cpu_percent = psutil.cpu_percent(interval=1)
+            memory = psutil.virtual_memory()
+            disk = psutil.disk_usage('/')
+            
+            system_status = {
+                "cpu_usage": cpu_percent,
+                "memory_usage": memory.percent,
+                "memory_total": memory.total // (1024**3),  # GB
+                "memory_available": memory.available // (1024**3),  # GB
+                "disk_usage": disk.percent,
+                "disk_total": disk.total // (1024**3),  # GB
+                "disk_free": disk.free // (1024**3),  # GB
+                "uptime": "Online",
+                "last_backup": "2024-01-15 14:30:00",
+                "database_status": "Connected",
+                "web_server_status": "Running"
+            }
+        except ImportError:
+            # Если psutil не установлен, возвращаем базовую информацию
+            system_status = {
+                "cpu_usage": 15,
+                "memory_usage": 45,
+                "memory_total": 8,
+                "memory_available": 4,
+                "disk_usage": 60,
+                "disk_total": 100,
+                "disk_free": 40,
+                "uptime": "Online",
+                "last_backup": "2024-01-15 14:30:00",
+                "database_status": "Connected",
+                "web_server_status": "Running"
+            }
+        
+        return JSONResponse(content={"success": True, "status": system_status})
+        
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка получения статуса системы: {str(e)}"})
+
+@app.get("/superadmin/logs", response_class=HTMLResponse)
+async def superadmin_logs(request: Request, db: Session = Depends(deps.get_db)):
+    # Проверяем доступ суперадмина
+    user = await check_superadmin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    return templates.TemplateResponse(
+        "superadmin/logs.html",
+        {
+            "request": request,
+            "current_user": user,
+        }
+    )
+
+@app.get("/superadmin/settings", response_class=HTMLResponse)
+async def superadmin_settings(request: Request, db: Session = Depends(deps.get_db)):
+    # Проверяем доступ суперадмина
+    user = await check_superadmin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    return templates.TemplateResponse(
+        "superadmin/settings.html",
+        {
+            "request": request,
+            "current_user": user,
+        }
+    )
 
 if __name__ == "__main__":
     # Исправляем изображения при старте

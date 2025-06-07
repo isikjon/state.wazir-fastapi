@@ -281,37 +281,58 @@
 
 {% block scripts %}
 <script>
+console.log('🚀 НАЧАЛО ЗАГРУЗКИ SCRIPTS БЛОКА');
+
+// Глобальная переменная для проверки
+window.SUPERADMIN_USERS_LOADED = true;
+
+console.log('📝 Определяю функцию exportUsers...');
 // Экспорт пользователей
 function exportUsers() {
-    console.log('Экспорт пользователей...');
+    console.log('✅ exportUsers вызвана!');
+    console.log('📤 Экспорт пользователей...');
     const url = '/api/v1/superadmin/export/users';
+    console.log('🔗 URL для экспорта:', url);
     window.open(url, '_blank');
 }
 
+console.log('📝 Определяю функцию showBulkActions...');
 // Массовые действия
 function showBulkActions() {
+    console.log('✅ showBulkActions вызвана!');
     const modal = document.getElementById('bulkActionsModal');
+    console.log('🔍 Ищу модальное окно:', modal);
     if (modal) {
+        console.log('✅ Модальное окно найдено, показываю');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+    } else {
+        console.error('❌ Модальное окно не найдено!');
     }
 }
 
+console.log('📝 Определяю функцию closeBulkActionsModal...');
 function closeBulkActionsModal() {
+    console.log('✅ closeBulkActionsModal вызвана!');
     const modal = document.getElementById('bulkActionsModal');
     if (modal) {
+        console.log('✅ Закрываю модальное окно');
         modal.classList.add('hidden');
         modal.classList.remove('flex');
     }
 }
 
+console.log('📝 Определяю функцию toggleUserStatus...');
 // Изменение статуса пользователя
 function toggleUserStatus(userId) {
+    console.log('✅ toggleUserStatus вызвана с ID:', userId);
+    
     if (!confirm('Вы уверены, что хотите изменить статус пользователя?')) {
+        console.log('❌ Пользователь отменил действие');
         return;
     }
     
-    console.log('Изменение статуса пользователя:', userId);
+    console.log('📡 Отправляю запрос на изменение статуса...');
     
     fetch(`/api/v1/superadmin/users/${userId}/toggle-status`, {
         method: 'POST',
@@ -319,28 +340,37 @@ function toggleUserStatus(userId) {
             'Content-Type': 'application/json',
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('📥 Получен ответ:', response);
+        return response.json();
+    })
     .then(data => {
+        console.log('📋 Данные ответа:', data);
         if (data.success) {
             alert('✅ ' + data.message);
+            console.log('🔄 Перезагружаю страницу...');
             location.reload();
         } else {
             alert('❌ ' + data.message);
         }
     })
     .catch(error => {
-        console.error('Ошибка:', error);
+        console.error('💥 Ошибка запроса:', error);
         alert('❌ Ошибка изменения статуса');
     });
 }
 
+console.log('📝 Определяю функцию applyFilters...');
 // Фильтрация
 function applyFilters() {
-    console.log('Применение фильтров...');
+    console.log('✅ applyFilters вызвана!');
+    console.log('🔍 Применение фильтров...');
     
     const search = document.getElementById('searchInput').value.trim();
     const status = document.getElementById('statusFilter').value;
     const propertyFilter = document.getElementById('propertyFilter').value;
+    
+    console.log('📊 Значения фильтров:', { search, status, propertyFilter });
     
     const params = new URLSearchParams();
     if (search) params.append('search', search);
@@ -348,18 +378,25 @@ function applyFilters() {
     if (propertyFilter) params.append('property_filter', propertyFilter);
     
     const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
-    console.log('Новый URL:', newUrl);
+    console.log('🔗 Новый URL:', newUrl);
     window.location.href = newUrl;
 }
 
+console.log('📝 Определяю функцию resetFilters...');
 // Сброс фильтров
 function resetFilters() {
+    console.log('✅ resetFilters вызвана!');
+    console.log('🧹 Сбрасываю все фильтры...');
+    
     document.getElementById('searchInput').value = '';
     document.getElementById('statusFilter').value = '';
     document.getElementById('propertyFilter').value = '';
+    
+    console.log('🔄 Перехожу на чистую страницу...');
     window.location.href = window.location.pathname;
 }
 
+console.log('📝 Определяю функцию debounce...');
 // Debounce для поиска
 function debounce(func, wait) {
     let timeout;
@@ -373,34 +410,11 @@ function debounce(func, wait) {
     };
 }
 
-// Инициализация
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Инициализация фильтров...');
-    
-    // Поиск
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.value = '{{ search }}';
-        searchInput.addEventListener('input', debounce(applyFilters, 800));
-    }
-    
-    // Фильтр статуса
-    const statusFilter = document.getElementById('statusFilter');
-    if (statusFilter) {
-        statusFilter.value = '{{ status }}';
-        statusFilter.addEventListener('change', applyFilters);
-    }
-    
-    // Фильтр недвижимости
-    const propertyFilter = document.getElementById('propertyFilter');
-    if (propertyFilter) {
-        propertyFilter.value = '{{ property_filter }}';
-        propertyFilter.addEventListener('change', applyFilters);
-    }
-});
-
+console.log('📝 Определяю функцию bulkAction...');
 // Массовые действия
 function bulkAction(action) {
+    console.log('✅ bulkAction вызвана с действием:', action);
+    
     if (action === 'activate') {
         if (confirm('Активировать всех пользователей?')) {
             alert('Функция будет реализована');
@@ -414,5 +428,64 @@ function bulkAction(action) {
     }
     closeBulkActionsModal();
 }
+
+console.log('⏳ Добавляю обработчик DOMContentLoaded...');
+// Инициализация
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎉 DOM загружен! Инициализация фильтров...');
+    
+    // Поиск
+    const searchInput = document.getElementById('searchInput');
+    console.log('🔍 Элемент поиска:', searchInput);
+    if (searchInput) {
+        searchInput.value = '{{ search }}';
+        searchInput.addEventListener('input', debounce(applyFilters, 800));
+        console.log('✅ Обработчик поиска добавлен');
+    } else {
+        console.error('❌ Элемент searchInput не найден!');
+    }
+    
+    // Фильтр статуса
+    const statusFilter = document.getElementById('statusFilter');
+    console.log('📊 Элемент фильтра статуса:', statusFilter);
+    if (statusFilter) {
+        statusFilter.value = '{{ status }}';
+        statusFilter.addEventListener('change', applyFilters);
+        console.log('✅ Обработчик фильтра статуса добавлен');
+    } else {
+        console.error('❌ Элемент statusFilter не найден!');
+    }
+    
+    // Фильтр недвижимости
+    const propertyFilter = document.getElementById('propertyFilter');
+    console.log('🏠 Элемент фильтра недвижимости:', propertyFilter);
+    if (propertyFilter) {
+        propertyFilter.value = '{{ property_filter }}';
+        propertyFilter.addEventListener('change', applyFilters);
+        console.log('✅ Обработчик фильтра недвижимости добавлен');
+    } else {
+        console.error('❌ Элемент propertyFilter не найден!');
+    }
+    
+    console.log('🎯 Инициализация завершена!');
+});
+
+console.log('🎯 ВСЕ ФУНКЦИИ ОПРЕДЕЛЕНЫ!');
+console.log('🔍 Проверяем доступность функций в window:');
+console.log('- exportUsers:', typeof exportUsers);
+console.log('- showBulkActions:', typeof showBulkActions);
+console.log('- toggleUserStatus:', typeof toggleUserStatus);
+console.log('- resetFilters:', typeof resetFilters);
+
+// Добавляем функции в глобальную область видимости для отладки
+window.exportUsers = exportUsers;
+window.showBulkActions = showBulkActions;
+window.toggleUserStatus = toggleUserStatus;
+window.resetFilters = resetFilters;
+window.closeBulkActionsModal = closeBulkActionsModal;
+window.bulkAction = bulkAction;
+
+console.log('🌍 Функции добавлены в window объект');
+console.log('✅ SCRIPTS БЛОК ПОЛНОСТЬЮ ЗАГРУЖЕН!');
 </script>
 {% endblock %} 

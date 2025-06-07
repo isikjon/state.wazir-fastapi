@@ -2068,60 +2068,189 @@ async def superadmin_dashboard(request: Request, db: Session = Depends(deps.get_
     # Статистика
     stats = {
         'admins_count': db.query(models.User).filter(models.User.role == models.UserRole.ADMIN).count(),
-        'users_count': db.query(models.User).count(),
+        'users_count': db.query(models.User).filter(models.User.role == models.UserRole.USER).count(),
         'properties_count': db.query(models.Property).count(),
         'pending_requests': db.query(models.Property).filter(models.Property.status == 'PENDING').count()
     }
     
-    # Последние действия (заглушка)
-    recent_activities = [
-        {
-            'icon': 'fas fa-user-plus',
-            'action': 'Создан новый администратор',
-            'admin_name': 'SuperAdmin',
-            'time': '2 часа назад'
-        },
-        {
-            'icon': 'fas fa-edit',
-            'action': 'Изменены настройки системы',
-            'admin_name': 'SuperAdmin',
-            'time': '1 день назад'
-        },
-        {
-            'icon': 'fas fa-trash',
-            'action': 'Удален пользователь',
-            'admin_name': 'Admin1',
-            'time': '2 дня назад'
-        }
-    ]
+    # РЕАЛЬНЫЕ последние действия из БД
+    recent_activities = []
     
-    # Системные уведомления
-    system_notifications = [
-        {
+    # Последние зарегистрированные пользователи (за последние 7 дней)
+    week_ago = datetime.now() - timedelta(days=7)
+    recent_users = db.query(models.User).filter(
+        models.User.role == models.UserRole.USER,
+        models.User.created_at >= week_ago
+    ).order_by(desc(models.User.created_at)).limit(3).all()
+    
+    for user_item in recent_users:
+        time_diff = datetime.now() - user_item.created_at
+        if time_diff.days > 0:
+            time_str = f"{time_diff.days} дн. назад"
+        elif time_diff.seconds > 3600:
+            time_str = f"{time_diff.seconds // 3600} ч. назад"
+        else:
+            time_str = f"{time_diff.seconds // 60} мин. назад"
+            
+        recent_activities.append({
+            'icon': 'fas fa-user-plus',
+            'action': f'Регистрация: {user_item.full_name or user_item.email}',
+            'admin_name': 'Система',
+            'time': time_str
+        })
+    
+    # Последние объявления (за последние 3 дня)
+    three_days_ago = datetime.now() - timedelta(days=3)
+    recent_properties = db.query(models.Property).filter(
+        models.Property.created_at >= three_days_ago
+    ).order_by(desc(models.Property.created_at)).limit(2).all()
+    
+    for prop in recent_properties:
+        time_diff = datetime.now() - prop.created_at
+        if time_diff.days > 0:
+            time_str = f"{time_diff.days} дн. назад"
+        elif time_diff.seconds > 3600:
+            time_str = f"{time_diff.seconds // 3600} ч. назад"
+        else:
+            time_str = f"{time_diff.seconds // 60} мин. назад"
+            
+        recent_activities.append({
+            'icon': 'fas fa-building',
+            'action': f'Новое объявление: {prop.title or f"Объект #{prop.id}"}',
+            'admin_name': 'Пользователь',
+            'time': time_str
+        })
+    
+    # Последние изменения статусов объявлений
+    recent_status_changes = db.query(models.Property).filter(
+        models.Property.updated_at >= three_days_ago,
+        models.Property.status.in_(['ACTIVE', 'REJECTED'])
+    ).order_by(desc(models.Property.updated_at)).limit(2).all()
+    
+    for prop in recent_status_changes:
+        time_diff = datetime.now() - prop.updated_at
+        if time_diff.days > 0:
+            time_str = f"{time_diff.days} дн. назад"
+        elif time_diff.seconds > 3600:
+            time_str = f"{time_diff.seconds // 3600} ч. назад"
+        else:
+            time_str = f"{time_diff.seconds // 60} мин. назад"
+            
+        status_text = "одобрено" if prop.status == 'ACTIVE' else "отклонено"
+        recent_activities.append({
+            'icon': 'fas fa-edit',
+            'action': f'Объявление {status_text}: {prop.title or f"#{prop.id}"}',
+            'admin_name': 'Модератор',
+            'time': time_str
+        })
+    
+    # Если нет реальных активностей, добавляем системное сообщение
+    if not recent_activities:
+        recent_activities.append({
+            'icon': 'fas fa-info-circle',
+            'action': 'Система запущена и работает стабильно',
+            'admin_name': 'Система',
+            'time': 'Сейчас'
+        })
+    
+    # РЕАЛЬНЫЕ системные уведомления
+    system_notifications = []
+    
+    # Проверяем наличие объявлений на модерации
+    pending_count = db.query(models.Property).filter(models.Property.status == 'PENDING').count()
+    if pending_count > 0:
+        system_notifications.append({
             'icon': 'fas fa-exclamation-triangle',
-            'title': 'Высокая нагрузка',
-            'message': 'Система работает под повышенной нагрузкой',
+            'title': 'Требуется модерация',
+            'message': f'{pending_count} объявлений ожидают модерации',
             'color': '#f59e0b',
             'bg_color': '#fefbf3',
-            'time': '10 минут назад'
-        },
-        {
-            'icon': 'fas fa-database',
-            'title': 'Резервная копия',
-            'message': 'Создана резервная копия базы данных',
+            'time': 'Сейчас'
+        })
+    
+    # Проверяем новых пользователей за последние 24 часа
+    yesterday = datetime.now() - timedelta(days=1)
+    new_users_count = db.query(models.User).filter(
+        models.User.created_at >= yesterday,
+        models.User.role == models.UserRole.USER
+    ).count()
+    
+    if new_users_count > 0:
+        system_notifications.append({
+            'icon': 'fas fa-users',
+            'title': 'Новые пользователи',
+            'message': f'{new_users_count} новых пользователей за последние 24 часа',
             'color': '#10b981',
             'bg_color': '#f0fdf4',
-            'time': '1 час назад'
-        }
-    ]
+            'time': '24 часа'
+        })
     
-    # Системная информация
+    # Проверяем неактивных администраторов
+    inactive_admins = db.query(models.User).filter(
+        models.User.role == models.UserRole.ADMIN,
+        models.User.is_active == False
+    ).count()
+    
+    if inactive_admins > 0:
+        system_notifications.append({
+            'icon': 'fas fa-user-slash',
+            'title': 'Неактивные администраторы',
+            'message': f'{inactive_admins} администраторов неактивны',
+            'color': '#ef4444',
+            'bg_color': '#fef2f2',
+            'time': '1 час назад'
+        })
+    
+    # Проверяем количество активных объявлений
+    active_properties = db.query(models.Property).filter(models.Property.status == 'ACTIVE').count()
+    if active_properties > 100:
+        system_notifications.append({
+            'icon': 'fas fa-chart-line',
+            'title': 'Высокая активность',
+            'message': f'{active_properties} активных объявлений в системе',
+            'color': '#10b981',
+            'bg_color': '#f0fdf4',
+            'time': 'Сейчас'
+        })
+    
+    # Если нет уведомлений, добавляем позитивное сообщение
+    if not system_notifications:
+        system_notifications.append({
+            'icon': 'fas fa-check-circle',
+            'title': 'Все в порядке',
+            'message': 'Система работает стабильно, проблем не обнаружено',
+            'color': '#10b981',
+            'bg_color': '#f0fdf4',
+            'time': 'Сейчас'
+        })
+    
+    # РЕАЛЬНАЯ системная информация
     system_info = {
         'python_version': f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
         'fastapi_version': '0.104.1',
-        'memory_usage': f"{psutil.virtual_memory().percent}%" if psutil else "Недоступно",
-        'uptime': '2 дня 14 часов'
+        'memory_usage': f"{psutil.virtual_memory().percent:.1f}%" if psutil else "Недоступно",
+        'uptime': 'Online'
     }
+    
+    # Пытаемся получить реальную информацию о системе
+    if psutil:
+        try:
+            # Использование CPU
+            cpu_percent = psutil.cpu_percent(interval=1)
+            # Использование памяти
+            memory = psutil.virtual_memory()
+            # Использование диска
+            disk = psutil.disk_usage('/')
+            
+            system_info.update({
+                'cpu_usage': f"{cpu_percent:.1f}%",
+                'memory_usage': f"{memory.percent:.1f}%",
+                'memory_total': f"{memory.total // (1024**3)} GB",
+                'disk_usage': f"{disk.percent:.1f}%",
+                'disk_free': f"{disk.free // (1024**3)} GB"
+            })
+        except Exception as e:
+            print(f"DEBUG: Ошибка получения системной информации: {e}")
     
     return templates.TemplateResponse(
         "superadmin/dashboard.html",
@@ -2227,7 +2356,7 @@ async def superadmin_properties(
     user = await check_superadmin_access(request, db)
     if isinstance(user, RedirectResponse):
         return user
-    
+        
     # Получаем категории для фильтра
     categories = db.query(models.Category).all()
     
@@ -2349,6 +2478,36 @@ async def superadmin_properties(
             "start_item": start_item,
             "end_item": end_item,
             "query_params": query_params,
+        }
+    )
+
+@app.get("/superadmin/logs", response_class=HTMLResponse)
+async def superadmin_logs(request: Request, db: Session = Depends(deps.get_db)):
+    # Проверяем доступ суперадмина
+    user = await check_superadmin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    return templates.TemplateResponse(
+        "superadmin/logs.html",
+        {
+            "request": request,
+            "current_user": user,
+        }
+    )
+
+@app.get("/superadmin/settings", response_class=HTMLResponse)
+async def superadmin_settings(request: Request, db: Session = Depends(deps.get_db)):
+    # Проверяем доступ суперадмина
+    user = await check_superadmin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    return templates.TemplateResponse(
+        "superadmin/settings.html",
+        {
+            "request": request,
+            "current_user": user,
         }
     )
 
@@ -2756,7 +2915,7 @@ async def export_properties(request: Request, db: Session = Depends(deps.get_db)
     # Проверяем доступ суперадмина
     user = await check_superadmin_access(request, db)
     if isinstance(user, RedirectResponse):
-        return user
+        return JSONResponse(status_code=401, content={"success": False, "message": "Доступ запрещен"})
     
     try:
         # Получаем все объявления
@@ -2781,19 +2940,41 @@ async def export_properties(request: Request, db: Session = Depends(deps.get_db)
                 'Дата создания': prop.created_at.strftime("%d.%m.%Y %H:%M") if prop.created_at else ""
             })
         
-        # Создаем DataFrame и Excel файл
-        df = pd.DataFrame(data)
+        # Создаем Excel файл
+        output = BytesIO()
+        workbook = openpyxl.Workbook()
+        worksheet = workbook.active
+        worksheet.title = "Объявления"
         
-        # Временный файл
-        import tempfile
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
-            df.to_excel(tmp.name, index=False, engine='openpyxl')
-            tmp_path = tmp.name
+        # Заголовки
+        headers = ["ID", "Название", "Цена", "Адрес", "Комнаты", "Площадь", "Статус", "Владелец", "Email владельца", "Телефон владельца", "Дата создания"]
+        for col, header in enumerate(headers, 1):
+            worksheet.cell(row=1, column=col, value=header)
         
-        return FileResponse(
-            tmp_path,
-            filename=f"properties_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        # Данные
+        for row, item in enumerate(data, 2):
+            worksheet.cell(row=row, column=1, value=item['ID'])
+            worksheet.cell(row=row, column=2, value=item['Название'])
+            worksheet.cell(row=row, column=3, value=item['Цена'])
+            worksheet.cell(row=row, column=4, value=item['Адрес'])
+            worksheet.cell(row=row, column=5, value=item['Комнаты'])
+            worksheet.cell(row=row, column=6, value=item['Площадь'])
+            worksheet.cell(row=row, column=7, value=item['Статус'])
+            worksheet.cell(row=row, column=8, value=item['Владелец'])
+            worksheet.cell(row=row, column=9, value=item['Email владельца'])
+            worksheet.cell(row=row, column=10, value=item['Телефон владельца'])
+            worksheet.cell(row=row, column=11, value=item['Дата создания'])
+        
+        workbook.save(output)
+        output.seek(0)
+        
+        headers = {
+            'Content-Disposition': f'attachment; filename="properties_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
+        }
+        return Response(
+            content=output.getvalue(),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers
         )
         
     except Exception as e:
@@ -2805,42 +2986,47 @@ async def export_users(request: Request, db: Session = Depends(deps.get_db)):
     # Проверяем доступ суперадмина
     user = await check_superadmin_access(request, db)
     if isinstance(user, RedirectResponse):
-        return user
+        return JSONResponse(status_code=401, content={"success": False, "message": "Доступ запрещен"})
     
     try:
         # Получаем всех пользователей
         users = db.query(models.User).all()
         
-        # Подготавливаем данные для экспорта
-        data = []
-        for user_item in users:
+        # Создаем Excel файл
+        output = BytesIO()
+        workbook = openpyxl.Workbook()
+        worksheet = workbook.active
+        worksheet.title = "Пользователи"
+        
+        # Заголовки
+        headers = ["ID", "ФИО", "Email", "Телефон", "Роль", "Статус", "Количество объявлений", "Дата регистрации"]
+        for col, header in enumerate(headers, 1):
+            worksheet.cell(row=1, column=col, value=header)
+        
+        # Данные
+        for row, user_item in enumerate(users, 2):
             # Считаем объявления пользователя
             properties_count = db.query(models.Property).filter(models.Property.owner_id == user_item.id).count()
             
-            data.append({
-                'ID': user_item.id,
-                'ФИО': user_item.full_name or f"Пользователь {user_item.id}",
-                'Email': user_item.email or "",
-                'Телефон': user_item.phone or "",
-                'Роль': user_item.role.value if user_item.role else "user",
-                'Статус': "Активный" if user_item.is_active else "Неактивный",
-                'Количество объявлений': properties_count,
-                'Дата регистрации': user_item.created_at.strftime("%d.%m.%Y %H:%M") if hasattr(user_item, 'created_at') and user_item.created_at else ""
-            })
+            worksheet.cell(row=row, column=1, value=user_item.id)
+            worksheet.cell(row=row, column=2, value=user_item.full_name or f"Пользователь {user_item.id}")
+            worksheet.cell(row=row, column=3, value=user_item.email or "")
+            worksheet.cell(row=row, column=4, value=user_item.phone or "")
+            worksheet.cell(row=row, column=5, value=user_item.role.value if user_item.role else "user")
+            worksheet.cell(row=row, column=6, value="Активный" if user_item.is_active else "Неактивный")
+            worksheet.cell(row=row, column=7, value=properties_count)
+            worksheet.cell(row=row, column=8, value=user_item.created_at.strftime("%d.%m.%Y %H:%M") if hasattr(user_item, 'created_at') and user_item.created_at else "")
         
-        # Создаем DataFrame и Excel файл
-        df = pd.DataFrame(data)
+        workbook.save(output)
+        output.seek(0)
         
-        # Временный файл
-        import tempfile
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
-            df.to_excel(tmp.name, index=False, engine='openpyxl')
-            tmp_path = tmp.name
-        
-        return FileResponse(
-            tmp_path,
-            filename=f"users_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        headers = {
+            'Content-Disposition': f'attachment; filename="users_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
+        }
+        return Response(
+            content=output.getvalue(),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers
         )
         
     except Exception as e:
@@ -2852,176 +3038,71 @@ async def export_all_data(request: Request, db: Session = Depends(deps.get_db)):
     # Проверяем доступ суперадмина
     user = await check_superadmin_access(request, db)
     if isinstance(user, RedirectResponse):
-        return user
+        return JSONResponse(status_code=401, content={"success": False, "message": "Доступ запрещен"})
     
     try:
         # Получаем все данные
         users = db.query(models.User).all()
         properties = db.query(models.Property).options(joinedload(models.Property.owner)).all()
         
-        # Данные пользователей
-        users_data = []
-        for user_item in users:
-            properties_count = db.query(models.Property).filter(models.Property.owner_id == user_item.id).count()
-            users_data.append({
-                'ID': user_item.id,
-                'ФИО': user_item.full_name or f"Пользователь {user_item.id}",
-                'Email': user_item.email or "",
-                'Телефон': user_item.phone or "",
-                'Роль': user_item.role.value if user_item.role else "user",
-                'Статус': "Активный" if user_item.is_active else "Неактивный",
-                'Количество объявлений': properties_count,
-                'Дата регистрации': user_item.created_at.strftime("%d.%m.%Y %H:%M") if hasattr(user_item, 'created_at') and user_item.created_at else ""
-            })
-        
-        # Данные объявлений
-        properties_data = []
-        for prop in properties:
-            properties_data.append({
-                'ID': prop.id,
-                'Название': prop.title or f"Объект #{prop.id}",
-                'Цена': prop.price or 0,
-                'Адрес': prop.address or "",
-                'Комнаты': prop.rooms or 0,
-                'Площадь': prop.area or 0,
-                'Статус': prop.status.value if prop.status else "draft",
-                'Владелец': prop.owner.full_name if prop.owner else "Нет данных",
-                'Email владельца': prop.owner.email if prop.owner else "",
-                'Телефон владельца': prop.owner.phone if prop.owner else "",
-                'Дата создания': prop.created_at.strftime("%d.%m.%Y %H:%M") if prop.created_at else ""
-            })
-        
         # Создаем Excel файл с несколькими листами
-        import tempfile
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
-            with pd.ExcelWriter(tmp.name, engine='openpyxl') as writer:
-                pd.DataFrame(users_data).to_excel(writer, sheet_name='Пользователи', index=False)
-                pd.DataFrame(properties_data).to_excel(writer, sheet_name='Объявления', index=False)
-            tmp_path = tmp.name
+        output = BytesIO()
+        workbook = openpyxl.Workbook()
         
-        return FileResponse(
-            tmp_path,
-            filename=f"full_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        # Удаляем дефолтный лист
+        workbook.remove(workbook.active)
+        
+        # Лист пользователей
+        users_sheet = workbook.create_sheet("Пользователи")
+        users_headers = ["ID", "ФИО", "Email", "Телефон", "Роль", "Статус", "Количество объявлений", "Дата регистрации"]
+        for col, header in enumerate(users_headers, 1):
+            users_sheet.cell(row=1, column=col, value=header)
+        
+        for row, user_item in enumerate(users, 2):
+            properties_count = db.query(models.Property).filter(models.Property.owner_id == user_item.id).count()
+            users_sheet.cell(row=row, column=1, value=user_item.id)
+            users_sheet.cell(row=row, column=2, value=user_item.full_name or f"Пользователь {user_item.id}")
+            users_sheet.cell(row=row, column=3, value=user_item.email or "")
+            users_sheet.cell(row=row, column=4, value=user_item.phone or "")
+            users_sheet.cell(row=row, column=5, value=user_item.role.value if user_item.role else "user")
+            users_sheet.cell(row=row, column=6, value="Активный" if user_item.is_active else "Неактивный")
+            users_sheet.cell(row=row, column=7, value=properties_count)
+            users_sheet.cell(row=row, column=8, value=user_item.created_at.strftime("%d.%m.%Y %H:%M") if hasattr(user_item, 'created_at') and user_item.created_at else "")
+        
+        # Лист объявлений
+        properties_sheet = workbook.create_sheet("Объявления")
+        properties_headers = ["ID", "Название", "Цена", "Адрес", "Комнаты", "Площадь", "Статус", "Владелец", "Email владельца", "Телефон владельца", "Дата создания"]
+        for col, header in enumerate(properties_headers, 1):
+            properties_sheet.cell(row=1, column=col, value=header)
+        
+        for row, prop in enumerate(properties, 2):
+            properties_sheet.cell(row=row, column=1, value=prop.id)
+            properties_sheet.cell(row=row, column=2, value=prop.title or f"Объект #{prop.id}")
+            properties_sheet.cell(row=row, column=3, value=prop.price or 0)
+            properties_sheet.cell(row=row, column=4, value=prop.address or "")
+            properties_sheet.cell(row=row, column=5, value=prop.rooms or 0)
+            properties_sheet.cell(row=row, column=6, value=prop.area or 0)
+            properties_sheet.cell(row=row, column=7, value=prop.status.value if prop.status else "draft")
+            properties_sheet.cell(row=row, column=8, value=prop.owner.full_name if prop.owner else "Нет данных")
+            properties_sheet.cell(row=row, column=9, value=prop.owner.email if prop.owner else "")
+            properties_sheet.cell(row=row, column=10, value=prop.owner.phone if prop.owner else "")
+            properties_sheet.cell(row=row, column=11, value=prop.created_at.strftime("%d.%m.%Y %H:%M") if prop.created_at else "")
+        
+        workbook.save(output)
+        output.seek(0)
+        
+        headers = {
+            'Content-Disposition': f'attachment; filename="full_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
+        }
+        return Response(
+            content=output.getvalue(),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers
         )
         
     except Exception as e:
         print(f"ERROR: Ошибка полного экспорта: {e}")
         return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка экспорта: {str(e)}"})
-
-# Добавляем реальные данные для дашборда суперадмина
-@app.get("/superadmin/dashboard", response_class=HTMLResponse)
-async def superadmin_dashboard(request: Request, db: Session = Depends(deps.get_db)):
-    # Проверяем доступ суперадмина
-    user = await check_superadmin_access(request, db)
-    if isinstance(user, RedirectResponse):
-        return user
-    
-    # Получаем статистику
-    from datetime import datetime, timedelta
-    
-    # Статистика
-    stats = {
-        'admins_count': db.query(models.User).filter(models.User.role == models.UserRole.ADMIN).count(),
-        'users_count': db.query(models.User).filter(models.User.role == models.UserRole.USER).count(),
-        'properties_count': db.query(models.Property).count(),
-        'pending_requests': db.query(models.Property).filter(models.Property.status == 'PENDING').count()
-    }
-    
-    # РЕАЛЬНЫЕ последние действия из БД
-    recent_activities = []
-    
-    # Последние зарегистрированные пользователи
-    recent_users = db.query(models.User).filter(
-        models.User.role == models.UserRole.USER
-    ).order_by(desc(models.User.created_at)).limit(3).all()
-    
-    for user_item in recent_users:
-        recent_activities.append({
-            'icon': 'fas fa-user-plus',
-            'action': f'Новый пользователь: {user_item.full_name or user_item.email}',
-            'admin_name': 'Система',
-            'time': user_item.created_at.strftime('%d.%m %H:%M') if user_item.created_at else 'Недавно'
-        })
-    
-    # Последние объявления
-    recent_properties = db.query(models.Property).order_by(desc(models.Property.created_at)).limit(2).all()
-    
-    for prop in recent_properties:
-        recent_activities.append({
-            'icon': 'fas fa-building',
-            'action': f'Новое объявление: {prop.title or f"Объект #{prop.id}"}',
-            'admin_name': 'Пользователь',
-            'time': prop.created_at.strftime('%d.%m %H:%M') if prop.created_at else 'Недавно'
-        })
-    
-    # РЕАЛЬНЫЕ системные уведомления
-    system_notifications = []
-    
-    # Проверяем наличие объявлений на модерации
-    pending_count = db.query(models.Property).filter(models.Property.status == 'PENDING').count()
-    if pending_count > 0:
-        system_notifications.append({
-            'icon': 'fas fa-exclamation-triangle',
-            'title': 'Требуется модерация',
-            'message': f'{pending_count} объявлений ожидают модерации',
-            'color': '#f59e0b',
-            'bg_color': '#fefbf3',
-            'time': 'Сейчас'
-        })
-    
-    # Проверяем новых пользователей за последние 24 часа
-    yesterday = datetime.now() - timedelta(days=1)
-    new_users_count = db.query(models.User).filter(
-        models.User.created_at >= yesterday,
-        models.User.role == models.UserRole.USER
-    ).count()
-    
-    if new_users_count > 0:
-        system_notifications.append({
-            'icon': 'fas fa-users',
-            'title': 'Новые пользователи',
-            'message': f'{new_users_count} новых пользователей за последние 24 часа',
-            'color': '#10b981',
-            'bg_color': '#f0fdf4',
-            'time': '24 часа'
-        })
-    
-    # Проверяем неактивных администраторов
-    inactive_admins = db.query(models.User).filter(
-        models.User.role == models.UserRole.ADMIN,
-        models.User.is_active == False
-    ).count()
-    
-    if inactive_admins > 0:
-        system_notifications.append({
-            'icon': 'fas fa-user-slash',
-            'title': 'Неактивные администраторы',
-            'message': f'{inactive_admins} администраторов неактивны',
-            'color': '#ef4444',
-            'bg_color': '#fef2f2',
-            'time': '1 час назад'
-        })
-    
-    # Системная информация
-    system_info = {
-        'python_version': f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-        'fastapi_version': '0.104.1',
-        'memory_usage': f"{psutil.virtual_memory().percent}%" if psutil else "Недоступно",
-        'uptime': '2 дня 14 часов'
-    }
-    
-    return templates.TemplateResponse(
-        "superadmin/dashboard.html",
-        {
-            "request": request,
-            "current_user": user,
-            "stats": stats,
-            "recent_activities": recent_activities,
-            "system_notifications": system_notifications,
-            "system_info": system_info
-        }
-    )
 
 @app.get("/api/v1/superadmin/export/admins")
 async def export_admins(request: Request, db: Session = Depends(deps.get_db)):
@@ -3129,139 +3210,3 @@ async def update_superadmin_settings(
             "compact_view": compact_view
         }
         
-        return JSONResponse(content={"success": True, "message": "Настройки сохранены", "settings": updated_settings})
-        
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка сохранения настроек: {str(e)}"})
-
-@app.post("/api/v1/superadmin/system/scale")
-async def update_system_scale(
-    request: Request,
-    scale: int = Form(...),
-    db: Session = Depends(deps.get_db)
-):
-    # Проверяем доступ суперадмина
-    user = await check_superadmin_access(request, db)
-    if isinstance(user, RedirectResponse):
-        return JSONResponse(status_code=401, content={"success": False, "message": "Нет доступа"})
-    
-    try:
-        # Валидация значения масштаба
-        if not 50 <= scale <= 200:
-            return JSONResponse(status_code=400, content={"success": False, "message": "Масштаб должен быть от 50% до 200%"})
-        
-        # Здесь можно реализовать изменение масштаба системы
-        # Например, изменение CSS переменных или настроек UI
-        
-        return JSONResponse(content={"success": True, "message": f"Масштаб системы установлен на {scale}%", "scale": scale})
-        
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка изменения масштаба: {str(e)}"})
-
-@app.post("/api/v1/superadmin/system/backup")
-async def create_system_backup(request: Request, db: Session = Depends(deps.get_db)):
-    # Проверяем доступ суперадмина
-    user = await check_superadmin_access(request, db)
-    if isinstance(user, RedirectResponse):
-        return JSONResponse(status_code=401, content={"success": False, "message": "Нет доступа"})
-    
-    try:
-        # Создаем резервную копию (здесь можно добавить реальную логику)
-        backup_filename = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sql"
-        
-        # В реальном приложении здесь был бы код для создания бэкапа базы данных
-        # subprocess.run(["pg_dump", "database_name", "-f", backup_filename])
-        
-        return JSONResponse(content={"success": True, "message": "Резервная копия создана", "filename": backup_filename})
-        
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка создания резервной копии: {str(e)}"})
-
-@app.get("/api/v1/superadmin/system/status")
-async def get_system_status(request: Request, db: Session = Depends(deps.get_db)):
-    # Проверяем доступ суперадмина
-    user = await check_superadmin_access(request, db)
-    if isinstance(user, RedirectResponse):
-        return JSONResponse(status_code=401, content={"success": False, "message": "Нет доступа"})
-    
-    try:
-        # Пытаемся импортировать psutil для получения реальной информации о системе
-        try:
-            import psutil
-            
-            # Получаем информацию о системе
-            cpu_percent = psutil.cpu_percent(interval=1)
-            memory = psutil.virtual_memory()
-            disk = psutil.disk_usage('/')
-            
-            system_status = {
-                "cpu_usage": cpu_percent,
-                "memory_usage": memory.percent,
-                "memory_total": memory.total // (1024**3),  # GB
-                "memory_available": memory.available // (1024**3),  # GB
-                "disk_usage": disk.percent,
-                "disk_total": disk.total // (1024**3),  # GB
-                "disk_free": disk.free // (1024**3),  # GB
-                "uptime": "Online",
-                "last_backup": "2024-01-15 14:30:00",
-                "database_status": "Connected",
-                "web_server_status": "Running"
-            }
-        except ImportError:
-            # Если psutil не установлен, возвращаем базовую информацию
-            system_status = {
-                "cpu_usage": 15,
-                "memory_usage": 45,
-                "memory_total": 8,
-                "memory_available": 4,
-                "disk_usage": 60,
-                "disk_total": 100,
-                "disk_free": 40,
-                "uptime": "Online",
-                "last_backup": "2024-01-15 14:30:00",
-                "database_status": "Connected",
-                "web_server_status": "Running"
-            }
-        
-        return JSONResponse(content={"success": True, "status": system_status})
-        
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка получения статуса системы: {str(e)}"})
-
-@app.get("/superadmin/logs", response_class=HTMLResponse)
-async def superadmin_logs(request: Request, db: Session = Depends(deps.get_db)):
-    # Проверяем доступ суперадмина
-    user = await check_superadmin_access(request, db)
-    if isinstance(user, RedirectResponse):
-        return user
-    
-    return templates.TemplateResponse(
-        "superadmin/logs.html",
-        {
-            "request": request,
-            "current_user": user,
-        }
-    )
-
-@app.get("/superadmin/settings", response_class=HTMLResponse)
-async def superadmin_settings(request: Request, db: Session = Depends(deps.get_db)):
-    # Проверяем доступ суперадмина
-    user = await check_superadmin_access(request, db)
-    if isinstance(user, RedirectResponse):
-        return user
-    
-    return templates.TemplateResponse(
-        "superadmin/settings.html",
-        {
-            "request": request,
-            "current_user": user,
-        }
-    )
-
-if __name__ == "__main__":
-    # Исправляем изображения при старте
-    from fix_images import fix_missing_images
-    fix_missing_images()
-    
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

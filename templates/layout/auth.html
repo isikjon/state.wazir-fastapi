@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <title>Wazir Недвижимость - Авторизация</title>
         <link rel="stylesheet"
             href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
@@ -15,6 +15,24 @@
             rel="stylesheet">
         <link rel="stylesheet"
             href="{{ url_for('static', path='layout/assets/scss/main.css') }}">
+        <style>
+            .remember-me-block {
+                transition: all 0.3s ease;
+            }
+            .remember-me-block:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+                border-color: #93c5fd;
+            }
+            .remember-me-checkbox:checked {
+                animation: checkBounce 0.3s ease;
+            }
+            @keyframes checkBounce {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.2); }
+                100% { transform: scale(1); }
+            }
+        </style>
     </head>
     <body class="bg-gray-50 font-sans">
         <div
@@ -87,6 +105,21 @@
                                 помню пароль</a>
                         </div>
 
+                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mx-auto my-4 border border-blue-100 shadow-sm remember-me-block">
+                            <label class="flex items-center justify-center cursor-pointer">
+                                <input type="checkbox" id="remember-me" class="mr-3 w-5 h-5 text-blue-600 bg-white border-2 border-blue-300 rounded focus:ring-blue-500 focus:ring-2 transition-all remember-me-checkbox">
+                                <div class="flex items-center">
+                                    <!-- <i class="fas fa-shield-alt mr-2 text-blue-500"></i> -->
+                                    <span class="text-sm text-blue-700 font-medium font-montserrat">
+                                        Запомнить данные
+                                    </span>
+                                </div>
+                            </label>
+                            <!-- <p class="text-xs text-blue-600 text-center mt-2 font-montserrat opacity-75">
+                                Данные будут сохранены безопасно в вашем браузере
+                            </p> -->
+                        </div>
+
                         <div class="space-y-3">
                             <button type="submit"
                                 class="btn btn-primary w-full py-3 rounded-lg font-montserrat">
@@ -100,6 +133,9 @@
                         </div>
                     </form>
                 </div>
+
+                <!-- Красивый блок "Запомнить меня" -->
+
             </div>
         </div>
 
@@ -110,6 +146,69 @@
         $(document).ready(function() {
             // Устанавливаем начальное значение contact_type
             $('#contact-type-input').val('phone');
+            
+            // Функция для сохранения данных в localStorage
+            function saveRememberMeData(contact, password, contactType) {
+                if ($('#remember-me').is(':checked')) {
+                    const rememberData = {
+                        contact: contact,
+                        password: password,
+                        contactType: contactType,
+                        timestamp: new Date().getTime()
+                    };
+                    localStorage.setItem('wazir_remember_me', JSON.stringify(rememberData));
+                } else {
+                    // Если чекбокс не отмечен, удаляем сохраненные данные
+                    localStorage.removeItem('wazir_remember_me');
+                }
+            }
+            
+            // Функция для загрузки сохраненных данных
+            function loadRememberMeData() {
+                const savedData = localStorage.getItem('wazir_remember_me');
+                if (savedData) {
+                    try {
+                        const data = JSON.parse(savedData);
+                        const currentTime = new Date().getTime();
+                        const dayInMs = 24 * 60 * 60 * 1000;
+                        
+                        // Проверяем, не истекли ли данные (30 дней)
+                        if (currentTime - data.timestamp < 30 * dayInMs) {
+                            // Восстанавливаем данные
+                            $('#user-id').val(data.contact);
+                            $('#password').val(data.password);
+                            $('#remember-me').prop('checked', true);
+                            
+                            // Переключаем на нужный таб
+                            if (data.contactType === 'email') {
+                                $('#tab-email').click();
+                            } else {
+                                $('#tab-phone').click();
+                            }
+                            
+                            console.log('Данные авторизации восстановлены из памяти');
+                        } else {
+                            // Данные устарели, удаляем их
+                            localStorage.removeItem('wazir_remember_me');
+                        }
+                    } catch (e) {
+                        console.error('Ошибка при загрузке сохраненных данных:', e);
+                        localStorage.removeItem('wazir_remember_me');
+                    }
+                }
+            }
+            
+            // Загружаем сохраненные данные при загрузке страницы
+            loadRememberMeData();
+            
+            // Обработчик изменения чекбокса "Запомнить меня"
+            $('#remember-me').on('change', function() {
+                if (!$(this).is(':checked')) {
+                    // Если пользователь снял галочку, удаляем сохраненные данные
+                    localStorage.removeItem('wazir_remember_me');
+                    console.log('Сохраненные данные авторизации удалены');
+                }
+            });
             
             // Маска для телефона (Киргизия)
             $('#user-id').mask('+996 000 000 000', {
@@ -145,6 +244,12 @@
                 
                 // Обновляем значение contact_type
                 $('#contact-type-input').val($(this).attr('id') === 'tab-phone' ? 'phone' : 'email');
+                
+                // Очищаем поля только если не используется "Запомнить меня"
+                if (!$('#remember-me').is(':checked')) {
+                    $('#user-id').val('');
+                    $('#password').val('');
+                }
                 
                 // Изменение плейсхолдера и метки в зависимости от выбранного таба
                 if ($(this).attr('id') === 'tab-phone') {
@@ -229,6 +334,12 @@
                         
                         // Проверяем структуру ответа
                         if (response && response.access_token) {
+                            // Сохраняем данные для "Запомнить меня" при успешной авторизации
+                            const contactValue = $('#user-id').val();
+                            const passwordValue = $('#password').val();
+                            const contactTypeValue = $('#tab-phone').hasClass('active') ? 'phone' : 'email';
+                            saveRememberMeData(contactValue, passwordValue, contactTypeValue);
+                            
                             // Сохраняем токен в localStorage
                             localStorage.setItem('access_token', response.access_token);
                             

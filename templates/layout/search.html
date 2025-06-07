@@ -2,7 +2,7 @@
 <html lang="ru">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <title>Wazir Недвижимость - Поиск</title>
         <link rel="stylesheet"
             href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
@@ -283,22 +283,23 @@
     <body style="font-family: 'AGAvalancheC';">
         <div class="min-h-screen flex flex-col">
             <header class="bg-white shadow-sm">
-                <div class="container mx-auto px-4 py-1">
-                    <div class="flex items-center justify-between">
+                <div class="mx-auto px-1 py-1">
+                    <div class="flex items-center justify-between" style="gap: 10px;">
                         <a href="/mobile/">
-                            <div class="flex items-center"
-                                style="box-shadow: 0px 6px 6px 0px rgba(0,0,0,0.21); padding: 0px 13px; border-radius: 8px; border: 1px solid #ccc;">
-                                <p
-                                    style="font-family: 'Trajan Pro 3';, sans-serif; font-size: 22px;">WAZIR</p>
+                            <div class="flex items-center" style="box-shadow: 0px 6px 6px 0px rgba(0,0,0,0.21); padding: 0px 13px; border-radius: 8px; border: 1px solid #ccc;">
+                                <p style="font-family: 'Trajan Pro 3', sans-serif;font-size: 24px;">WAZIR</p>
                             </div>
                         </a>
+                        <div class="flex items-center">
+                            <div class="flex items-center weather-currency" style="box-shadow: 0px 6px 6px 0px rgba(0,0,0,0.21);padding: 5px 4px;border-radius: 8px;border: 1px solid #ccc;">
+                                <img src="https://wazir.kg/static/weather.png" alt="weather" class="" style="height: 23px; width: 25px;">
+                                <span id="weather" style="font-size: 18px">+30°</span>
+                            </div>
+                        </div>
                         <div class="flex items-center" style="gap: 24px;">
-                            <div class="flex items-center weather-currency" style="box-shadow: 0px 6px 6px 0px rgba(0,0,0,0.21); padding: 5px 12px; border-radius: 8px; border: 1px solid #ccc;">
-                                <img src="https://wazir.kg/static/weather.png" alt="weather" class="" style="height: 25px;width: 35px;">
-                                <span id="weather" style="font-size: 17px">+30°</span>
-                            </div><div class="flex items-center weather-currency" style="box-shadow: 0px 6px 6px 0px rgba(0,0,0,0.21); padding: 5px 12px; border-radius: 8px; border: 1px solid #ccc;">
-                                <img src="https://flagcdn.com/w20/us.png" alt="USD" class="h-5 mr-2">
-                                <span id="currency-rate">87.5</span>
+                            <div class="flex items-center weather-currency" style="box-shadow: 0px 6px 6px 0px rgba(0,0,0,0.21);padding: 5px 4px;border-radius: 8px;border: 1px solid #ccc;">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/d/de/Flag_of_the_United_States.png" alt="USD" class="h-5 mr-2">
+                                <span id="currency-rate" style="font-size: 18px;">87.5</span>
                             </div>
                         </div>
                     </div>
@@ -373,7 +374,7 @@
                 </div>
 
                 <!-- Категории (табы) -->
-                <div class="category-tabs py-2 sticky top-0 z-10 shadow-sm">
+                <!-- <div class="category-tabs py-2 sticky top-0 z-10 shadow-sm">
                     <div class="container mx-auto px-4">
                         <select class="category-select" id="category-select">
                             <option value {% if not selected_category
@@ -386,7 +387,7 @@
                             {% endfor %}
                         </select>
                     </div>
-                </div>
+                </div> -->
 
                 <!-- Поисковая строка и фильтры -->
                 <div class="container mx-auto px-4 mb-4 mt-3">
@@ -426,10 +427,10 @@
                     </div>
 
                     <!-- Панель фильтров -->
-                    <div class="filter-header" id="filter-header">
+                    <!-- <div class="filter-header" id="filter-header">
                         <span>Фильтры поиска</span>
                         <i class="fas fa-chevron-down text-gray-500"></i>
-                    </div>
+                    </div> -->
                     <div id="filter-panel"
                         class="filter-panel bg-white rounded-lg shadow-sm p-4 mb-4">
                         <form id="filter-form">
@@ -467,7 +468,7 @@
                                     (м²)</label>
                                 <div class="price-range mb-6">
                                     <div class="price-progress"
-                                        style="left: {{ (min_area or 0) / 500 * 100 }}%; right: {{ 100 - ((max_area or 500) / 500 * 100) }}%"></div>
+                                        style="left: {{ (min_area or 0) / 500 * 100 }}%; right: {{ 100 - ((max_area or 500) / 505 * 100) }}%"></div>
                                 </div>
                                 <div class="range-input">
                                     <input type="range" name="min_area" min="0"
@@ -594,86 +595,92 @@
                     {% if properties %}
                     {% for prop in properties %}
                     <!-- Карточка объявления -->
-                    <div class="property-card bg-white mb-5">
-                        <div class="relative">
-                            <!-- Слайдер изображений -->
-                            <div class="swiper property-swiper">
-                                <div class="swiper-wrapper">
-                                    {% if prop.images %}
-                                    {% for image in prop.images %}
-                                    <div class="swiper-slide">
-                                        <div class="col-span-1">
-                                            <img src="{{ image }}"
-                                                alt="{{ prop.title }}"
-                                                class="w-full h-full object-cover">
+                    <a href="{{ url_for('property', property_id=prop.id) }}" class="block no-underline">
+                        <div class="property-card bg-white mb-5 hover:shadow-lg transition-shadow">
+                            <div class="relative">
+                                <!-- Слайдер изображений -->
+                                <div class="swiper property-swiper">
+                                    <div class="swiper-wrapper">
+                                        {% if prop.images %}
+                                        {% for image in prop.images %}
+                                        <div class="swiper-slide">
+                                            <div class="col-span-1">
+                                                <img src="{{ image }}"
+                                                    alt="{{ prop.title }}"
+                                                    class="w-full h-full object-cover">
+                                            </div>
                                         </div>
+                                        {% endfor %}
+                                        {% else %}
+                                        <div class="swiper-slide">
+                                            <div class="col-span-1">
+                                                <img
+                                                    src="{{ url_for('static', path='layout/assets/img/property-placeholder.jpg') }}"
+                                                    alt="Нет фото"
+                                                    class="w-full h-full object-cover">
+                                            </div>
+                                        </div>
+                                        {% endif %}
                                     </div>
-                                    {% endfor %}
+                                    <div class="swiper-pagination"></div>
+                                </div>
+
+                                <!-- Индикатор просмотра фото -->
+                                <div
+                                    class="absolute bottom-3 right-3 bg-black bg-opacity-50 text-white px-3 py-1 rounded text-sm font-medium">
+                                    1/{{ prop.images_count or 1 }}
+                                </div>
+                            </div>
+
+                            <div class="p-4">
+                                <div class="mb-2">
+                                    <h3 class="property-price">{{
+                                        "{:,.0f}".format(prop.price).replace(',',
+                                        ' ') }} KGZ</h3>
+                                </div>
+                                <div class="property-info mb-1">
+                                    <p>{{ prop.rooms or "?" }}-комн.кв • {{
+                                        prop.area or "?" }} м² • {{ prop.floor or
+                                        "?" }}/{{ prop.building_floors or "?" }}
+                                        этаж</p>
+                                </div>
+                                <div class="property-address mb-3">
+                                    <p>г.{{ prop.city or "Ош" }} • {{ prop.address
+                                        or "Адрес не указан" }}</p>
+                                </div>
+
+                                <!-- Кнопки действий -->
+                                <div class="flex" onclick="event.stopPropagation();">
+                                    <a href="tel:+996123456789"
+                                        class="action-btn call-btn"
+                                        onclick="event.stopPropagation();">
+                                        <i class="fas fa-phone-alt"></i> Позвонить
+                                    </a>
+                                    <a
+                                        href="{{ url_for('property', property_id=prop.id) }}"
+                                        class="action-btn details-btn"
+                                        onclick="event.stopPropagation();">
+                                        <i class="fas fa-info-circle"></i> Подробно
+                                    </a>
+                                    {% if prop.tour_360_url %}
+                                    <a href="{{ prop.tour_360_url }}"
+                                        class="action-btn tour-btn"
+                                        onclick="event.stopPropagation();">
+                                        <i class="fas fa-vr-cardboard"></i> 360° -
+                                        Тур
+                                    </a>
                                     {% else %}
-                                    <div class="swiper-slide">
-                                        <div class="col-span-1">
-                                            <img
-                                                src="{{ url_for('static', path='layout/assets/img/property-placeholder.jpg') }}"
-                                                alt="Нет фото"
-                                                class="w-full h-full object-cover">
-                                        </div>
-                                    </div>
+                                    <a href="#" class="action-btn tour-btn"
+                                        style="opacity: 0.5; pointer-events: none;"
+                                        onclick="event.stopPropagation();">
+                                        <i class="fas fa-vr-cardboard"></i> 360° -
+                                        Тур
+                                    </a>
                                     {% endif %}
                                 </div>
-                                <div class="swiper-pagination"></div>
-                            </div>
-
-                            <!-- Индикатор просмотра фото -->
-                            <div
-                                class="absolute bottom-3 right-3 bg-black bg-opacity-50 text-white px-3 py-1 rounded text-sm font-medium">
-                                1/{{ prop.images_count or 1 }}
                             </div>
                         </div>
-
-                        <div class="p-4">
-                            <div class="mb-2">
-                                <h3 class="property-price">{{
-                                    "{:,.0f}".format(prop.price).replace(',',
-                                    ' ') }} KGZ</h3>
-                            </div>
-                            <div class="property-info mb-1">
-                                <p>{{ prop.rooms or "?" }}-комн.кв • {{
-                                    prop.area or "?" }} м² • {{ prop.floor or
-                                    "?" }}/{{ prop.building_floors or "?" }}
-                                    этаж</p>
-                            </div>
-                            <div class="property-address mb-3">
-                                <p>г.{{ prop.city or "Ош" }} • {{ prop.address
-                                    or "Адрес не указан" }}</p>
-                            </div>
-
-                            <!-- Кнопки действий -->
-                            <div class="flex">
-                                <a href="tel:+996123456789"
-                                    class="action-btn call-btn">
-                                    <i class="fas fa-phone-alt"></i> Позвонить
-                                </a>
-                                <a
-                                    href="{{ url_for('property', property_id=prop.id) }}"
-                                    class="action-btn details-btn">
-                                    <i class="fas fa-info-circle"></i> Подробно
-                                </a>
-                                {% if prop.tour_360_url %}
-                                <a href="{{ prop.tour_360_url }}"
-                                    class="action-btn tour-btn">
-                                    <i class="fas fa-vr-cardboard"></i> 360° -
-                                    Тур
-                                </a>
-                                {% else %}
-                                <a href="#" class="action-btn tour-btn"
-                                    style="opacity: 0.5; pointer-events: none;">
-                                    <i class="fas fa-vr-cardboard"></i> 360° -
-                                    Тур
-                                </a>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
+                    </a>
                     {% endfor %}
                     {% else %}
                     <!-- Если нет объявлений -->
@@ -1073,7 +1080,7 @@
                     }
                 } else {
                     const percent = (minVal / 500) * 100;
-                    const maxPercent = 100 - ((maxVal / 500) * 100);
+                    const maxPercent = 100 - ((maxVal / 505) * 100);
                     
                     areaProgress.css({
                         'left': percent + '%',

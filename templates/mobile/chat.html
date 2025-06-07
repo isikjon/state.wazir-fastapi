@@ -2,7 +2,7 @@
 <html lang="ru">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <title>Wazir Недвижимость - Чат</title>
         <link rel="stylesheet"
             href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
@@ -334,9 +334,7 @@
                         // Добавляем информационное сообщение о начале чата
                         const infoMessage = $(`
                             <div class="message info-message flex justify-center my-4">
-                                <div class="bg-gray-100 rounded-lg py-2 px-4 text-center text-gray-500">
-                                    Это начало вашего чата. Напишите что-нибудь, чтобы начать разговор!
-                                </div>
+                                Это начало вашего чата. Напишите что-нибудь, чтобы начать разговор!
                             </div>
                         `);
                         $('#messagesContainer').append(infoMessage);

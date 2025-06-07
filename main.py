@@ -876,8 +876,8 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
         models.Property.id != property.id,
         models.Property.type == property.type,
         models.Property.city == property.city,
-        models.Property.status == 'active'
-    ).limit(4).all()
+        models.Property.status == 'ACTIVE'
+    ).limit(5).all()
     
     # Форматируем данные для шаблона
     property_data = {
@@ -900,6 +900,9 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
         "has_renovation": property.has_renovation,
         "has_parking": property.has_parking,
         "notes": property.notes,  # Дата съемки 360
+        "created_at": property.created_at,
+        "updated_at": property.updated_at,
+        "views_count": getattr(property, 'views_count', 0),  # Безопасное получение значения
         "owner": {
             "id": property.owner.id,
             "full_name": property.owner.full_name,

@@ -9,6 +9,7 @@ class UserRole(str, enum.Enum):
     ADMIN = "ADMIN"
     USER = "USER"
     MANAGER = "MANAGER"
+    COMPANY = "COMPANY"  # Юридическое лицо
 
 
 class UserStatus(str, enum.Enum):
@@ -28,6 +29,14 @@ class User(Base, TimestampMixin):
     is_active = Column(Boolean, default=True)
     role = Column(Enum(UserRole), default=UserRole.USER)
     status = Column(Enum(UserStatus), default=UserStatus.PENDING)
+    
+    # Поля для юридических лиц
+    company_name = Column(String(255), nullable=True)  # Название компании
+    company_number = Column(String(100), nullable=True)  # Номер юр.лица (ИНН/ОГРН)
+    company_owner = Column(String(255), nullable=True)  # На кого оформлено
+    company_logo_url = Column(String(500), nullable=True)  # URL логотипа
+    company_description = Column(Text, nullable=True)  # Описание компании
+    company_address = Column(String(500), nullable=True)  # Адрес компании
     
     properties = relationship("Property", back_populates="owner")
     favorites = relationship("Favorite", back_populates="user")

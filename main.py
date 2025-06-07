@@ -2419,12 +2419,11 @@ async def superadmin_users(
         }
     )
 
-@app.get("/superadmin/properties", response_class=HTMLResponse)
-async def superadmin_properties(
+@app.get("/superadmin/companies", response_class=HTMLResponse)
+async def superadmin_companies(
     request: Request, 
     search: str = Query(None),
     status: str = Query(None),
-    type: str = Query(None),
     page: int = Query(1, ge=1),
     db: Session = Depends(deps.get_db)
 ):
@@ -2432,128 +2431,84 @@ async def superadmin_properties(
     user = await check_superadmin_access(request, db)
     if isinstance(user, RedirectResponse):
         return user
-        
-    # Получаем категории для фильтра
-    categories = db.query(models.Category).all()
     
-    # Базовый запрос
-    query = db.query(models.Property).options(
-        joinedload(models.Property.owner),
-        joinedload(models.Property.images)
-    )
+    # Базовый запрос для юридических лиц
+    query = db.query(models.User).filter(models.User.role == models.UserRole.COMPANY)
     
     # Применяем фильтры
     if search:
         search_term = f"%{search}%"
         query = query.filter(
             or_(
-                models.Property.title.ilike(search_term),
-                models.Property.address.ilike(search_term),
-                models.Property.description.ilike(search_term)
+                models.User.company_name.ilike(search_term),
+                models.User.company_number.ilike(search_term),
+                models.User.company_owner.ilike(search_term),
+                models.User.full_name.ilike(search_term),
+                models.User.email.ilike(search_term),
+                models.User.phone.ilike(search_term)
             )
         )
     
     if status:
-        query = query.filter(models.Property.status == status)
-    
-    if type:
-        try:
-            type_id = int(type)
-            query = query.join(models.PropertyCategory).filter(
-                models.PropertyCategory.category_id == type_id
-            )
-        except (ValueError, TypeError):
-            pass
-    
-    # Получаем статистику
-    total_properties = db.query(models.Property).count()
-    active_count = db.query(models.Property).filter(models.Property.status == 'ACTIVE').count()
-    pending_count = db.query(models.Property).filter(models.Property.status == 'PENDING').count()
-    blocked_count = db.query(models.Property).filter(models.Property.status == 'REJECTED').count()
+        if status == "active":
+            query = query.filter(models.User.is_active == True)
+        elif status == "blocked":
+            query = query.filter(models.User.is_active == False)
     
     # Пагинация
     total_items = query.count()
-    items_per_page = 10
+    items_per_page = 20
     total_pages = (total_items + items_per_page - 1) // items_per_page if total_items > 0 else 1
     
     if page > total_pages and total_pages > 0:
         page = total_pages
     
     start_idx = (page - 1) * items_per_page
-    properties_results = query.order_by(desc(models.Property.created_at)).offset(start_idx).limit(items_per_page).all()
+    companies_results = query.order_by(desc(models.User.created_at)).offset(start_idx).limit(items_per_page).all()
     
-    # Форматируем данные
-    enhanced_properties = []
-    for prop in properties_results:
-        # Главное изображение
-        image_url = "/static/layout/assets/img/property-placeholder.jpg"
-        if prop.images:
-            main_images = [img for img in prop.images if img.is_main]
-            if main_images:
-                image_url = main_images[0].url
-            elif prop.images:
-                image_url = prop.images[0].url
+    # Подготавливаем данные для отображения
+    enhanced_companies = []
+    total_company_properties = 0
+    
+    for company in companies_results:
+        properties_count = db.query(models.Property).filter(models.Property.owner_id == company.id).count()
+        total_company_properties += properties_count
         
-        # Статус
-        status_map = {
-            "draft": "Черновик",
-            "pending": "На модерации",
-            "active": "Активное",
-            "rejected": "Отклонено",
-            "sold": "Продано"
-        }
-        status_val = prop.status.value if prop.status else "draft"
-        status_display = status_map.get(status_val, "Неизвестно")
-        
-        enhanced_properties.append({
-            "id": prop.id,
-            "title": prop.title or f"Объект #{prop.id}",
-            "address": prop.address or "Адрес не указан",
-            "price": prop.price,
-            "price_formatted": f"{prop.price:,.0f} сом" if prop.price else "Цена не указана",
-            "status": status_val,
-            "status_display": status_display,
-            "owner_id": prop.owner_id,
-            "owner_name": prop.owner.full_name if prop.owner else "Нет данных",
-            "image_url": image_url,
-            "created_at": prop.created_at.strftime("%d.%m.%Y %H:%M") if prop.created_at else "Нет данных",
-            "rooms": prop.rooms,
-            "area": prop.area,
+        enhanced_companies.append({
+            "id": company.id,
+            "company_name": company.company_name,
+            "company_number": company.company_number,
+            "company_owner": company.company_owner,
+            "company_logo_url": company.company_logo_url,
+            "company_description": company.company_description,
+            "company_address": company.company_address,
+            "full_name": company.full_name,
+            "email": company.email,
+            "phone": company.phone,
+            "is_active": company.is_active,
+            "properties_count": properties_count,
+            "created_at": company.created_at.strftime("%d.%m.%Y") if hasattr(company, 'created_at') and company.created_at else "Нет данных"
         })
     
-    # Параметры запроса для пагинации
-    query_params = ""
-    if search:
-        query_params += f"&search={search}"
-    if status:
-        query_params += f"&status={status}"
-    if type:
-        query_params += f"&type={type}"
-    
-    start_item = start_idx + 1 if total_items > 0 else 0
-    end_item = min(start_idx + len(enhanced_properties), total_items)
-    page_range = range(max(1, page - 2), min(total_pages + 1, page + 3))
+    # Статистика
+    companies_total = query.count()
+    companies_active = query.filter(models.User.is_active == True).count()
+    companies_inactive = companies_total - companies_active
     
     return templates.TemplateResponse(
-        "superadmin/properties.html",
+        "superadmin/companies.html",
         {
             "request": request,
             "current_user": user,
-            "properties": enhanced_properties,
-            "total_properties": total_properties,
-            "active_count": active_count,
-            "pending_count": pending_count,
-            "blocked_count": blocked_count,
-            "categories": categories,
-            "search_query": search,
-            "status": status,
-            "type": type,
+            "companies": enhanced_companies,
+            "companies_total": companies_total,
+            "companies_active": companies_active,
+            "companies_inactive": companies_inactive,
+            "total_company_properties": total_company_properties,
+            "search": search or "",
+            "status": status or "",
             "current_page": page,
             "total_pages": total_pages,
-            "pages": page_range,
-            "start_item": start_item,
-            "end_item": end_item,
-            "query_params": query_params,
         }
     )
 
@@ -3605,11 +3560,376 @@ async def get_system_status(request: Request, db: Session = Depends(deps.get_db)
     except Exception as e:
         return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка получения статуса системы: {str(e)}"})
 
+# Дополнительные API роуты для суперадмина
+
+@app.post("/api/v1/superadmin/companies")
+async def create_company(
+    request: Request,
+    company_name: str = Form(...),
+    company_number: str = Form(...),
+    company_owner: str = Form(...),
+    email: str = Form(...),
+    phone: str = Form(...),
+    full_name: str = Form(None),
+    company_address: str = Form(None),
+    company_description: str = Form(None),
+    company_logo_url: str = Form(None),
+    password: str = Form(...),
+    is_active: str = Form("on"),
+    db: Session = Depends(deps.get_db)
+):
+    # Проверяем доступ суперадмина
+    user = await check_superadmin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    try:
+        # Проверяем уникальность email
+        existing_email = db.query(models.User).filter(models.User.email == email).first()
+        if existing_email:
+            return JSONResponse(status_code=400, content={"success": False, "message": "Пользователь с таким email уже существует"})
+        
+        # Проверяем уникальность телефона
+        existing_phone = db.query(models.User).filter(models.User.phone == phone).first()
+        if existing_phone:
+            return JSONResponse(status_code=400, content={"success": False, "message": "Пользователь с таким телефоном уже существует"})
+        
+        # Проверяем уникальность номера компании
+        existing_number = db.query(models.User).filter(
+            models.User.company_number == company_number,
+            models.User.role == models.UserRole.COMPANY
+        ).first()
+        if existing_number:
+            return JSONResponse(status_code=400, content={"success": False, "message": "Компания с таким номером уже существует"})
+        
+        # Хешируем пароль
+        hashed_password = pwd_context.hash(password)
+        
+        # Создаем новое юридическое лицо
+        new_company = models.User(
+            email=email,
+            phone=phone,
+            full_name=full_name,
+            hashed_password=hashed_password,
+            role=models.UserRole.COMPANY,
+            is_active=is_active == "on",
+            company_name=company_name,
+            company_number=company_number,
+            company_owner=company_owner,
+            company_address=company_address,
+            company_description=company_description,
+            company_logo_url=company_logo_url if company_logo_url else None
+        )
+        
+        db.add(new_company)
+        db.commit()
+        db.refresh(new_company)
+        
+        print(f"DEBUG: Создано новое юридическое лицо: {company_name}")
+        
+        return JSONResponse(content={"success": True, "message": "Юридическое лицо создано успешно"})
+        
+    except Exception as e:
+        print(f"ERROR: Ошибка создания юридического лица: {e}")
+        db.rollback()
+        return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка создания: {str(e)}"})
+
+@app.get("/api/v1/superadmin/companies/{company_id}")
+async def get_company(
+    company_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    # Проверяем доступ суперадмина
+    user = await check_superadmin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=401, content={"success": False, "message": "Доступ запрещен"})
+    
+    company = db.query(models.User).filter(
+        models.User.id == company_id,
+        models.User.role == models.UserRole.COMPANY
+    ).first()
+    
+    if not company:
+        return JSONResponse(status_code=404, content={"success": False, "message": "Компания не найдена"})
+    
+    return JSONResponse(content={
+        "success": True,
+        "company": {
+            "id": company.id,
+            "company_name": company.company_name,
+            "company_number": company.company_number,
+            "company_owner": company.company_owner,
+            "company_address": company.company_address,
+            "company_description": company.company_description,
+            "company_logo_url": company.company_logo_url,
+            "full_name": company.full_name,
+            "email": company.email,
+            "phone": company.phone,
+            "is_active": company.is_active
+        }
+    })
+
+@app.put("/api/v1/superadmin/companies/{company_id}")
+async def update_company(
+    company_id: int,
+    request: Request,
+    company_name: str = Form(...),
+    company_number: str = Form(...),
+    company_owner: str = Form(...),
+    email: str = Form(...),
+    phone: str = Form(...),
+    full_name: str = Form(None),
+    company_address: str = Form(None),
+    company_description: str = Form(None),
+    company_logo_url: str = Form(None),
+    is_active: str = Form("off"),
+    db: Session = Depends(deps.get_db)
+):
+    # Проверяем доступ суперадмина
+    user = await check_superadmin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=401, content={"success": False, "message": "Доступ запрещен"})
+    
+    try:
+        company = db.query(models.User).filter(
+            models.User.id == company_id,
+            models.User.role == models.UserRole.COMPANY
+        ).first()
+        
+        if not company:
+            return JSONResponse(status_code=404, content={"success": False, "message": "Компания не найдена"})
+        
+        # Проверяем уникальность email (кроме текущей компании)
+        existing_email = db.query(models.User).filter(
+            models.User.email == email,
+            models.User.id != company_id
+        ).first()
+        if existing_email:
+            return JSONResponse(status_code=400, content={"success": False, "message": "Пользователь с таким email уже существует"})
+        
+        # Проверяем уникальность телефона (кроме текущей компании)
+        existing_phone = db.query(models.User).filter(
+            models.User.phone == phone,
+            models.User.id != company_id
+        ).first()
+        if existing_phone:
+            return JSONResponse(status_code=400, content={"success": False, "message": "Пользователь с таким телефоном уже существует"})
+        
+        # Проверяем уникальность номера компании (кроме текущей компании)
+        existing_number = db.query(models.User).filter(
+            models.User.company_number == company_number,
+            models.User.role == models.UserRole.COMPANY,
+            models.User.id != company_id
+        ).first()
+        if existing_number:
+            return JSONResponse(status_code=400, content={"success": False, "message": "Компания с таким номером уже существует"})
+        
+        # Обновляем данные
+        company.company_name = company_name
+        company.company_number = company_number
+        company.company_owner = company_owner
+        company.company_address = company_address
+        company.company_description = company_description
+        company.company_logo_url = company_logo_url if company_logo_url else None
+        company.full_name = full_name
+        company.email = email
+        company.phone = phone
+        company.is_active = is_active == "on"
+        
+        db.commit()
+        
+        return JSONResponse(content={"success": True, "message": "Юридическое лицо обновлено успешно"})
+        
+    except Exception as e:
+        print(f"ERROR: Ошибка обновления юридического лица: {e}")
+        db.rollback()
+        return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка обновления: {str(e)}"})
+
+@app.patch("/api/v1/superadmin/companies/{company_id}/toggle")
+async def toggle_company_status(
+    company_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    # Проверяем доступ суперадмина
+    user = await check_superadmin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=401, content={"success": False, "message": "Доступ запрещен"})
+    
+    try:
+        company = db.query(models.User).filter(
+            models.User.id == company_id,
+            models.User.role == models.UserRole.COMPANY
+        ).first()
+        
+        if not company:
+            return JSONResponse(status_code=404, content={"success": False, "message": "Компания не найдена"})
+        
+        # Переключаем статус
+        company.is_active = not company.is_active
+        db.commit()
+        
+        status_text = "активирована" if company.is_active else "заблокирована"
+        return JSONResponse(content={"success": True, "message": f"Компания {status_text}"})
+        
+    except Exception as e:
+        print(f"ERROR: Ошибка изменения статуса компании: {e}")
+        db.rollback()
+        return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка изменения статуса: {str(e)}"})
+
+@app.delete("/api/v1/superadmin/companies/{company_id}")
+async def delete_company(
+    company_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    # Проверяем доступ суперадмина
+    user = await check_superadmin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=401, content={"success": False, "message": "Доступ запрещен"})
+    
+    try:
+        company = db.query(models.User).filter(
+            models.User.id == company_id,
+            models.User.role == models.UserRole.COMPANY
+        ).first()
+        
+        if not company:
+            return JSONResponse(status_code=404, content={"success": False, "message": "Компания не найдена"})
+        
+        # Получаем все объявления компании
+        properties = db.query(models.Property).filter(models.Property.owner_id == company_id).all()
+        
+        # Удаляем все объявления компании
+        for prop in properties:
+            db.delete(prop)
+        
+        # Удаляем саму компанию
+        db.delete(company)
+        db.commit()
+        
+        return JSONResponse(content={
+            "success": True, 
+            "message": f"Компания удалена. Также удалено {len(properties)} объявлений."
+        })
+        
+    except Exception as e:
+        print(f"ERROR: Ошибка удаления компании: {e}")
+        db.rollback()
+        return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка удаления: {str(e)}"})
+
+@app.get("/api/v1/superadmin/export/companies")
+async def export_companies(
+    request: Request, 
+    search: str = Query(None),
+    status: str = Query(None),
+    db: Session = Depends(deps.get_db)
+):
+    # Проверяем доступ суперадмина
+    user = await check_superadmin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=401, content={"success": False, "message": "Доступ запрещен"})
+    
+    try:
+        # Базовый запрос с фильтрами
+        query = db.query(models.User).filter(models.User.role == models.UserRole.COMPANY)
+        
+        # Применяем фильтры
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                or_(
+                    models.User.company_name.ilike(search_term),
+                    models.User.company_number.ilike(search_term),
+                    models.User.company_owner.ilike(search_term),
+                    models.User.full_name.ilike(search_term),
+                    models.User.email.ilike(search_term),
+                    models.User.phone.ilike(search_term)
+                )
+            )
+        
+        if status:
+            if status == "active":
+                query = query.filter(models.User.is_active == True)
+            elif status == "blocked":
+                query = query.filter(models.User.is_active == False)
+        
+        companies = query.all()
+        
+        # Подготавливаем данные для экспорта
+        data = []
+        for company in companies:
+            properties_count = db.query(models.Property).filter(models.Property.owner_id == company.id).count()
+            
+            data.append({
+                'ID': company.id,
+                'Название компании': company.company_name or "Не указано",
+                'ИНН/Номер': company.company_number or "Не указан",
+                'Владелец': company.company_owner or "Не указан",
+                'Контактное лицо': company.full_name or "Не указано",
+                'Email': company.email or "Не указан",
+                'Телефон': company.phone or "Не указан",
+                'Адрес': company.company_address or "Не указан",
+                'Описание': company.company_description or "Нет описания",
+                'Статус': "Активная" if company.is_active else "Заблокирована",
+                'Объявлений': properties_count,
+                'Дата регистрации': company.created_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(company, 'created_at') and company.created_at else "Нет данных"
+            })
+        
+        if not data:
+            return JSONResponse(status_code=404, content={"success": False, "message": "Нет данных для экспорта"})
+        
+        # Создаем Excel файл
+        from io import BytesIO
+        import openpyxl
+        from datetime import datetime
+        from fastapi import Response
+        
+        output = BytesIO()
+        workbook = openpyxl.Workbook()
+        worksheet = workbook.active
+        worksheet.title = "Юридические лица"
+        
+        # Заголовки
+        headers = list(data[0].keys())
+        for col, header in enumerate(headers, 1):
+            worksheet.cell(row=1, column=col, value=header)
+        
+        # Данные
+        for row, item in enumerate(data, 2):
+            for col, key in enumerate(headers, 1):
+                worksheet.cell(row=row, column=col, value=item[key])
+        
+        workbook.save(output)
+        output.seek(0)
+        
+        # Формируем имя файла с фильтрами
+        filename = "companies"
+        if search:
+            filename += f"_search-{search[:10]}"
+        if status:
+            filename += f"_status-{status}"
+        filename += f"_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        
+        headers = {
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
+        
+        return Response(
+            content=output.getvalue(),
+            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers=headers
+        )
+        
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка экспорта: {str(e)}"})
+
 if __name__ == "__main__":
     # Исправляем изображения при старте
     try:
-        from fix_images import fix_missing_images
-        fix_missing_images()
+    from fix_images import fix_missing_images
+    fix_missing_images()
     except ImportError:
         print("fix_images module not found, skipping image fixes")
     

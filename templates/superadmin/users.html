@@ -11,50 +11,50 @@
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-blue-100 text-blue-600">
                     <i class="fas fa-users text-xl"></i>
-                </div>
+                    </div>
                 <div class="ml-4">
                     <h3 class="text-2xl font-semibold text-gray-900">{{ users|length }}</h3>
                     <p class="text-sm text-muted">Всего пользователей</p>
                 </div>
             </div>
         </div>
-
+        
         <div class="bg-green-50 rounded-xl p-6 border border-green-100">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-green-100 text-green-600">
                     <i class="fas fa-user-check text-xl"></i>
-                </div>
+                    </div>
                 <div class="ml-4">
                     <h3 class="text-2xl font-semibold text-gray-900">{{ users|selectattr('is_active')|list|length }}</h3>
                     <p class="text-sm text-muted">Активные</p>
                 </div>
             </div>
         </div>
-
+        
         <div class="bg-orange-50 rounded-xl p-6 border border-orange-100">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-orange-100 text-orange-600">
                     <i class="fas fa-building text-xl"></i>
-                </div>
+                    </div>
                 <div class="ml-4">
                     <h3 class="text-2xl font-semibold text-gray-900">{{ users|selectattr('properties_count', 'gt', 0)|list|length }}</h3>
                     <p class="text-sm text-muted">С недвижимостью</p>
                 </div>
             </div>
         </div>
-
+        
         <div class="bg-red-50 rounded-xl p-6 border border-red-100">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-red-100 text-red-600">
                     <i class="fas fa-user-slash text-xl"></i>
-                </div>
+                    </div>
                 <div class="ml-4">
                     <h3 class="text-2xl font-semibold text-gray-900">{{ users|selectattr('is_active', 'equalto', False)|list|length }}</h3>
                     <p class="text-sm text-muted">Заблокированы</p>
-                </div>
             </div>
         </div>
     </div>
+</div>
 
     <!-- Заголовок и действия -->
     <div class="bg-gradient-to-r from-green-800 to-green-900 rounded-xl p-6 text-white">
@@ -72,39 +72,39 @@
                     <i class="fas fa-tasks mr-2"></i>
                     Массовые действия
                 </button>
-            </div>
         </div>
     </div>
+</div>
 
-    <!-- Поиск и фильтры -->
+<!-- Поиск и фильтры -->
     <div class="bg-white rounded-xl border border-gray-200 p-6">
-        <div class="flex flex-wrap items-center gap-4">
-            <div class="flex-1 min-w-64">
-                <div class="relative">
+    <div class="flex flex-wrap items-center gap-4">
+        <div class="flex-1 min-w-64">
+            <div class="relative">
                     <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    <input type="text" id="searchInput" 
+                <input type="text" id="searchInput" 
                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" 
-                           placeholder="Поиск по имени, email или телефону...">
-                </div>
+                       placeholder="Поиск по имени, email или телефону...">
             </div>
-            <select id="statusFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
-                <option value="">Все статусы</option>
-                <option value="active">Активные</option>
-                <option value="blocked">Заблокированные</option>
-            </select>
-            <select id="propertyFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
-                <option value="">Все пользователи</option>
-                <option value="with">С недвижимостью</option>
-                <option value="without">Без недвижимости</option>
-            </select>
-            <button onclick="resetFilters()" class="btn btn-secondary">
-                <i class="fas fa-undo mr-2"></i>
-                Сбросить
-            </button>
         </div>
+            <select id="statusFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+            <option value="">Все статусы</option>
+            <option value="active">Активные</option>
+            <option value="blocked">Заблокированные</option>
+        </select>
+            <select id="propertyFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+            <option value="">Все пользователи</option>
+            <option value="with">С недвижимостью</option>
+            <option value="without">Без недвижимости</option>
+        </select>
+            <button onclick="resetFilters()" class="btn btn-secondary">
+            <i class="fas fa-undo mr-2"></i>
+            Сбросить
+        </button>
     </div>
+</div>
 
-    <!-- Таблица пользователей -->
+<!-- Таблица пользователей -->
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
@@ -156,7 +156,7 @@
                         
                         <!-- Недвижимость -->
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {% if user.properties_count > 0 %}
+                                    {% if user.properties_count > 0 %}
                                 <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                                     {{ user.properties_count }} объявлений
                                 </span>
@@ -164,7 +164,7 @@
                                 <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
                                     Нет объявлений
                                 </span>
-                            {% endif %}
+                                    {% endif %}
                         </td>
                         
                         <!-- Регистрация -->
@@ -190,7 +190,7 @@
                             <button onclick="toggleUserStatus({{ user.id }})" 
                                     class="px-4 py-2 text-sm {% if user.is_active %}bg-red-500 hover:bg-red-600 text-white{% else %}bg-green-500 hover:bg-green-600 text-white{% endif %} rounded-lg transition-colors">
                                 {% if user.is_active %}Заблокировать{% else %}Разблокировать{% endif %}
-                            </button>
+                                </button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -210,7 +210,7 @@
 <!-- Пагинация -->
 {% if total_pages > 1 %}
 <div class="bg-white rounded-xl border border-gray-200 p-6 mt-6">
-    <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between">
         <div class="text-sm text-gray-700">
             Показано <span class="font-medium">{{ start_item }}</span> - 
             <span class="font-medium">{{ end_item }}</span> из 
@@ -267,12 +267,12 @@
             <button onclick="bulkAction('export')" class="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
                 <i class="fas fa-download mr-2"></i>
                 Экспортировать выбранных
-            </button>
+                </button>
         </div>
         <div class="p-6 border-t border-gray-200 text-right">
             <button onclick="closeBulkActionsModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
-                Отмена
-            </button>
+                    Отмена
+                </button>
         </div>
     </div>
 </div>
@@ -303,7 +303,7 @@ function showBulkActions() {
         console.log('✅ Модальное окно найдено, показываю');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
-    } else {
+                } else {
         console.error('❌ Модальное окно не найдено!');
     }
 }
@@ -341,17 +341,17 @@ function toggleUserStatus(userId) {
         console.log('📥 Получен ответ:', response);
         return response.json();
     })
-    .then(data => {
+        .then(data => {
         console.log('📋 Данные ответа:', data);
-        if (data.success) {
+            if (data.success) {
             alert('✅ ' + data.message);
             console.log('🔄 Перезагружаю страницу...');
-            location.reload();
-        } else {
+                    location.reload();
+            } else {
             alert('❌ ' + data.message);
-        }
-    })
-    .catch(error => {
+            }
+        })
+        .catch(error => {
         console.error('💥 Ошибка запроса:', error);
         alert('❌ Ошибка изменения статуса');
     });
@@ -445,7 +445,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Фильтр статуса
     const statusFilter = document.getElementById('statusFilter');
     console.log('📊 Элемент фильтра статуса:', statusFilter);
-    if (statusFilter) {
+            if (statusFilter) {
         statusFilter.value = '{{ status }}';
         statusFilter.addEventListener('change', applyFilters);
         console.log('✅ Обработчик фильтра статуса добавлен');
@@ -456,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Фильтр недвижимости
     const propertyFilter = document.getElementById('propertyFilter');
     console.log('🏠 Элемент фильтра недвижимости:', propertyFilter);
-    if (propertyFilter) {
+            if (propertyFilter) {
         propertyFilter.value = '{{ property_filter }}';
         propertyFilter.addEventListener('change', applyFilters);
         console.log('✅ Обработчик фильтра недвижимости добавлен');

@@ -57,18 +57,18 @@
     </div>
 
     <!-- Заголовок и действия -->
-    <div class="bg-gradient-to-r from-primary-600 to-primary-800 rounded-xl p-6 text-white">
+    <div class="bg-gradient-to-r from-[#144b44] to-[#0f3b36] rounded-xl p-6 text-white">
         <div class="flex items-center justify-between">
             <div>
-                <h2 class="text-xl font-semibold">Управление пользователями</h2>
-                <p class="text-primary-100 mt-1">Просмотр и модерация пользователей системы</p>
+                <h2 class="text-xl font-semibold text-white">Управление пользователями</h2>
+                <p class="text-gray-200 mt-1">Просмотр и модерация пользователей системы</p>
             </div>
             <div class="flex space-x-3">
-                <button onclick="exportUsers()" class="px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-lg font-medium hover:bg-white/30 transition-all duration-200">
+                <button onclick="exportUsers()" class="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-medium transition-all duration-200">
                     <i class="fas fa-download mr-2"></i>
                     Экспорт XLSX
                 </button>
-                <button onclick="showBulkActions()" class="px-4 py-2 bg-yellow-500 text-white rounded-lg font-medium hover:bg-yellow-600 transition-all duration-200">
+                <button onclick="showBulkActions()" class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium transition-all duration-200">
                     <i class="fas fa-tasks mr-2"></i>
                     Массовые действия
                 </button>
@@ -187,20 +187,10 @@
                         
                         <!-- Действия -->
                         <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                            <div class="flex flex-col space-y-1">
-                                <button onclick="viewUserDetails({{ user.id }})" 
-                                        class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors">
-                                    Просмотр
-                                </button>
-                                <button onclick="toggleUserStatus({{ user.id }})" 
-                                        class="px-3 py-1 text-xs {% if user.is_active %}bg-red-100 text-red-700 hover:bg-red-200{% else %}bg-green-100 text-green-700 hover:bg-green-200{% endif %} rounded transition-colors">
-                                    {% if user.is_active %}Заблокировать{% else %}Разблокировать{% endif %}
-                                </button>
-                                <button onclick="deleteUserProperties({{ user.id }})" 
-                                        class="px-3 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors">
-                                    Удалить объявления
-                                </button>
-                            </div>
+                            <button onclick="toggleUserStatus({{ user.id }})" 
+                                    class="px-4 py-2 text-sm {% if user.is_active %}bg-red-500 hover:bg-red-600 text-white{% else %}bg-green-500 hover:bg-green-600 text-white{% endif %} rounded-lg transition-colors">
+                                {% if user.is_active %}Заблокировать{% else %}Разблокировать{% endif %}
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -306,147 +296,64 @@
 
 {% block scripts %}
 <script>
+// Экспорт пользователей
 function exportUsers() {
-    // Добавляем текущие параметры фильтров к URL экспорта
-    const params = new URLSearchParams();
-    const search = document.getElementById('searchInput').value;
-    const status = document.getElementById('statusFilter').value;
-    const propertyFilter = document.getElementById('propertyFilter').value;
-    
-    if (search) params.append('search', search);
-    if (status) params.append('status', status);
-    if (propertyFilter) params.append('property_filter', propertyFilter);
-    
-    const url = '/api/v1/superadmin/export/users' + (params.toString() ? '?' + params.toString() : '');
+    console.log('Экспорт пользователей...');
+    const url = '/api/v1/superadmin/export/users';
     window.open(url, '_blank');
 }
 
+// Массовые действия
 function showBulkActions() {
-    document.getElementById('bulkActionsModal').classList.remove('hidden');
-    document.getElementById('bulkActionsModal').classList.add('flex');
+    const modal = document.getElementById('bulkActionsModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
 }
 
 function closeBulkActionsModal() {
-    document.getElementById('bulkActionsModal').classList.add('hidden');
-    document.getElementById('bulkActionsModal').classList.remove('flex');
+    const modal = document.getElementById('bulkActionsModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
 }
 
-function viewUserDetails(userId) {
-    fetch(`/api/v1/superadmin/users/${userId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const user = data.user;
-                const content = `
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-4">
-                            <div class="p-4 bg-gray-50 rounded-xl">
-                                <h4 class="font-semibold text-gray-700 mb-2">Основная информация</h4>
-                                <div class="space-y-2">
-                                    <p><span class="font-medium">ФИО:</span> ${user.full_name || 'Не указано'}</p>
-                                    <p><span class="font-medium">Email:</span> ${user.email || 'Не указан'}</p>
-                                    <p><span class="font-medium">Телефон:</span> ${user.phone || 'Не указан'}</p>
-                                    <p><span class="font-medium">Статус:</span> 
-                                        <span class="${user.is_active ? 'text-green-600' : 'text-red-600'} font-semibold">
-                                            ${user.is_active ? 'Активный' : 'Заблокирован'}
-                                        </span>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                document.getElementById('userDetailsContent').innerHTML = content;
-                document.getElementById('userDetailsModal').classList.remove('hidden');
-                document.getElementById('userDetailsModal').classList.add('flex');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showNotification('Ошибка загрузки данных пользователя', 'error');
-        });
-}
-
-function closeUserDetailsModal() {
-    document.getElementById('userDetailsModal').classList.add('hidden');
-    document.getElementById('userDetailsModal').classList.remove('flex');
-}
-
+// Изменение статуса пользователя
 function toggleUserStatus(userId) {
+    if (!confirm('Вы уверены, что хотите изменить статус пользователя?')) {
+        return;
+    }
+    
+    console.log('Изменение статуса пользователя:', userId);
+    
     fetch(`/api/v1/superadmin/users/${userId}/toggle-status`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': getCSRFToken()
         }
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showNotification(data.message, 'success');
-            setTimeout(() => location.reload(), 1000);
+            alert('✅ ' + data.message);
+            location.reload();
         } else {
-            showNotification(data.message, 'error');
+            alert('❌ ' + data.message);
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        showNotification('Ошибка изменения статуса', 'error');
+        console.error('Ошибка:', error);
+        alert('❌ Ошибка изменения статуса');
     });
 }
 
-function deleteUserProperties(userId) {
-    if (confirm('Вы уверены, что хотите удалить все объявления пользователя?')) {
-        fetch(`/api/v1/superadmin/users/${userId}/properties`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCSRFToken()
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showNotification(data.message, 'success');
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                showNotification(data.message, 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showNotification('Ошибка удаления объявлений', 'error');
-        });
-    }
-}
-
-function resetFilters() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('statusFilter').value = '';
-    document.getElementById('propertyFilter').value = '';
-    applyFilters();
-}
-
-function bulkAction(action) {
-    if (action === 'activate') {
-        if (confirm('Активировать всех пользователей?')) {
-            // Реализация массовой активации
-            alert('Функция массовой активации будет реализована');
-        }
-    } else if (action === 'deactivate') {
-        if (confirm('Заблокировать всех пользователей?')) {
-            // Реализация массовой блокировки
-            alert('Функция массовой блокировки будет реализована');
-        }
-    } else if (action === 'export') {
-        exportUsers();
-    }
-    closeBulkActionsModal();
-}
-
-// Фильтрация и поиск в реальном времени
+// Фильтрация
 function applyFilters() {
-    const search = document.getElementById('searchInput').value;
+    console.log('Применение фильтров...');
+    
+    const search = document.getElementById('searchInput').value.trim();
     const status = document.getElementById('statusFilter').value;
     const propertyFilter = document.getElementById('propertyFilter').value;
     
@@ -455,11 +362,20 @@ function applyFilters() {
     if (status) params.append('status', status);
     if (propertyFilter) params.append('property_filter', propertyFilter);
     
-    const url = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
-    window.location.href = url;
+    const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+    console.log('Новый URL:', newUrl);
+    window.location.href = newUrl;
 }
 
-// Debounce функция для поиска
+// Сброс фильтров
+function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('propertyFilter').value = '';
+    window.location.href = window.location.pathname;
+}
+
+// Debounce для поиска
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -472,22 +388,25 @@ function debounce(func, wait) {
     };
 }
 
-// Инициализация событий
+// Инициализация
 document.addEventListener('DOMContentLoaded', function() {
-    // Поиск с задержкой
+    console.log('Инициализация фильтров...');
+    
+    // Поиск
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
         searchInput.value = '{{ search }}';
-        searchInput.addEventListener('input', debounce(applyFilters, 500));
+        searchInput.addEventListener('input', debounce(applyFilters, 800));
     }
     
-    // Фильтры без задержки
+    // Фильтр статуса
     const statusFilter = document.getElementById('statusFilter');
     if (statusFilter) {
         statusFilter.value = '{{ status }}';
         statusFilter.addEventListener('change', applyFilters);
     }
     
+    // Фильтр недвижимости
     const propertyFilter = document.getElementById('propertyFilter');
     if (propertyFilter) {
         propertyFilter.value = '{{ property_filter }}';
@@ -495,17 +414,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function getCSRFToken() {
-    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
-}
-
-function showNotification(message, type) {
-    // Простая реализация уведомлений
-    if (type === 'success') {
-        alert('✅ ' + message);
-    } else {
-        alert('❌ ' + message);
+// Массовые действия
+function bulkAction(action) {
+    if (action === 'activate') {
+        if (confirm('Активировать всех пользователей?')) {
+            alert('Функция будет реализована');
+        }
+    } else if (action === 'deactivate') {
+        if (confirm('Заблокировать всех пользователей?')) {
+            alert('Функция будет реализована');
+        }
+    } else if (action === 'export') {
+        exportUsers();
     }
+    closeBulkActionsModal();
 }
 </script>
 {% endblock %} 

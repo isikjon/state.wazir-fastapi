@@ -2271,11 +2271,11 @@ async def superadmin_admins(request: Request, db: Session = Depends(deps.get_db)
     if isinstance(user, RedirectResponse):
         return user
     
-    # Получаем всех администраторов
+    # Получаем всех администраторов (ADMIN и MANAGER роли)
     admins = db.query(models.User).filter(
         or_(
             models.User.role == models.UserRole.ADMIN,
-            models.User.role == models.UserRole.SUPER_ADMIN
+            models.User.role == models.UserRole.MANAGER
         )
     ).all()
     
@@ -2493,6 +2493,164 @@ async def superadmin_logs(request: Request, db: Session = Depends(deps.get_db)):
         {
             "request": request,
             "current_user": user,
+        }
+    )
+
+@app.get("/superadmin/analytics", response_class=HTMLResponse)
+async def superadmin_analytics(request: Request, db: Session = Depends(deps.get_db)):
+    # Проверяем доступ суперадмина
+    user = await check_superadmin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    from datetime import datetime, timedelta
+    from sqlalchemy import func, extract
+    
+    # Статистика пользователей
+    total_users = db.query(models.User).filter(models.User.role == models.UserRole.USER).count()
+    active_users = db.query(models.User).filter(
+        models.User.role == models.UserRole.USER,
+        models.User.is_active == True
+    ).count()
+    
+    # Статистика объявлений
+    total_properties = db.query(models.Property).count()
+    active_properties = db.query(models.Property).filter(models.Property.status == 'ACTIVE').count()
+    pending_properties = db.query(models.Property).filter(models.Property.status == 'PENDING').count()
+    
+    # Статистика по дням за последние 30 дней
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=30)
+    
+    # Регистрации пользователей по дням
+    users_by_date = db.query(
+        func.date(models.User.created_at).label('date'),
+        func.count(models.User.id).label('count')
+    ).filter(
+        models.User.created_at >= start_date,
+        models.User.role == models.UserRole.USER
+    ).group_by(
+        func.date(models.User.created_at)
+    ).order_by('date').all()
+    
+    # Объявления по дням
+    properties_by_date = db.query(
+        func.date(models.Property.created_at).label('date'),
+        func.count(models.Property.id).label('count')
+    ).filter(
+        models.Property.created_at >= start_date
+    ).group_by(
+        func.date(models.Property.created_at)
+    ).order_by('date').all()
+    
+    # Популярные категории
+    try:
+        popular_categories = db.query(
+            models.Category.name.label('category'),
+            func.count(models.PropertyCategory.property_id).label('count')
+        ).join(
+            models.PropertyCategory, models.Category.id == models.PropertyCategory.category_id
+        ).group_by(
+            models.Category.id, models.Category.name
+        ).order_by(
+            func.count(models.PropertyCategory.property_id).desc()
+        ).limit(10).all()
+    except:
+        popular_categories = []
+    
+    # Средняя цена по категориям
+    try:
+        price_by_category = db.query(
+            models.Category.name.label('category'),
+            func.avg(models.Property.price).label('avg_price')
+        ).join(
+            models.PropertyCategory, models.Category.id == models.PropertyCategory.category_id
+        ).join(
+            models.Property, models.PropertyCategory.property_id == models.Property.id
+        ).filter(
+            models.Property.price.isnot(None),
+            models.Property.price > 0
+        ).group_by(
+            models.Category.id, models.Category.name
+        ).order_by('avg_price').all()
+    except:
+        price_by_category = []
+    
+    # Статистика активности по месяцам
+    monthly_stats = db.query(
+        extract('month', models.Property.created_at).label('month'),
+        func.count(models.Property.id).label('count')
+    ).filter(
+        models.Property.created_at >= datetime.now().replace(month=1, day=1)
+    ).group_by(
+        extract('month', models.Property.created_at)
+    ).order_by('month').all()
+    
+    # Топ пользователи по количеству объявлений
+    top_users = db.query(
+        models.User.id,
+        models.User.full_name,
+        models.User.email,
+        func.count(models.Property.id).label('properties_count')
+    ).join(
+        models.Property, models.User.id == models.Property.owner_id
+    ).filter(
+        models.User.role == models.UserRole.USER
+    ).group_by(
+        models.User.id, models.User.full_name, models.User.email
+    ).order_by(
+        func.count(models.Property.id).desc()
+    ).limit(10).all()
+    
+    # Форматируем данные для графиков
+    users_chart_data = {
+        'labels': [item.date.strftime('%d.%m') for item in users_by_date[-14:]] or [],
+        'data': [item.count for item in users_by_date[-14:]] or []
+    }
+    
+    properties_chart_data = {
+        'labels': [item.date.strftime('%d.%m') for item in properties_by_date[-14:]] or [],
+        'data': [item.count for item in properties_by_date[-14:]] or []
+    }
+    
+    categories_chart_data = {
+        'labels': [item.category for item in popular_categories[:6]] or ['Нет данных'],
+        'data': [item.count for item in popular_categories[:6]] or [0]
+    }
+    
+    price_chart_data = {
+        'labels': [item.category for item in price_by_category[:6]] or ['Нет данных'],
+        'data': [float(item.avg_price) if item.avg_price else 0 for item in price_by_category[:6]] or [0]
+    }
+    
+    # Месяцы на русском
+    month_names = {
+        1: 'Янв', 2: 'Фев', 3: 'Мар', 4: 'Апр', 5: 'Май', 6: 'Июн',
+        7: 'Июл', 8: 'Авг', 9: 'Сен', 10: 'Окт', 11: 'Ноя', 12: 'Дек'
+    }
+    
+    monthly_chart_data = {
+        'labels': [month_names.get(int(item.month), f'Месяц {item.month}') for item in monthly_stats] or ['Нет данных'],
+        'data': [item.count for item in monthly_stats] or [0]
+    }
+    
+    return templates.TemplateResponse(
+        "superadmin/analytics.html",
+        {
+            "request": request,
+            "current_user": user,
+            "total_users": total_users,
+            "active_users": active_users,
+            "total_properties": total_properties,
+            "active_properties": active_properties,
+            "pending_properties": pending_properties,
+            "users_chart_data": users_chart_data,
+            "properties_chart_data": properties_chart_data,
+            "categories_chart_data": categories_chart_data,
+            "price_chart_data": price_chart_data,
+            "monthly_chart_data": monthly_chart_data,
+            "top_users": top_users,
+            "popular_categories": popular_categories
         }
     )
 

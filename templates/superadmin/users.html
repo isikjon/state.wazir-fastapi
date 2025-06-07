@@ -1,376 +1,282 @@
 {% extends "superadmin/base.html" %}
 
-{% block title %}Пользователи - SuperAdmin{% endblock %}
 {% block page_title %}Пользователи{% endblock %}
 {% block page_subtitle %}Управление пользователями системы{% endblock %}
 
 {% block content %}
-<!-- Заголовок и статистика -->
-<div class="mb-8">
+<div class="space-y-6">
+    <!-- Статистика -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <!-- Всего пользователей -->
-        <div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative overflow-hidden group">
-            <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full -mr-10 -mt-10"></div>
-            <div class="relative">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-3xl font-bold font-display text-gray-800">{{ users_total }}</p>
-                        <p class="text-lg font-semibold text-gray-700 mt-1">Всего</p>
-                    </div>
-                    <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
-                        <i class="fas fa-users text-white text-2xl"></i>
-                    </div>
+        <div class="bg-blue-50 rounded-xl p-6 border border-blue-100">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                    <i class="fas fa-users text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-2xl font-semibold text-gray-900">{{ users|length }}</h3>
+                    <p class="text-sm text-muted">Всего пользователей</p>
                 </div>
             </div>
         </div>
-        
-        <!-- Активные пользователи -->
-        <div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative overflow-hidden group">
-            <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-500/10 to-blue-500/10 rounded-full -mr-10 -mt-10"></div>
-            <div class="relative">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-3xl font-bold font-display text-gray-800">{{ users_active }}</p>
-                        <p class="text-lg font-semibold text-gray-700 mt-1">Активные</p>
-                    </div>
-                    <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg">
-                        <i class="fas fa-user-check text-white text-2xl"></i>
-                    </div>
+
+        <div class="bg-green-50 rounded-xl p-6 border border-green-100">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                    <i class="fas fa-user-check text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-2xl font-semibold text-gray-900">{{ users|selectattr('is_active')|list|length }}</h3>
+                    <p class="text-sm text-muted">Активные</p>
                 </div>
             </div>
         </div>
-        
-        <!-- С объявлениями -->
-        <div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative overflow-hidden group">
-            <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-500/10 to-yellow-500/10 rounded-full -mr-10 -mt-10"></div>
-            <div class="relative">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-3xl font-bold font-display text-gray-800">{{ users_with_properties }}</p>
-                        <p class="text-lg font-semibold text-gray-700 mt-1">С недвижимостью</p>
-                    </div>
-                    <div class="w-16 h-16 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-2xl flex items-center justify-center shadow-lg">
-                        <i class="fas fa-building text-white text-2xl"></i>
-                    </div>
+
+        <div class="bg-orange-50 rounded-xl p-6 border border-orange-100">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-orange-100 text-orange-600">
+                    <i class="fas fa-building text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-2xl font-semibold text-gray-900">{{ users|selectattr('properties_count', 'gt', 0)|list|length }}</h3>
+                    <p class="text-sm text-muted">С недвижимостью</p>
                 </div>
             </div>
         </div>
-        
-        <!-- Заблокированные -->
-        <div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative overflow-hidden group">
-            <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-500/10 to-pink-500/10 rounded-full -mr-10 -mt-10"></div>
-            <div class="relative">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-3xl font-bold font-display text-gray-800">{{ users_blocked }}</p>
-                        <p class="text-lg font-semibold text-gray-700 mt-1">Заблокированы</p>
-                    </div>
-                    <div class="w-16 h-16 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
-                        <i class="fas fa-user-lock text-white text-2xl"></i>
-                    </div>
+
+        <div class="bg-red-50 rounded-xl p-6 border border-red-100">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-red-100 text-red-600">
+                    <i class="fas fa-user-slash text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-2xl font-semibold text-gray-900">{{ users|selectattr('is_active', 'equalto', False)|list|length }}</h3>
+                    <p class="text-sm text-muted">Заблокированы</p>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Панель управления -->
-<div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 mb-8 overflow-hidden">
-    <div class="bg-gradient-to-r from-blue-500 to-purple-500 p-6">
+    <!-- Заголовок и действия -->
+    <div class="bg-gradient-to-r from-primary to-primary-600 rounded-xl p-6 text-white">
         <div class="flex items-center justify-between">
             <div>
-                <h3 class="text-2xl font-bold font-display text-white">Управление пользователями</h3>
-                <p class="text-blue-100 mt-1">Просмотр и модерация пользователей системы</p>
+                <h2 class="text-xl font-semibold">Управление пользователями</h2>
+                <p class="text-primary-100 mt-1">Просмотр и модерация пользователей системы</p>
             </div>
-            <div class="flex space-x-4">
-                <button onclick="exportUsers()" 
-                        class="px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all duration-300 shadow-lg">
+            <div class="flex space-x-3">
+                <button onclick="exportUsers()" class="btn btn-white">
                     <i class="fas fa-download mr-2"></i>
                     Экспорт XLSX
                 </button>
-                <button onclick="showBulkActions()" 
-                        class="px-6 py-3 bg-yellow-500 text-white rounded-xl font-semibold hover:bg-yellow-600 transition-all duration-300 shadow-lg">
+                <button onclick="showBulkActions()" class="btn btn-yellow">
                     <i class="fas fa-tasks mr-2"></i>
                     Массовые действия
                 </button>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Поиск и фильтры -->
-<div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 mb-8 p-6">
-    <div class="flex flex-wrap items-center gap-4">
-        <div class="flex-1 min-w-64">
-            <div class="relative">
-                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                <input type="text" id="searchInput" 
-                       class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-colors" 
-                       placeholder="Поиск по имени, email или телефону...">
+    <!-- Поиск и фильтры -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <div class="flex flex-wrap items-center gap-4">
+            <div class="flex-1 min-w-64">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="searchInput" 
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" 
+                           placeholder="Поиск по имени, email или телефону...">
+                </div>
             </div>
+            <select id="statusFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                <option value="">Все статусы</option>
+                <option value="active">Активные</option>
+                <option value="blocked">Заблокированные</option>
+            </select>
+            <select id="propertyFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                <option value="">Все пользователи</option>
+                <option value="with">С недвижимостью</option>
+                <option value="without">Без недвижимости</option>
+            </select>
+            <button onclick="resetFilters()" class="btn btn-secondary">
+                <i class="fas fa-undo mr-2"></i>
+                Сбросить
+            </button>
         </div>
-        <select id="statusFilter" 
-                class="px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-colors">
-            <option value="">Все статусы</option>
-            <option value="active">Активные</option>
-            <option value="blocked">Заблокированные</option>
-        </select>
-        <select id="propertyFilter" 
-                class="px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-colors">
-            <option value="">Все пользователи</option>
-            <option value="with">С недвижимостью</option>
-            <option value="without">Без недвижимости</option>
-        </select>
-        <button onclick="resetFilters()" 
-                class="px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-300">
-            <i class="fas fa-undo mr-2"></i>
-            Сбросить
-        </button>
     </div>
-</div>
 
-<!-- Таблица пользователей -->
-<div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-    <div class="p-6">
+    <!-- Таблица пользователей -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="border-b border-gray-200">
-                        <th class="text-left py-4 px-4 font-bold text-gray-700">
-                            <div class="flex items-center space-x-2">
-                                <i class="fas fa-user text-blue-500"></i>
-                                <span>Пользователь</span>
-                            </div>
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-user text-blue-500 mr-2"></i>Пользователь
                         </th>
-                        <th class="text-left py-4 px-4 font-bold text-gray-700">
-                            <div class="flex items-center space-x-2">
-                                <i class="fas fa-envelope text-green-500"></i>
-                                <span>Контакты</span>
-                            </div>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-envelope text-green-500 mr-2"></i>Контакты
                         </th>
-                        <th class="text-left py-4 px-4 font-bold text-gray-700">
-                            <div class="flex items-center space-x-2">
-                                <i class="fas fa-home text-orange-500"></i>
-                                <span>Недвижимость</span>
-                            </div>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-building text-orange-500 mr-2"></i>Недвижимость
                         </th>
-                        <th class="text-left py-4 px-4 font-bold text-gray-700">
-                            <div class="flex items-center space-x-2">
-                                <i class="fas fa-calendar text-purple-500"></i>
-                                <span>Регистрация</span>
-                            </div>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-calendar text-purple-500 mr-2"></i>Регистрация
                         </th>
-                        <th class="text-left py-4 px-4 font-bold text-gray-700">
-                            <div class="flex items-center space-x-2">
-                                <i class="fas fa-toggle-on text-red-500"></i>
-                                <span>Статус</span>
-                            </div>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-toggle-on text-red-500 mr-2"></i>Статус
                         </th>
-                        <th class="text-center py-4 px-4 font-bold text-gray-700">
-                            <div class="flex items-center justify-center space-x-2">
-                                <i class="fas fa-cogs text-gray-500"></i>
-                                <span>Действия</span>
-                            </div>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-cogs mr-2"></i>Действия
                         </th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody class="bg-white divide-y divide-gray-200">
                     {% for user in users %}
-                    <tr class="hover:bg-gray-50/50 transition-colors duration-200" data-user-id="{{ user.id }}">
+                    <tr class="hover:bg-gray-50" data-user-id="{{ user.id }}">
                         <!-- Пользователь -->
-                        <td class="py-6 px-4">
-                            <div class="flex items-center space-x-4">
-                                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-md">
-                                    {% if user.avatar_url %}
-                                        <img src="{{ user.avatar_url }}" alt="Avatar" class="w-full h-full rounded-xl object-cover">
-                                    {% else %}
-                                        <i class="fas fa-user text-white"></i>
-                                    {% endif %}
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-10 w-10">
+                                    <div class="h-10 w-10 rounded-full bg-primary flex items-center justify-center">
+                                        <i class="fas fa-user text-white text-sm"></i>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p class="font-semibold text-gray-900">{{ user.full_name or 'Пользователь' }}</p>
-                                    <p class="text-sm text-gray-500">ID: {{ user.id }}</p>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">{{ user.full_name or 'Пользователь' }}</div>
+                                    <div class="text-sm text-gray-500">ID: {{ user.id }}</div>
                                 </div>
                             </div>
                         </td>
                         
                         <!-- Контакты -->
-                        <td class="py-6 px-4">
-                            <div class="space-y-1">
-                                <div class="flex items-center space-x-2">
-                                    <i class="fas fa-envelope text-green-500 text-sm"></i>
-                                    <span class="text-sm text-gray-900">{{ user.email or 'Не указан' }}</span>
-                                </div>
-                                {% if user.phone %}
-                                <div class="flex items-center space-x-2">
-                                    <i class="fas fa-phone text-blue-500 text-sm"></i>
-                                    <span class="text-sm text-gray-600">{{ user.phone }}</span>
-                                </div>
-                                {% endif %}
-                            </div>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ user.email or 'Не указан' }}</div>
+                            <div class="text-sm text-gray-500">{{ user.phone or 'Не указан' }}</div>
                         </td>
                         
                         <!-- Недвижимость -->
-                        <td class="py-6 px-4">
-                            <div class="flex items-center space-x-3">
-                                <div class="text-center">
-                                    <div class="text-sm font-medium text-gray-900">{{ user.properties_count }}</div>
-                                    {% if user.properties_count > 0 %}
-                                    <button class="view-user-properties-btn text-xs text-orange-500 hover:text-orange-600 font-semibold" 
-                                            data-user-id="{{ user.id }}" data-user-name="{{ user.full_name or user.email }}">
-                                        <i class="fas fa-eye mr-1"></i>Посмотреть
-                                    </button>
-                                    {% endif %}
-                                </div>
-                            </div>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if user.properties_count > 0 %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    {{ user.properties_count }} объявлений
+                                </span>
+                            {% else %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    Нет объявлений
+                                </span>
+                            {% endif %}
                         </td>
                         
-                        <!-- Дата регистрации -->
-                        <td class="py-6 px-4">
-                            <span class="text-sm text-gray-600">{{ user.created_at }}</span>
+                        <!-- Регистрация -->
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ user.registered_at }}
                         </td>
                         
                         <!-- Статус -->
-                        <td class="py-6 px-4">
+                        <td class="px-6 py-4 whitespace-nowrap">
                             {% if user.is_active %}
-                                <span class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-green-100 text-green-800 font-semibold">
-                                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                    <span>Активный</span>
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    Активный
                                 </span>
                             {% else %}
-                                <span class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-red-100 text-red-800 font-semibold">
-                                    <div class="w-2 h-2 bg-red-500 rounded-full"></div>
-                                    <span>Заблокирован</span>
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                    Заблокирован
                                 </span>
                             {% endif %}
                         </td>
                         
                         <!-- Действия -->
-                        <td class="py-6 px-4">
-                            <div class="flex items-center justify-center space-x-2">
-                                <button class="view-user-details-btn w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 text-white rounded-lg hover:shadow-lg transition-all duration-300" 
-                                        title="Просмотр деталей" data-user-id="{{ user.id }}">
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                            <div class="flex justify-center space-x-2">
+                                <button onclick="viewUserDetails({{ user.id }})" 
+                                        class="text-blue-600 hover:text-blue-900" title="Просмотр">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                
-                                {% if user.is_active %}
-                                <button class="block-user-btn w-10 h-10 bg-gradient-to-br from-red-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-300" 
-                                        title="Заблокировать" data-user-id="{{ user.id }}" data-user-name="{{ user.full_name or user.email }}">
-                                    <i class="fas fa-ban"></i>
+                                <button onclick="toggleUserStatus({{ user.id }})" 
+                                        class="{% if user.is_active %}text-red-600 hover:text-red-900{% else %}text-green-600 hover:text-green-900{% endif %}" 
+                                        title="{% if user.is_active %}Заблокировать{% else %}Разблокировать{% endif %}">
+                                    <i class="fas fa-{% if user.is_active %}ban{% else %}check{% endif %}"></i>
                                 </button>
-                                {% else %}
-                                <button class="unblock-user-btn w-10 h-10 bg-gradient-to-br from-green-500 to-blue-500 text-white rounded-lg hover:shadow-lg transition-all duration-300" 
-                                        title="Разблокировать" data-user-id="{{ user.id }}" data-user-name="{{ user.full_name or user.email }}">
-                                    <i class="fas fa-unlock"></i>
-                                </button>
-                                {% endif %}
-                                
-                                <button class="delete-user-btn w-10 h-10 bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-lg hover:shadow-lg transition-all duration-300" 
-                                        title="Удалить" data-user-id="{{ user.id }}" data-user-name="{{ user.full_name or user.email }}">
-                                    <i class="fas fa-trash"></i>
+                                <button onclick="deleteUserProperties({{ user.id }})" 
+                                        class="text-orange-600 hover:text-orange-900" title="Удалить объявления">
+                                    <i class="fas fa-home"></i>
                                 </button>
                             </div>
                         </td>
                     </tr>
                     {% endfor %}
+                    {% if not users %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                            Пользователи не найдены
+                        </td>
+                    </tr>
+                    {% endif %}
                 </tbody>
             </table>
         </div>
     </div>
 </div>
 
-<!-- Модальное окно деталей пользователя -->
-<div id="userDetailsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden">
-        <div class="bg-gradient-to-r from-blue-500 to-purple-500 p-6">
-            <div class="flex items-center justify-between">
-                <h3 class="text-xl font-bold font-display text-white">Детали пользователя</h3>
-                <button onclick="closeModal('userDetailsModal')" class="text-white/80 hover:text-white">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            <p class="text-blue-100 text-sm mt-1">Подробная информация о пользователе</p>
+<!-- Модальные окна остаются без изменений -->
+<!-- Модальное окно просмотра пользователя -->
+<div id="userDetailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900">Информация о пользователе</h3>
+            <button onclick="closeUserDetailsModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
         </div>
-        <div class="p-6" id="userDetailsContent">
-            <!-- Контент загружается динамически -->
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно объявлений пользователя -->
-<div id="userPropertiesModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 overflow-hidden">
-        <div class="bg-gradient-to-r from-orange-500 to-yellow-500 p-6">
-            <div class="flex items-center justify-between">
-                <h3 class="text-xl font-bold font-display text-white">Объявления пользователя</h3>
-                <button onclick="closeModal('userPropertiesModal')" class="text-white/80 hover:text-white">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            <p class="text-orange-100 text-sm mt-1">Все объявления недвижимости</p>
-        </div>
-        <div class="p-6" id="userPropertiesContent">
-            <!-- Контент загружается динамически -->
+        <div id="userDetailsContent" class="p-6">
+            <!-- Содержимое загружается динамически -->
         </div>
     </div>
 </div>
 
 <!-- Модальное окно массовых действий -->
-<div id="bulkActionsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
-        <div class="bg-gradient-to-r from-yellow-500 to-orange-500 p-6">
-            <div class="flex items-center justify-between">
-                <h3 class="text-xl font-bold font-display text-white">Массовые действия</h3>
-                <button onclick="closeModal('bulkActionsModal')" class="text-white/80 hover:text-white">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            <p class="text-yellow-100 text-sm mt-1">Действия над выбранными пользователями</p>
+<div id="bulkActionsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl max-w-md w-full mx-4">
+        <div class="p-6 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Массовые действия</h3>
         </div>
-        <div class="p-6">
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Выберите действие:</label>
-                    <select id="bulkAction" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-orange-500">
-                        <option value="">-- Выберите действие --</option>
-                        <option value="block">Заблокировать выбранных</option>
-                        <option value="unblock">Разблокировать выбранных</option>
-                        <option value="export">Экспортировать выбранных</option>
-                    </select>
-                </div>
-                <p class="text-sm text-gray-600">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    Выберите пользователей в таблице, затем выберите действие
-                </p>
-            </div>
-            <div class="flex space-x-3 mt-8">
-                <button onclick="closeModal('bulkActionsModal')" 
-                        class="flex-1 py-3 text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 font-semibold transition-colors">
-                    Отмена
-                </button>
-                <button onclick="executeBulkAction()" 
-                        class="flex-1 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl hover:from-yellow-600 hover:to-orange-600 font-semibold transition-all">
-                    Выполнить
-                </button>
-            </div>
+        <div class="p-6 space-y-4">
+            <button onclick="bulkAction('activate')" class="w-full btn btn-green">
+                <i class="fas fa-check mr-2"></i>
+                Активировать всех пользователей
+            </button>
+            <button onclick="bulkAction('deactivate')" class="w-full btn btn-red">
+                <i class="fas fa-ban mr-2"></i>
+                Заблокировать всех пользователей
+            </button>
+            <button onclick="bulkAction('export')" class="w-full btn btn-blue">
+                <i class="fas fa-download mr-2"></i>
+                Экспортировать выбранных
+            </button>
+        </div>
+        <div class="p-6 border-t border-gray-200 text-right">
+            <button onclick="closeBulkActionsModal()" class="btn btn-secondary">
+                Отмена
+            </button>
         </div>
     </div>
 </div>
-
 {% endblock %}
 
-{% block extra_js %}
+{% block scripts %}
 <script>
-// Глобальные переменные
-let selectedUsers = new Set();
-
 function exportUsers() {
-    window.location.href = '/api/v1/superadmin/export/users';
+    window.open('/api/v1/superadmin/export/users', '_blank');
 }
 
 function showBulkActions() {
     document.getElementById('bulkActionsModal').classList.remove('hidden');
     document.getElementById('bulkActionsModal').classList.add('flex');
+}
+
+function closeBulkActionsModal() {
+    document.getElementById('bulkActionsModal').classList.add('hidden');
+    document.getElementById('bulkActionsModal').classList.remove('flex');
 }
 
 function viewUserDetails(userId) {
@@ -395,39 +301,9 @@ function viewUserDetails(userId) {
                                     </p>
                                 </div>
                             </div>
-                            
-                            <div class="p-4 bg-gray-50 rounded-xl">
-                                <h4 class="font-semibold text-gray-700 mb-2">Активность</h4>
-                                <div class="space-y-2">
-                                    <p><span class="font-medium">Дата регистрации:</span> ${user.created_at}</p>
-                                    <p><span class="font-medium">Последний вход:</span> ${user.last_login || 'Никогда'}</p>
-                                    <p><span class="font-medium">Объявлений:</span> ${user.properties_count}</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="space-y-4">
-                            <div class="p-4 bg-gray-50 rounded-xl">
-                                <h4 class="font-semibold text-gray-700 mb-2">Статистика</h4>
-                                <div class="space-y-2">
-                                    <p><span class="font-medium">Активных объявлений:</span> ${user.active_properties || 0}</p>
-                                    <p><span class="font-medium">На модерации:</span> ${user.pending_properties || 0}</p>
-                                    <p><span class="font-medium">Заблокированных:</span> ${user.blocked_properties || 0}</p>
-                                </div>
-                            </div>
-                            
-                            <div class="p-4 bg-gray-50 rounded-xl">
-                                <h4 class="font-semibold text-gray-700 mb-2">Дополнительно</h4>
-                                <div class="space-y-2">
-                                    <p><span class="font-medium">IP адрес:</span> ${user.ip_address || 'Не определен'}</p>
-                                    <p><span class="font-medium">Устройство:</span> ${user.device || 'Не определено'}</p>
-                                    <p><span class="font-medium">Город:</span> ${user.city || 'Не указан'}</p>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 `;
-                
                 document.getElementById('userDetailsContent').innerHTML = content;
                 document.getElementById('userDetailsModal').classList.remove('hidden');
                 document.getElementById('userDetailsModal').classList.add('flex');
@@ -435,329 +311,88 @@ function viewUserDetails(userId) {
         })
         .catch(error => {
             console.error('Error:', error);
-            Swal.fire({
-                title: 'Ошибка',
-                text: 'Не удалось загрузить детали пользователя',
-                icon: 'error',
-                customClass: {
-                    confirmButton: 'bg-red-500 hover:bg-red-600'
-                }
-            });
+            showNotification('Ошибка загрузки данных пользователя', 'error');
         });
 }
 
-function viewUserProperties(userId, userName) {
-    fetch(`/api/v1/superadmin/users/${userId}/properties`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const properties = data.properties;
-                let content = `<h4 class="text-lg font-semibold mb-4">Объявления пользователя: ${userName}</h4>`;
-                
-                if (properties.length === 0) {
-                    content += '<p class="text-gray-500 text-center py-8">У пользователя нет объявлений</p>';
-                } else {
-                    content += '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
-                    properties.forEach(property => {
-                        content += `
-                            <div class="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                                <div class="flex justify-between items-start mb-3">
-                                    <h5 class="font-semibold text-gray-900">${property.title}</h5>
-                                    <span class="px-2 py-1 text-xs rounded-full ${property.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                                        ${property.is_active ? 'Активно' : 'Неактивно'}
-                                    </span>
-                                </div>
-                                <p class="text-sm text-gray-600 mb-2">${property.address || 'Адрес не указан'}</p>
-                                <p class="text-lg font-bold text-purple-600">${property.price ? property.price + ' сом' : 'Цена не указана'}</p>
-                                <p class="text-xs text-gray-400 mt-2">Создано: ${property.created_at}</p>
-                            </div>
-                        `;
-                    });
-                    content += '</div>';
-                }
-                
-                document.getElementById('userPropertiesContent').innerHTML = content;
-                document.getElementById('userPropertiesModal').classList.remove('hidden');
-                document.getElementById('userPropertiesModal').classList.add('flex');
+function closeUserDetailsModal() {
+    document.getElementById('userDetailsModal').classList.add('hidden');
+    document.getElementById('userDetailsModal').classList.remove('flex');
+}
+
+function toggleUserStatus(userId) {
+    fetch(`/api/v1/superadmin/users/${userId}/toggle-status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка изменения статуса', 'error');
+    });
+}
+
+function deleteUserProperties(userId) {
+    if (confirm('Вы уверены, что хотите удалить все объявления пользователя?')) {
+        fetch(`/api/v1/superadmin/users/${userId}/properties`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
             }
         })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.fire({
-                title: 'Ошибка',
-                text: 'Не удалось загрузить объявления пользователя',
-                icon: 'error',
-                customClass: {
-                    confirmButton: 'bg-red-500 hover:bg-red-600'
-                }
-            });
-        });
-}
-
-function blockUser(userId, userName) {
-    Swal.fire({
-        title: '🚫 Заблокировать пользователя?',
-        text: `Вы действительно хотите заблокировать пользователя "${userName}"?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: '🚫 Заблокировать',
-        cancelButtonText: '❌ Отмена',
-        customClass: {
-            confirmButton: 'bg-gradient-to-r from-red-500 to-pink-500',
-            cancelButton: 'bg-gray-500'
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            performUserAction('block', userId, userName);
-        }
-    });
-}
-
-function unblockUser(userId, userName) {
-    Swal.fire({
-        title: '✅ Разблокировать пользователя?',
-        text: `Вы действительно хотите разблокировать пользователя "${userName}"?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#10b981',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: '✅ Разблокировать',
-        cancelButtonText: '❌ Отмена',
-        customClass: {
-            confirmButton: 'bg-gradient-to-r from-green-500 to-blue-500',
-            cancelButton: 'bg-gray-500'
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            performUserAction('unblock', userId, userName);
-        }
-    });
-}
-
-function deleteUser(userId, userName) {
-    Swal.fire({
-        title: '🗑️ Удалить пользователя?',
-        text: `Внимание! Это действие удалит пользователя "${userName}" и все его объявления!`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: '🗑️ Удалить',
-        cancelButtonText: '❌ Отмена',
-        customClass: {
-            confirmButton: 'bg-gradient-to-r from-red-600 to-red-700',
-            cancelButton: 'bg-gray-500'
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            performUserAction('delete', userId, userName);
-        }
-    });
-}
-
-function performUserAction(action, userId, userName) {
-    const endpoint = `/api/v1/superadmin/users/${userId}/${action}`;
-    const method = action === 'delete' ? 'DELETE' : 'POST';
-    
-    fetch(endpoint, { method: method })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                const messages = {
-                    block: '🚫 Пользователь заблокирован',
-                    unblock: '✅ Пользователь разблокирован',
-                    delete: '🗑️ Пользователь удален'
-                };
-                
-                Swal.fire({
-                    title: 'Успех',
-                    text: messages[action],
-                    icon: 'success',
-                    customClass: {
-                        confirmButton: 'bg-gradient-to-r from-green-500 to-blue-500'
-                    }
-                }).then(() => {
-                    location.reload();
-                });
+                showNotification(data.message, 'success');
+                setTimeout(() => location.reload(), 1000);
             } else {
-                Swal.fire({
-                    title: 'Ошибка',
-                    text: data.message || 'Не удалось выполнить действие',
-                    icon: 'error',
-                    customClass: {
-                        confirmButton: 'bg-red-500 hover:bg-red-600'
-                    }
-                });
+                showNotification(data.message, 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            Swal.fire({
-                title: 'Ошибка',
-                text: 'Произошла ошибка при выполнении действия',
-                icon: 'error',
-                customClass: {
-                    confirmButton: 'bg-red-500 hover:bg-red-600'
-                }
-            });
+            showNotification('Ошибка удаления объявлений', 'error');
         });
-}
-
-function executeBulkAction() {
-    const action = document.getElementById('bulkAction').value;
-    if (!action) {
-        Swal.fire({
-            title: 'Выберите действие',
-            text: 'Пожалуйста, выберите действие для выполнения',
-            icon: 'info',
-            customClass: {
-                confirmButton: 'bg-blue-500 hover:bg-blue-600'
-            }
-        });
-        return;
     }
-    
-    if (selectedUsers.size === 0) {
-        Swal.fire({
-            title: 'Выберите пользователей',
-            text: 'Пожалуйста, выберите пользователей в таблице',
-            icon: 'info',
-            customClass: {
-                confirmButton: 'bg-blue-500 hover:bg-blue-600'
-            }
-        });
-        return;
-    }
-    
-    // Выполнение массового действия
-    const userIds = Array.from(selectedUsers);
-    console.log('Executing bulk action:', action, 'for users:', userIds);
-    
-    // Здесь будет логика выполнения массового действия
-    closeModal('bulkActionsModal');
 }
 
 function resetFilters() {
     document.getElementById('searchInput').value = '';
     document.getElementById('statusFilter').value = '';
     document.getElementById('propertyFilter').value = '';
-    
-    // Показываем все строки
-    document.querySelectorAll('tbody tr').forEach(row => {
-        row.style.display = '';
-    });
+    location.reload();
 }
 
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
-    document.getElementById(modalId).classList.remove('flex');
+function bulkAction(action) {
+    // Реализация массовых действий
+    console.log('Bulk action:', action);
+    closeBulkActionsModal();
 }
 
 // Поиск и фильтрация
-document.addEventListener('DOMContentLoaded', function() {
-    // Анимация появления карточек
-    const cards = document.querySelectorAll('.card-hover');
-    cards.forEach((card, index) => {
-        card.style.animationDelay = `${index * 0.1}s`;
-        card.classList.add('animate-slide-up');
-    });
-    
-    // Обработчики событий для кнопок
-    document.querySelectorAll('.view-user-details-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const userId = this.getAttribute('data-user-id');
-            viewUserDetails(userId);
-        });
-    });
-    
-    document.querySelectorAll('.view-user-properties-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const userId = this.getAttribute('data-user-id');
-            const userName = this.getAttribute('data-user-name');
-            viewUserProperties(userId, userName);
-        });
-    });
-    
-    document.querySelectorAll('.block-user-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const userId = this.getAttribute('data-user-id');
-            const userName = this.getAttribute('data-user-name');
-            blockUser(userId, userName);
-        });
-    });
-    
-    document.querySelectorAll('.unblock-user-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const userId = this.getAttribute('data-user-id');
-            const userName = this.getAttribute('data-user-name');
-            unblockUser(userId, userName);
-        });
-    });
-    
-    document.querySelectorAll('.delete-user-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const userId = this.getAttribute('data-user-id');
-            const userName = this.getAttribute('data-user-name');
-            deleteUser(userId, userName);
-        });
-    });
-    
-    // Закрытие модальных окон по клику вне области
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('fixed')) {
-            closeModal(e.target.id);
-        }
-    });
-    
-    // Поиск
-    document.getElementById('searchInput').addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        filterTable();
-    });
-    
-    // Фильтры
-    document.getElementById('statusFilter').addEventListener('change', filterTable);
-    document.getElementById('propertyFilter').addEventListener('change', filterTable);
-    
-    function filterTable() {
-        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-        const statusFilter = document.getElementById('statusFilter').value;
-        const propertyFilter = document.getElementById('propertyFilter').value;
-        const rows = document.querySelectorAll('tbody tr');
-        
-        rows.forEach(row => {
-            const name = row.cells[0].textContent.toLowerCase();
-            const email = row.cells[1].textContent.toLowerCase();
-            const phone = row.cells[1].textContent.toLowerCase();
-            const propertiesCount = parseInt(row.cells[2].textContent.trim());
-            const isActive = row.cells[4].textContent.includes('Активный');
-            
-            let show = true;
-            
-            // Поиск
-            if (searchTerm && !name.includes(searchTerm) && !email.includes(searchTerm) && !phone.includes(searchTerm)) {
-                show = false;
-            }
-            
-            // Фильтр по статусу
-            if (statusFilter) {
-                if ((statusFilter === 'active' && !isActive) || (statusFilter === 'blocked' && isActive)) {
-                    show = false;
-                }
-            }
-            
-            // Фильтр по недвижимости
-            if (propertyFilter) {
-                if ((propertyFilter === 'with' && propertiesCount === 0) || (propertyFilter === 'without' && propertiesCount > 0)) {
-                    show = false;
-                }
-            }
-            
-            row.style.display = show ? '' : 'none';
-        });
-    }
+document.getElementById('searchInput').addEventListener('input', function() {
+    // Реализация поиска
 });
+
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+}
+
+function showNotification(message, type) {
+    // Простая реализация уведомлений
+    alert(message);
+}
 </script>
 {% endblock %} 

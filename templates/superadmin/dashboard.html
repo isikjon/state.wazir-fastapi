@@ -2,97 +2,185 @@
 
 {% block title %}Дашборд - SuperAdmin{% endblock %}
 {% block page_title %}Дашборд{% endblock %}
-{% block page_subtitle %}Обзор системы и основные метрики{% endblock %}
+{% block page_subtitle %}Добро пожаловать в панель суперадминистратора{% endblock %}
 
 {% block content %}
+<!-- Welcome Banner -->
+<div class="relative mb-8 overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-3xl"></div>
+    <div class="absolute inset-0 bg-black/20 rounded-3xl"></div>
+    <div class="absolute top-4 right-4 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+    <div class="absolute bottom-4 left-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+    
+    <div class="relative p-8 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-4xl font-bold font-display mb-2">
+                    Добро пожаловать! 👑
+                </h1>
+                <p class="text-xl text-white/90 mb-6 font-medium">
+                    Управляйте системой с комфортом и стилем
+                </p>
+                <div class="flex items-center space-x-6">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                        <span class="text-sm font-medium">Система работает стабильно</span>
+                    </div>
+                    <div class="text-sm text-white/80">
+                        Последний вход: {{ current_user.last_login if current_user and current_user.last_login else 'сегодня в 14:30' }}
+                    </div>
+                </div>
+            </div>
+            <div class="hidden lg:block">
+                <div class="w-32 h-32 bg-gradient-to-br from-white/20 to-white/5 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                    <i class="fas fa-rocket text-5xl text-white/80"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Статистические карточки -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div class="flex items-center">
-            <div class="flex-shrink-0">
-                <div class="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-                    <i class="fas fa-user-shield text-white"></i>
+    <!-- Администраторы -->
+    <div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative overflow-hidden group">
+        <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full -mr-10 -mt-10"></div>
+        <div class="relative">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <i class="fas fa-user-shield text-white text-xl"></i>
+                </div>
+                <div class="text-right">
+                    <p class="text-3xl font-bold font-display text-gray-800">{{ stats.admins_count }}</p>
+                    <div class="flex items-center justify-end space-x-1 mt-1">
+                        <i class="fas fa-arrow-up text-green-500 text-xs"></i>
+                        <span class="text-xs text-green-500 font-semibold">+12%</span>
+                    </div>
                 </div>
             </div>
-            <div class="ml-4">
-                <h3 class="text-sm font-medium text-gray-500">Администраторов</h3>
-                <p class="text-2xl font-semibold text-gray-900">{{ stats.admins_count }}</p>
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-1">Администраторы</h3>
+                <p class="text-sm text-gray-500">Активные в системе</p>
             </div>
         </div>
     </div>
     
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div class="flex items-center">
-            <div class="flex-shrink-0">
-                <div class="w-12 h-12 bg-success rounded-lg flex items-center justify-center">
-                    <i class="fas fa-users text-white"></i>
+    <!-- Пользователи -->
+    <div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative overflow-hidden group">
+        <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/10 to-green-500/10 rounded-full -mr-10 -mt-10"></div>
+        <div class="relative">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <i class="fas fa-users text-white text-xl"></i>
+                </div>
+                <div class="text-right">
+                    <p class="text-3xl font-bold font-display text-gray-800">{{ stats.users_count }}</p>
+                    <div class="flex items-center justify-end space-x-1 mt-1">
+                        <i class="fas fa-arrow-up text-green-500 text-xs"></i>
+                        <span class="text-xs text-green-500 font-semibold">+24%</span>
+                    </div>
                 </div>
             </div>
-            <div class="ml-4">
-                <h3 class="text-sm font-medium text-gray-500">Пользователей</h3>
-                <p class="text-2xl font-semibold text-gray-900">{{ stats.users_count }}</p>
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-1">Пользователи</h3>
+                <p class="text-sm text-gray-500">Зарегистрированных</p>
             </div>
         </div>
     </div>
     
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div class="flex items-center">
-            <div class="flex-shrink-0">
-                <div class="w-12 h-12 bg-warning rounded-lg flex items-center justify-center">
-                    <i class="fas fa-building text-white"></i>
+    <!-- Объявления -->
+    <div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative overflow-hidden group">
+        <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-full -mr-10 -mt-10"></div>
+        <div class="relative">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-14 h-14 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <i class="fas fa-building text-white text-xl"></i>
+                </div>
+                <div class="text-right">
+                    <p class="text-3xl font-bold font-display text-gray-800">{{ stats.properties_count }}</p>
+                    <div class="flex items-center justify-end space-x-1 mt-1">
+                        <i class="fas fa-arrow-up text-green-500 text-xs"></i>
+                        <span class="text-xs text-green-500 font-semibold">+8%</span>
+                    </div>
                 </div>
             </div>
-            <div class="ml-4">
-                <h3 class="text-sm font-medium text-gray-500">Объявлений</h3>
-                <p class="text-2xl font-semibold text-gray-900">{{ stats.properties_count }}</p>
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-1">Объявления</h3>
+                <p class="text-sm text-gray-500">Всего в системе</p>
             </div>
         </div>
     </div>
     
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div class="flex items-center">
-            <div class="flex-shrink-0">
-                <div class="w-12 h-12 bg-danger rounded-lg flex items-center justify-center">
-                    <i class="fas fa-clock text-white"></i>
+    <!-- На модерации -->
+    <div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative overflow-hidden group">
+        <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-500/10 to-pink-500/10 rounded-full -mr-10 -mt-10"></div>
+        <div class="relative">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <i class="fas fa-clock text-white text-xl"></i>
+                </div>
+                <div class="text-right">
+                    <p class="text-3xl font-bold font-display text-gray-800">{{ stats.pending_requests }}</p>
+                    <div class="flex items-center justify-end space-x-1 mt-1">
+                        {% if stats.pending_requests > 0 %}
+                            <i class="fas fa-exclamation-triangle text-orange-500 text-xs"></i>
+                            <span class="text-xs text-orange-500 font-semibold">Требует внимания</span>
+                        {% else %}
+                            <i class="fas fa-check text-green-500 text-xs"></i>
+                            <span class="text-xs text-green-500 font-semibold">Все обработано</span>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
-            <div class="ml-4">
-                <h3 class="text-sm font-medium text-gray-500">На модерации</h3>
-                <p class="text-2xl font-semibold text-gray-900">{{ stats.pending_requests }}</p>
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-1">На модерации</h3>
+                <p class="text-sm text-gray-500">Ожидают проверки</p>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Быстрые действия -->
-<div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
-            <i class="fas fa-bolt text-primary mr-2"></i>
+<div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 mb-8 overflow-hidden">
+    <div class="bg-gradient-to-r from-purple-500 to-pink-500 p-6">
+        <h3 class="text-2xl font-bold font-display text-white flex items-center">
+            <i class="fas fa-bolt mr-3 text-yellow-300"></i>
             Быстрые действия
         </h3>
+        <p class="text-purple-100 mt-1">Наиболее часто используемые функции</p>
     </div>
     <div class="p-6">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <a href="/superadmin/admins?action=create" 
-               class="flex items-center justify-center px-4 py-3 bg-primary text-white rounded-lg hover:bg-indigo-600 transition-colors duration-200">
-                <i class="fas fa-plus mr-2"></i>
-                Создать админа
-            </a>
+            <button onclick="location.href='/superadmin/admins'" 
+                    class="group relative p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
+                <div class="absolute top-2 right-2 w-8 h-8 bg-white/20 rounded-full"></div>
+                <i class="fas fa-plus text-2xl mb-3 block"></i>
+                <span class="font-semibold">Создать админа</span>
+                <p class="text-xs text-purple-100 mt-1">Добавить нового администратора</p>
+            </button>
+            
             <button onclick="showSystemInfo()" 
-                    class="flex items-center justify-center px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200">
-                <i class="fas fa-info-circle mr-2"></i>
-                Системная информация
+                    class="group relative p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
+                <div class="absolute top-2 right-2 w-8 h-8 bg-white/20 rounded-full"></div>
+                <i class="fas fa-info-circle text-2xl mb-3 block"></i>
+                <span class="font-semibold">Системная информация</span>
+                <p class="text-xs text-blue-100 mt-1">Статус сервера</p>
             </button>
+            
             <button onclick="exportData()" 
-                    class="flex items-center justify-center px-4 py-3 bg-success text-white rounded-lg hover:bg-green-600 transition-colors duration-200">
-                <i class="fas fa-download mr-2"></i>
-                Экспорт данных
+                    class="group relative p-6 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
+                <div class="absolute top-2 right-2 w-8 h-8 bg-white/20 rounded-full"></div>
+                <i class="fas fa-download text-2xl mb-3 block"></i>
+                <span class="font-semibold">Экспорт данных</span>
+                <p class="text-xs text-green-100 mt-1">Скачать отчеты</p>
             </button>
+            
             <button onclick="showLogs()" 
-                    class="flex items-center justify-center px-4 py-3 bg-warning text-white rounded-lg hover:bg-yellow-600 transition-colors duration-200">
-                <i class="fas fa-file-alt mr-2"></i>
-                Логи системы
+                    class="group relative p-6 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
+                <div class="absolute top-2 right-2 w-8 h-8 bg-white/20 rounded-full"></div>
+                <i class="fas fa-file-alt text-2xl mb-3 block"></i>
+                <span class="font-semibold">Логи системы</span>
+                <p class="text-xs text-orange-100 mt-1">Системные события</p>
             </button>
         </div>
     </div>
@@ -101,96 +189,127 @@
 <!-- Две колонки для активности и уведомлений -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
     <!-- Последние действия -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
-                <i class="fas fa-history text-primary mr-2"></i>
+    <div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="bg-gradient-to-r from-indigo-500 to-purple-500 p-6">
+            <h3 class="text-xl font-bold font-display text-white flex items-center">
+                <i class="fas fa-history mr-3"></i>
                 Последние действия
             </h3>
+            <p class="text-indigo-100 text-sm mt-1">Активность в системе</p>
         </div>
         <div class="p-6">
             <div class="space-y-4">
                 {% for activity in recent_activities %}
-                <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-4 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
                     <div class="flex-shrink-0">
-                        <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                            <i class="{{ activity.icon }} text-white text-sm"></i>
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-md">
+                            <i class="{{ activity.icon }} text-white"></i>
                         </div>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900 truncate">{{ activity.action }}</p>
-                        <p class="text-sm text-gray-500">{{ activity.admin_name }} • {{ activity.time }}</p>
+                        <p class="font-semibold text-gray-900 truncate">{{ activity.action }}</p>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <span class="text-sm text-gray-500">{{ activity.admin_name }}</span>
+                            <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+                            <span class="text-sm text-gray-500">{{ activity.time }}</span>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-chevron-right text-gray-300"></i>
                     </div>
                 </div>
                 {% endfor %}
+            </div>
+            <div class="mt-6">
+                <button class="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300">
+                    Показать все действия
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Системные уведомления -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
-                <i class="fas fa-bell text-primary mr-2"></i>
+    <div class="card-hover bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="bg-gradient-to-r from-pink-500 to-red-500 p-6">
+            <h3 class="text-xl font-bold font-display text-white flex items-center">
+                <i class="fas fa-bell mr-3"></i>
                 Системные уведомления
             </h3>
+            <p class="text-pink-100 text-sm mt-1">Важные события системы</p>
         </div>
         <div class="p-6">
             <div class="space-y-4">
                 {% for notification in system_notifications %}
-                <div class="border-l-4 pl-4 py-2 notification-item" data-color="{{ notification.color }}" data-bg="{{ notification.bg_color }}">
-                    <div class="flex items-center mb-1">
-                        <i class="{{ notification.icon }} mr-2 notification-icon" data-color="{{ notification.color }}"></i>
-                        <span class="text-sm font-medium text-gray-900">{{ notification.title }}</span>
+                <div class="relative p-4 rounded-xl border-l-4 notification-item" data-color="{{ notification.color }}" data-bg="{{ notification.bg_color }}">
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0">
+                            <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: {{ notification.color }}20;">
+                                <i class="{{ notification.icon }} notification-icon" data-color="{{ notification.color }}"></i>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-semibold text-gray-900">{{ notification.title }}</h4>
+                                <span class="text-xs text-gray-400">{{ notification.time }}</span>
+                            </div>
+                            <p class="text-sm text-gray-600">{{ notification.message }}</p>
+                        </div>
                     </div>
-                    <p class="text-sm text-gray-600">{{ notification.message }}</p>
-                    <p class="text-xs text-gray-400 mt-1">{{ notification.time }}</p>
                 </div>
                 {% endfor %}
+            </div>
+            <div class="mt-6">
+                <button class="w-full py-3 bg-gradient-to-r from-pink-500 to-red-500 text-white rounded-xl font-semibold hover:from-pink-600 hover:to-red-600 transition-all duration-300">
+                    Все уведомления
+                </button>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Модальное окно системной информации -->
-<div id="systemInfoModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
-                <i class="fas fa-server mr-2 text-primary"></i>
-                Системная информация
-            </h3>
-            <button onclick="closeModal('systemInfoModal')" class="text-gray-400 hover:text-gray-600">
-                <i class="fas fa-times"></i>
-            </button>
+<div id="systemInfoModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-500 to-purple-500 p-6">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold font-display text-white flex items-center">
+                    <i class="fas fa-server mr-3"></i>
+                    Системная информация
+                </h3>
+                <button onclick="closeModal('systemInfoModal')" class="text-white/80 hover:text-white transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <p class="text-blue-100 text-sm mt-1">Состояние сервера и приложения</p>
         </div>
         <div class="p-6">
             <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Версия Python</p>
-                    <p class="text-sm text-gray-900">{{ system_info.python_version }}</p>
+                <div class="p-4 bg-gray-50 rounded-xl">
+                    <p class="text-sm font-semibold text-gray-500 mb-1">Версия Python</p>
+                    <p class="text-lg font-bold text-gray-900">{{ system_info.python_version }}</p>
                 </div>
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Версия FastAPI</p>
-                    <p class="text-sm text-gray-900">{{ system_info.fastapi_version }}</p>
+                <div class="p-4 bg-gray-50 rounded-xl">
+                    <p class="text-sm font-semibold text-gray-500 mb-1">Версия FastAPI</p>
+                    <p class="text-lg font-bold text-gray-900">{{ system_info.fastapi_version }}</p>
                 </div>
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Использование памяти</p>
-                    <p class="text-sm text-gray-900">{{ system_info.memory_usage }}</p>
+                <div class="p-4 bg-gray-50 rounded-xl">
+                    <p class="text-sm font-semibold text-gray-500 mb-1">Использование памяти</p>
+                    <p class="text-lg font-bold text-gray-900">{{ system_info.memory_usage }}</p>
                 </div>
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Время работы</p>
-                    <p class="text-sm text-gray-900">{{ system_info.uptime }}</p>
+                <div class="p-4 bg-gray-50 rounded-xl">
+                    <p class="text-sm font-semibold text-gray-500 mb-1">Время работы</p>
+                    <p class="text-lg font-bold text-gray-900">{{ system_info.uptime }}</p>
                 </div>
             </div>
+            <button onclick="closeModal('systemInfoModal')" 
+                    class="w-full mt-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-purple-600 transition-all duration-300">
+                Закрыть
+            </button>
         </div>
     </div>
 </div>
 
 <style>
-.notification-item {
-    border-left-width: 4px;
-}
 .notification-item[data-color="#f59e0b"] {
     border-left-color: #f59e0b;
     background-color: #fefbf3;
@@ -234,10 +353,14 @@ function exportData() {
         text: 'Выберите тип данных для экспорта:',
         icon: 'question',
         showCancelButton: true,
-        confirmButtonText: 'Все данные',
-        cancelButtonText: 'Отмена',
+        confirmButtonText: '📊 Все данные',
+        cancelButtonText: '❌ Отмена',
         showDenyButton: true,
-        denyButtonText: 'Только пользователи'
+        denyButtonText: '👥 Только пользователи',
+        customClass: {
+            confirmButton: 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600',
+            denyButton: 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600'
+        }
     }).then((result) => {
         if (result.isConfirmed) {
             window.location.href = '/api/v1/superadmin/export/all';
@@ -248,33 +371,61 @@ function exportData() {
 }
 
 function showLogs() {
-    window.open('/superadmin/logs', '_blank');
+    Swal.fire({
+        title: '📄 Логи системы',
+        text: 'Открыть логи в новом окне?',
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: '🚀 Открыть',
+        cancelButtonText: 'Отмена',
+        customClass: {
+            confirmButton: 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.open('/superadmin/logs', '_blank');
+        }
+    });
 }
 
-// Закрытие модальных окон по клику вне области
-document.addEventListener('click', function(e) {
-    if (e.target.id === 'systemInfoModal') {
-        closeModal('systemInfoModal');
-    }
-});
-
-// Обновление статистики каждые 30 секунд
-setInterval(function() {
-    fetch('/api/v1/superadmin/stats')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Обновляем статистические карточки
-                const cards = document.querySelectorAll('.grid .bg-white p');
-                if (cards.length >= 4) {
-                    cards[0].textContent = data.stats.admins_count;
-                    cards[1].textContent = data.stats.users_count;
-                    cards[2].textContent = data.stats.properties_count;
-                    cards[3].textContent = data.stats.pending_requests;
+// Анимация появления карточек
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.card-hover');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+        card.classList.add('animate-slide-up');
+    });
+    
+    // Закрытие модальных окон по клику вне области
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'systemInfoModal') {
+            closeModal('systemInfoModal');
+        }
+    });
+    
+    // Обновление статистики каждые 30 секунд с красивой анимацией
+    setInterval(function() {
+        fetch('/api/v1/superadmin/stats')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Обновляем с анимацией
+                    const statElements = document.querySelectorAll('.text-3xl.font-bold.font-display');
+                    if (statElements.length >= 4) {
+                        [data.stats.admins_count, data.stats.users_count, data.stats.properties_count, data.stats.pending_requests].forEach((value, index) => {
+                            if (statElements[index]) {
+                                statElements[index].style.transform = 'scale(1.1)';
+                                setTimeout(() => {
+                                    statElements[index].textContent = value;
+                                    statElements[index].style.transform = 'scale(1)';
+                                }, 150);
+                            }
+                        });
+                    }
                 }
-            }
-        })
-        .catch(error => console.log('Ошибка обновления статистики:', error));
-}, 30000);
+            })
+            .catch(error => console.log('Ошибка обновления статистики:', error));
+    }, 30000);
+});
 </script>
 {% endblock %} 

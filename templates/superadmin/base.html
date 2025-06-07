@@ -6,111 +6,257 @@
     <title>{% block title %}Wazir SuperAdmin{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#6366f1',
-                        secondary: '#8b5cf6',
-                        accent: '#06b6d4',
+                        primary: '#8b5cf6',
+                        secondary: '#a855f7',
+                        accent: '#c084fc',
                         success: '#10b981',
                         warning: '#f59e0b',
                         danger: '#ef4444',
+                        dark: '#1e1b4b',
+                        light: '#f8fafc',
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                        'display': ['Poppins', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'bounce-soft': 'bounceSoft 0.6s ease-out',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
                     }
                 }
             }
         }
     </script>
+    
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes bounceSoft {
+            0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
+            40%, 43% { transform: translate3d(0,-8px,0); }
+            70% { transform: translate3d(0,-4px,0); }
+            90% { transform: translate3d(0,-2px,0); }
+        }
+        
+        @keyframes glow {
+            from { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+            to { box-shadow: 0 0 30px rgba(139, 92, 246, 0.6); }
+        }
+        
+        .glass-effect {
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #8b5cf6, #a855f7, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px rgba(139, 92, 246, 0.1);
+        }
+        
+        .nav-item {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+        
+        .nav-item:hover::before {
+            left: 100%;
+        }
+        
+        .sidebar-gradient {
+            background: linear-gradient(145deg, #1e1b4b, #312e81, #3730a3);
+        }
+        
+        .main-gradient {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+    </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-50 font-sans">
-    <div class="flex h-screen bg-gray-50">
+    <div class="flex h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
         <!-- Sidebar -->
-        <div class="w-64 bg-white shadow-sm border-r border-gray-200">
-            <!-- Logo -->
-            <div class="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+        <div class="w-72 sidebar-gradient shadow-2xl relative">
+            <!-- Decorative Elements -->
+            <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full blur-3xl opacity-20"></div>
+            <div class="absolute bottom-20 left-0 w-24 h-24 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full blur-2xl opacity-20"></div>
+            
+            <!-- Logo Section -->
+            <div class="relative flex items-center justify-between h-20 px-6 border-b border-white/10">
                 <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                        <i class="fas fa-crown text-white text-sm"></i>
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl flex items-center justify-center shadow-lg animate-glow">
+                        <i class="fas fa-crown text-white text-lg"></i>
                     </div>
-                    <h1 class="text-xl font-semibold text-gray-900">SuperAdmin</h1>
+                    <div>
+                        <h1 class="text-2xl font-bold font-display text-white">SuperAdmin</h1>
+                        <p class="text-xs text-purple-200">Elite Dashboard</p>
+                    </div>
                 </div>
-                <a href="/superadmin/logout" 
-                   class="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                   title="Выйти">
-                    <i class="fas fa-sign-out-alt"></i>
-                </a>
             </div>
             
             <!-- Navigation -->
-            <nav class="mt-6">
-                <div class="px-4">
+            <nav class="mt-8 px-4 relative z-10">
+                <div class="space-y-2">
                     <a href="/superadmin/dashboard" 
-                       class="flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {% if request.url.path == '/superadmin/dashboard' %}bg-primary text-white{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                        <i class="fas fa-tachometer-alt w-5"></i>
-                        <span>Дашборд</span>
+                       class="nav-item flex items-center space-x-4 px-4 py-4 text-white rounded-xl transition-all duration-300 group {% if request.url.path == '/superadmin/dashboard' %}bg-white/20 shadow-lg{% else %}hover:bg-white/10{% endif %}">
+                        <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+                            <i class="fas fa-tachometer-alt text-white"></i>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-lg">Дашборд</span>
+                            <p class="text-xs text-purple-200">Обзор системы</p>
+                        </div>
                     </a>
                     
                     <a href="/superadmin/admins" 
-                       class="flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 mt-1 {% if 'admins' in request.url.path %}bg-primary text-white{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                        <i class="fas fa-user-shield w-5"></i>
-                        <span>Администраторы</span>
+                       class="nav-item flex items-center space-x-4 px-4 py-4 text-white rounded-xl transition-all duration-300 group {% if 'admins' in request.url.path %}bg-white/20 shadow-lg{% else %}hover:bg-white/10{% endif %}">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-400 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+                            <i class="fas fa-user-shield text-white"></i>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-lg">Администраторы</span>
+                            <p class="text-xs text-purple-200">Управление админами</p>
+                        </div>
                     </a>
                     
                     <a href="/superadmin/users" 
-                       class="flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 mt-1 {% if 'users' in request.url.path %}bg-primary text-white{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                        <i class="fas fa-users w-5"></i>
-                        <span>Пользователи</span>
+                       class="nav-item flex items-center space-x-4 px-4 py-4 text-white rounded-xl transition-all duration-300 group {% if 'users' in request.url.path %}bg-white/20 shadow-lg{% else %}hover:bg-white/10{% endif %}">
+                        <div class="w-10 h-10 bg-gradient-to-br from-green-400 to-blue-400 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+                            <i class="fas fa-users text-white"></i>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-lg">Пользователи</span>
+                            <p class="text-xs text-purple-200">База пользователей</p>
+                        </div>
                     </a>
                     
                     <a href="/superadmin/properties" 
-                       class="flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 mt-1 {% if 'properties' in request.url.path %}bg-primary text-white{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                        <i class="fas fa-building w-5"></i>
-                        <span>Объявления</span>
+                       class="nav-item flex items-center space-x-4 px-4 py-4 text-white rounded-xl transition-all duration-300 group {% if 'properties' in request.url.path %}bg-white/20 shadow-lg{% else %}hover:bg-white/10{% endif %}">
+                        <div class="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+                            <i class="fas fa-building text-white"></i>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-lg">Объявления</span>
+                            <p class="text-xs text-purple-200">Недвижимость</p>
+                        </div>
                     </a>
                     
                     <a href="/superadmin/analytics" 
-                       class="flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 mt-1 {% if 'analytics' in request.url.path %}bg-primary text-white{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                        <i class="fas fa-chart-line w-5"></i>
-                        <span>Аналитика</span>
+                       class="nav-item flex items-center space-x-4 px-4 py-4 text-white rounded-xl transition-all duration-300 group {% if 'analytics' in request.url.path %}bg-white/20 shadow-lg{% else %}hover:bg-white/10{% endif %}">
+                        <div class="w-10 h-10 bg-gradient-to-br from-pink-400 to-red-400 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+                            <i class="fas fa-chart-line text-white"></i>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-lg">Аналитика</span>
+                            <p class="text-xs text-purple-200">Статистика</p>
+                        </div>
                     </a>
                 </div>
             </nav>
+            
+            <!-- Bottom Section -->
+            <div class="absolute bottom-0 w-full p-6">
+                <div class="glass-effect rounded-xl p-4">
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
+                            {% if current_user and current_user.avatar_url %}
+                                <img src="{{ current_user.avatar_url }}" alt="Avatar" class="w-full h-full rounded-full object-cover">
+                            {% else %}
+                                <i class="fas fa-user text-white"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <p class="text-white font-semibold">{{ current_user.full_name if current_user and current_user.full_name else 'SuperAdmin' }}</p>
+                            <p class="text-xs text-purple-200">{{ current_user.email if current_user and current_user.email else 'superadmin@wazir.kg' }}</p>
+                        </div>
+                    </div>
+                    <a href="/superadmin/logout" 
+                       class="flex items-center justify-center space-x-2 w-full py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 hover:text-white rounded-lg transition-all duration-300">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Выйти</span>
+                    </a>
+                </div>
+            </div>
         </div>
 
         <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
             <!-- Header -->
-            <header class="bg-white shadow-sm border-b border-gray-200">
-                <div class="flex items-center justify-between h-16 px-6">
+            <header class="bg-white/80 backdrop-blur-xl shadow-sm border-b border-gray-200/50 relative">
+                <div class="absolute inset-0 bg-gradient-to-r from-purple-50/50 to-pink-50/50"></div>
+                <div class="relative flex items-center justify-between h-20 px-8">
                     <div>
-                        <h2 class="text-xl font-semibold text-gray-900">{% block page_title %}SuperAdmin Panel{% endblock %}</h2>
-                        <p class="text-sm text-gray-500">{% block page_subtitle %}Панель управления суперадминистратора{% endblock %}</p>
+                        <h2 class="text-3xl font-bold font-display gradient-text">{% block page_title %}SuperAdmin Panel{% endblock %}</h2>
+                        <p class="text-gray-600 font-medium">{% block page_subtitle %}Панель управления суперадминистратора{% endblock %}</p>
                     </div>
                     
-                    <!-- User Info -->
+                    <!-- Quick Actions -->
                     <div class="flex items-center space-x-4">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                                {% if current_user and current_user.avatar_url %}
-                                    <img src="{{ current_user.avatar_url }}" alt="Avatar" class="w-full h-full rounded-full object-cover">
-                                {% else %}
-                                    <i class="fas fa-user text-gray-500 text-sm"></i>
-                                {% endif %}
-                            </div>
-                            <div class="hidden md:block">
-                                <p class="text-sm font-medium text-gray-900">{{ current_user.full_name if current_user and current_user.full_name else 'SuperAdmin' }}</p>
-                                <p class="text-xs text-gray-500">{{ current_user.email if current_user and current_user.email else 'superadmin@wazir.kg' }}</p>
-                            </div>
+                        <button class="relative p-3 bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group">
+                            <i class="fas fa-bell"></i>
+                            <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center animate-bounce">3</span>
+                        </button>
+                        
+                        <button class="p-3 bg-gradient-to-br from-blue-500 to-purple-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
+                            {% if current_user and current_user.avatar_url %}
+                                <img src="{{ current_user.avatar_url }}" alt="Avatar" class="w-full h-full rounded-xl object-cover">
+                            {% else %}
+                                <i class="fas fa-user text-white"></i>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
             </header>
 
             <!-- Page Content -->
-            <main class="flex-1 overflow-y-auto">
-                <div class="p-6">
+            <main class="flex-1 overflow-y-auto main-gradient">
+                <div class="p-8 animate-fade-in">
                     {% block content %}{% endblock %}
                 </div>
             </main>
@@ -120,6 +266,72 @@
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Custom Animations -->
+    <script>
+        // Smooth animations on load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate cards on scroll
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate-slide-up');
+                    }
+                });
+            }, observerOptions);
+            
+            // Observe all cards
+            document.querySelectorAll('.card-hover').forEach(card => {
+                observer.observe(card);
+            });
+            
+            // Add ripple effect to buttons
+            document.querySelectorAll('button, .nav-item').forEach(element => {
+                element.addEventListener('click', function(e) {
+                    const ripple = document.createElement('span');
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+                    
+                    ripple.style.width = ripple.style.height = size + 'px';
+                    ripple.style.left = x + 'px';
+                    ripple.style.top = y + 'px';
+                    ripple.classList.add('ripple');
+                    
+                    this.appendChild(ripple);
+                    
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                });
+            });
+        });
+    </script>
+    
+    <style>
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(0);
+            animation: ripple-animation 0.6s linear;
+            pointer-events: none;
+        }
+        
+        @keyframes ripple-animation {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+    </style>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html> 

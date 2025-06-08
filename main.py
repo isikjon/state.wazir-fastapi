@@ -1523,7 +1523,7 @@ async def admin_properties(
         except (ValueError, TypeError):
             # Если property_type не число, фильтруем по типу объекта
             properties_query = properties_query.filter(models.Property.type == property_type)
-    
+            
     if search:
         search_term = f"%{search}%"
         properties_query = properties_query.filter(
@@ -1544,7 +1544,7 @@ async def admin_properties(
     # Проверяем корректность номера страницы
     if page > total_pages and total_pages > 0:
         page = total_pages
-    
+        
     # Применяем пагинацию
     start_idx = (page - 1) * items_per_page
     properties_paginated = properties_query.order_by(desc(models.Property.created_at)).offset(start_idx).limit(items_per_page).all()
@@ -1668,7 +1668,7 @@ async def admin_properties(
     page_range = range(max(1, page - 2), min(total_pages + 1, page + 3))
     
     return templates.TemplateResponse("admin/properties.html", {
-        "request": request,
+            "request": request,
         "current_admin": user,
         "properties": properties_formatted,
         "categories": categories,
@@ -1676,10 +1676,10 @@ async def admin_properties(
         "property_type": property_type,
         "search_query": search,
         "total_properties": total_properties,
-        "total_pages": total_pages,
-        "current_page": page,
-        "pages": page_range,
-        "start_item": start_item,
+            "total_pages": total_pages,
+            "current_page": page,
+            "pages": page_range,
+            "start_item": start_item,
         "end_item": end_item
     })
 
@@ -1735,7 +1735,7 @@ async def admin_requests(request: Request, tab: str = Query('listings'), status:
         print(f"Error counting properties: {e}")
         tour_requests_count = 0
         listing_requests_count = 0
-
+    
     # Получаем список объявлений из БД
     try:
         # Создаем базовый запрос к таблице properties
@@ -1929,7 +1929,7 @@ async def admin_requests(request: Request, tab: str = Query('listings'), status:
         query_params += f"&property_type={property_type}"
     if search:
         query_params += f"&search={search}"
-    
+        
     # Генерируем список страниц для навигации
     page_range = range(max(1, page - 2), min(total_pages + 1, page + 3))
     
@@ -4423,7 +4423,7 @@ async def companies_analytics(
     try:
         # Получаем реальные данные компании из БД
         user_properties = db.query(models.Property).filter(
-            models.Property.owner_id == current_user.id
+                models.Property.owner_id == current_user.id
         ).all()
         
         # Базовая статистика

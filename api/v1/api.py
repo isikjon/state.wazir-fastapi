@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from api.v1.endpoints import auth, contacts, weather, currency, chat, properties, favorites, upload, health
+from api.v1.endpoints import auth, contacts, weather, currency, chat, properties, favorites, upload, health, panorama_upload
 
 api_router = APIRouter()
 
@@ -12,3 +12,4 @@ api_router.include_router(properties.router, prefix="/properties", tags=["proper
 api_router.include_router(favorites.router, prefix="/properties/favorites", tags=["favorites"])
 api_router.include_router(upload.router, prefix="/upload", tags=["upload"])
 api_router.include_router(health.router, prefix="/health", tags=["health"])
+api_router.include_router(panorama_upload.router, prefix="/panorama", tags=["panorama_upload"])

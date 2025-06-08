@@ -402,8 +402,72 @@
                 </button>
             </div>
             <div class="p-4">
-                <form id="upload-360-form" method="post" enctype="multipart/form-data">
+                <!-- Переключатель между загрузкой файла и URL -->
+                <div class="mb-4">
+                    <div class="flex border-b">
+                        <button id="upload-tab" class="flex-1 py-2 px-4 text-center border-b-2 border-blue-500 text-blue-600 font-medium">
+                            Загрузить файл
+                        </button>
+                        <button id="url-tab" class="flex-1 py-2 px-4 text-center border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                            Указать URL
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Форма загрузки файла -->
+                <div id="file-upload-form" class="upload-form">
                     <input type="hidden" id="property-id-for-360" name="property_id" value="">
+                    
+                    <div class="mb-4">
+                        <label for="panorama-file" class="block text-sm font-medium text-gray-700 mb-2">
+                            Выберите 360° изображение
+                        </label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="panorama-file" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                        <span>Загрузить файл</span>
+                                        <input id="panorama-file" name="panorama-file" type="file" class="sr-only" accept="image/*" />
+                                    </label>
+                                    <p class="pl-1">или перетащите сюда</p>
+                                </div>
+                                <p class="text-xs text-gray-500">PNG, JPG, JPEG до 50MB</p>
+                                <p class="text-xs text-gray-500">Соотношение сторон должно быть примерно 2:1</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Превью загруженного файла -->
+                        <div id="file-preview" class="mt-3 hidden">
+                            <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                                <img id="preview-image" src="" alt="Превью" class="h-16 w-32 object-cover rounded border">
+                                <div class="flex-1">
+                                    <p id="file-name" class="text-sm font-medium text-gray-900"></p>
+                                    <p id="file-size" class="text-sm text-gray-500"></p>
+                                </div>
+                                <button id="remove-file" type="button" class="text-red-600 hover:text-red-500">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Прогресс загрузки -->
+                        <div id="upload-progress" class="mt-3 hidden">
+                            <div class="flex justify-between text-sm text-gray-600 mb-1">
+                                <span>Загрузка и обработка...</span>
+                                <span id="progress-percent">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Форма URL -->
+                <div id="url-upload-form" class="upload-form hidden">
                     <div class="mb-4">
                         <label for="tour-360-url" class="block text-sm font-medium text-gray-700 mb-1">URL 360° панорамы</label>
                         <input type="text" id="tour-360-url" name="tour_360_url" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="https://kuula.co/share/xxxxxxx">
@@ -413,11 +477,36 @@
                         <label for="tour-360-date" class="block text-sm font-medium text-gray-700 mb-1">Дата съемки 360°</label>
                         <input type="date" id="tour-360-date" name="tour_360_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     </div>
-                </form>
+                </div>
+                
+                <!-- Информация о существующей панораме -->
+                <div id="existing-panorama-info" class="mb-4 hidden">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-info-circle text-blue-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-blue-800">Текущая панорама</h3>
+                                <div class="mt-1 text-sm text-blue-700">
+                                    <p id="current-panorama-info">Загружена: <span id="current-upload-date">-</span></p>
+                                    <p id="current-panorama-type">Тип: <span id="panorama-type">-</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="border-t p-4 flex justify-end gap-2">
-                <button class="close-upload-360-modal px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:outline-none">Отмена</button>
-                <button id="save-360-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none">Сохранить</button>
+            <div class="border-t p-4 flex justify-between">
+                <div>
+                    <button id="delete-360-btn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none hidden">
+                        <i class="fas fa-trash mr-1"></i> Удалить
+                    </button>
+                </div>
+                <div class="flex gap-2">
+                    <button class="close-upload-360-modal px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:outline-none">Отмена</button>
+                    <button id="save-360-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none">Сохранить</button>
+                </div>
             </div>
         </div>
     </div>
@@ -497,89 +586,11 @@ $(document).ready(function() {
         $('#property-modal').removeClass('hidden');
     });
 
-    // 360° функционал
-    $(document).on('click', '.upload-360-btn', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const propertyId = $(this).data('property-id');
-        $('#property-id-for-360').val(propertyId);
-        $('#upload-360-modal').removeClass('hidden');
-        
-        // Сброс формы
-        $('#tour-360-url').val('');
-        $('#tour-360-date').val('');
-        
-        // Загружаем существующие данные 360°
-        fetch(`/api/v1/admin/properties/${propertyId}/360`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.tour_360_url) {
-                    $('#tour-360-url').val(data.tour_360_url);
-                }
-                if (data.tour_360_date) {
-                    $('#tour-360-date').val(data.tour_360_date);
-                }
-            })
-            .catch(error => console.error('Ошибка загрузки данных 360°:', error));
-    });
-
-    // Закрытие модального окна 360°
-    $(document).on('click', '.close-upload-360-modal, #upload-360-modal-backdrop', function(e) {
-        if (e.target === this) {
-            $('#upload-360-modal').addClass('hidden');
-        }
-    });
-
-    // Сохранение 360°
-    $(document).on('click', '#save-360-btn', function() {
-        const propertyId = $('#property-id-for-360').val();
-        const tourUrl = $('#tour-360-url').val();
-        const tourDate = $('#tour-360-date').val();
-        
-        if (!tourUrl.trim()) {
-            alert('Пожалуйста, укажите URL 360° панорамы');
-            return;
-        }
-        
-        const formData = new FormData();
-        formData.append('tour_360_url', tourUrl);
-        if (tourDate) {
-            formData.append('tour_360_date', tourDate);
-        }
-        
-        fetch(`/api/v1/admin/properties/${propertyId}/360`, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('360° панорама успешно сохранена!');
-                $('#upload-360-modal').addClass('hidden');
-                location.reload();
-            } else {
-                alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'));
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка при сохранении данных 360°:', error);
-            alert('Произошла ошибка при сохранении данных');
-        });
-    });
-
     // Закрытие основного модального окна
     $(document).on('click', '.close-modal', function(e) {
         e.preventDefault();
         e.stopPropagation();
         $('#property-modal').addClass('hidden');
-    });
-    
-    // Закрытие модального окна при клике на фон
-    $(document).on('click', '#property-modal', function(e) {
-        if (e.target === this) {
-            $('#property-modal').addClass('hidden');
-        }
     });
 
     // Фильтры
@@ -656,4 +667,7 @@ function goToSlide(slideIndex) {
     });
 }
 </script>
+
+<!-- Подключение нового JavaScript для 360° загрузки -->
+<script src="/static/js/admin-panorama-upload.js"></script>
 {% endblock %}

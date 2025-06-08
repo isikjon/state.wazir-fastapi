@@ -507,6 +507,12 @@
                                     <span>{{ property.type|capitalize }}</span>
                                 </div>
                                 {% endif %}
+                                {% if property.category %}
+                                <div class="info-item">
+                                    <i class="fas fa-tag"></i>
+                                    <span>{{ property.category.name }}</span>
+                                </div>
+                                {% endif %}
                                 {% if property.rooms %}
                                 <div class="info-item">
                                     <i class="fas fa-door-open"></i>
@@ -579,18 +585,33 @@
                         <!-- Контакты продавца -->
                         <div class="seller-info">
                             <div class="avatar">
-                                <img
-                                    src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop"
-                                    alt="Фото продавца">
+                                {% if property.owner.is_company and property.owner.logo_url %}
+                                <img src="{{ property.owner.logo_url }}" alt="Логотип компании">
+                                {% elif property.owner.is_company %}
+                                <div class="bg-orange-100 text-orange-600 rounded-full w-12 h-12 flex items-center justify-center">
+                                    <i class="fas fa-building text-lg"></i>
+                                </div>
+                                {% else %}
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop" alt="Фото продавца">
+                                {% endif %}
                             </div>
                             <div>
-                                <div class="seller-name">{{
-                                    property.owner.full_name }}</div>
-                                <div
-                                    class="text-gray-500 text-sm">Продавец</div>
+                                <div class="seller-name">
+                                    {% if property.owner.is_company %}
+                                        {{ property.owner.company_name or 'Компания' }}
+                                    {% else %}
+                                        {{ property.owner.full_name or 'Пользователь' }}
+                                    {% endif %}
+                                </div>
+                                <div class="text-gray-500 text-sm">
+                                    {% if property.owner.is_company %}
+                                        Компания
+                                    {% else %}
+                                        Продавец
+                                    {% endif %}
+                                </div>
                             </div>
-                            <a href="tel:{{ property.owner.phone }}"
-                                class="call-btn">
+                            <a href="tel:{{ property.owner.phone }}" class="call-btn">
                                 <i class="fas fa-phone-alt mr-1"></i> Позвонить
                             </a>
                         </div>

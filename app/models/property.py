@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Boolean, Float, ForeignKey, Text, Enum, Table
+from sqlalchemy import Column, String, Integer, Boolean, Float, ForeignKey, Text, Enum, Table, DateTime
 from sqlalchemy import Column, Integer, String, Float, Boolean, Text, Enum, ForeignKey, Table
 from sqlalchemy.orm import relationship
 from database import Base
@@ -38,7 +38,17 @@ class Property(Base, TimestampMixin):
     area = Column(Float)
     status = Column(Enum(PropertyStatus), default=PropertyStatus.DRAFT)
     is_featured = Column(Boolean, default=False)
-    tour_360_url = Column(String(255), nullable=True)
+    
+    # 360° панорама поля
+    tour_360_url = Column(String(255), nullable=True)  # URL для старой совместимости
+    tour_360_file_id = Column(String(100), nullable=True)  # ID файла панорамы
+    tour_360_original_url = Column(String(255), nullable=True)  # Путь к оригинальному файлу
+    tour_360_optimized_url = Column(String(255), nullable=True)  # Путь к оптимизированному файлу
+    tour_360_preview_url = Column(String(255), nullable=True)  # Путь к превью
+    tour_360_thumbnail_url = Column(String(255), nullable=True)  # Путь к миниатюре
+    tour_360_metadata = Column(Text, nullable=True)  # JSON с метаданными панорамы
+    tour_360_uploaded_at = Column(DateTime, nullable=True)  # Дата загрузки панорамы
+    
     type = Column(String(50), default="apartment")  # Добавляем поле типа недвижимости
     
     # Дополнительные поля для фильтрации
@@ -79,6 +89,21 @@ class Property(Base, TimestampMixin):
     images = relationship("PropertyImage", back_populates="property")
     favorites = relationship("Favorite", back_populates="property")
 
+    # Метод для проверки наличия 360° панорамы
+    def has_360_tour(self) -> bool:
+        """Проверяет, есть ли у объявления 360° панорама"""
+        return bool(self.tour_360_file_id or self.tour_360_url)
+    
+    def get_360_tour_url(self) -> str:
+        """Возвращает URL для отображения 360° панорамы (приоритет оптимизированной версии)"""
+        if self.tour_360_optimized_url:
+            return self.tour_360_optimized_url
+        elif self.tour_360_original_url:
+            return self.tour_360_original_url
+        elif self.tour_360_url:
+            return self.tour_360_url
+        return None
+
     # Метод для преобразования модели в словарь с правильной сериализацией всех полей
     def to_dict(self):
         result = {
@@ -93,6 +118,14 @@ class Property(Base, TimestampMixin):
             "status": self.status.value if self.status else "draft",
             "is_featured": self.is_featured,
             "tour_360_url": self.tour_360_url,
+            "tour_360_file_id": self.tour_360_file_id,
+            "tour_360_original_url": self.tour_360_original_url,
+            "tour_360_optimized_url": self.tour_360_optimized_url,
+            "tour_360_preview_url": self.tour_360_preview_url,
+            "tour_360_thumbnail_url": self.tour_360_thumbnail_url,
+            "tour_360_uploaded_at": self.tour_360_uploaded_at.isoformat() if self.tour_360_uploaded_at else None,
+            "has_360_tour": self.has_360_tour(),
+            "tour_360_display_url": self.get_360_tour_url(),
             "notes": self.notes,
             "type": self.type,
             "rooms": self.rooms,

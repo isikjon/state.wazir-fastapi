@@ -2590,7 +2590,10 @@ async def superadmin_properties(
         # URL изображения (если есть)
         image_url = "/static/img/property-placeholder.jpg"  # Дефолтное изображение
         if hasattr(prop, 'images') and prop.images:
-            image_url = prop.images[0] if isinstance(prop.images, list) else prop.images
+            # prop.images - это список объектов PropertyImage, получаем URL первого изображения
+            first_image = prop.images[0]
+            if hasattr(first_image, 'url'):
+                image_url = first_image.url
         
         enhanced_properties.append({
             "id": prop.id,

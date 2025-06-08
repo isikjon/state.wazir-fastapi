@@ -4218,16 +4218,20 @@ async def companies_dashboard(request: Request, db: Session = Depends(deps.get_d
     
     try:
         # Получаем статистику компании
-        user_properties = db.query(models.Property).filter(models.Property.user_id == current_user.id)
+        user_properties = db.query(models.Property).filter(models.Property.owner_id == current_user.id)
         
         total_properties = user_properties.count()
         active_properties = user_properties.filter(models.Property.status == 'active').count()
         
-        # Считаем общие просмотры (примерное значение)
-        total_views = sum([prop.views or 0 for prop in user_properties.all()])
+        # Считаем общие просмотры (примерное значение, так как поля views может не быть)
+        properties_list = user_properties.all()
+        total_views = 0
+        for prop in properties_list:
+            if hasattr(prop, 'views') and prop.views:
+                total_views += prop.views
         
         # Средняя цена
-        prices = [prop.price for prop in user_properties.all() if prop.price]
+        prices = [prop.price for prop in properties_list if prop.price]
         avg_price = sum(prices) / len(prices) if prices else 0
         
         stats = {
@@ -4242,8 +4246,12 @@ async def companies_dashboard(request: Request, db: Session = Depends(deps.get_d
         # Получаем последние объявления
         recent_properties = user_properties.order_by(models.Property.created_at.desc()).limit(5).all()
         
-        # Получаем топ объявления по просмотрам
-        top_properties = user_properties.order_by(models.Property.views.desc()).limit(5).all()
+        # Получаем топ объявления по просмотрам (если поле views существует)
+        try:
+            top_properties = user_properties.order_by(models.Property.views.desc()).limit(5).all()
+        except AttributeError:
+            # Если поля views нет, просто берем последние
+            top_properties = recent_properties
         
         # Данные для графика (примерные)
         chart_labels = ['1', '2', '3', '4', '5', '6', '7']
@@ -4280,7 +4288,7 @@ async def companies_listings(
     
     try:
         # Базовый запрос
-        query = db.query(models.Property).filter(models.Property.user_id == current_user.id)
+        query = db.query(models.Property).filter(models.Property.owner_id == current_user.id)
         
         # Фильтры
         if search:
@@ -4288,7 +4296,7 @@ async def companies_listings(
         if status:
             query = query.filter(models.Property.status == status)
         if property_type:
-            query = query.filter(models.Property.property_type == property_type)
+            query = query.filter(models.Property.type == property_type)
         
         # Пагинация
         per_page = 20
@@ -4299,7 +4307,7 @@ async def companies_listings(
         properties = query.order_by(models.Property.created_at.desc()).offset(offset).limit(per_page).all()
         
         # Статистика
-        all_properties = db.query(models.Property).filter(models.Property.user_id == current_user.id)
+        all_properties = db.query(models.Property).filter(models.Property.owner_id == current_user.id)
         active_count = all_properties.filter(models.Property.status == 'active').count()
         pending_count = all_properties.filter(models.Property.status == 'pending').count()
         draft_count = all_properties.filter(models.Property.status == 'draft').count()
@@ -4434,7 +4442,7 @@ async def delete_company_property(
     # Находим объявление
     property_obj = db.query(models.Property).filter(
         models.Property.id == property_id,
-        models.Property.user_id == current_user.id
+        models.Property.owner_id == current_user.id  # Проверяем, что объявление принадлежит текущей компании
     ).first()
     
     if not property_obj:

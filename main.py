@@ -1056,9 +1056,9 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
             "full_name": property.owner.full_name or "Неизвестен",
             "phone": property.owner.phone or "Не указан",
             "email": property.owner.email or "Не указан",
-            "is_company": property.owner.is_company,
+            "is_company": property.owner.role == models.UserRole.COMPANY if property.owner.role else False,
             "company_name": property.owner.company_name,
-            "logo_url": property.owner.logo_url
+            "logo_url": property.owner.company_logo_url
         } if property.owner else None,
         "images": [{"url": img.url, "is_main": img.is_main} for img in property.images] if property.images else [],
         "category": {

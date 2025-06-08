@@ -4867,7 +4867,7 @@ async def update_property_360(
     # Проверяем что объявление принадлежит компании
     property_obj = db.query(models.Property).filter(
         models.Property.id == property_id,
-        models.Property.owner_id == current_user.id
+        models.Property.company_id == current_user.id
     ).first()
     
     if not property_obj:
@@ -4908,7 +4908,7 @@ async def get_property_360(
     # Проверяем что объявление принадлежит компании
     property_obj = db.query(models.Property).filter(
         models.Property.id == property_id,
-        models.Property.owner_id == current_user.id
+        models.Property.company_id == current_user.id
     ).first()
     
     if not property_obj:
@@ -4916,6 +4916,8 @@ async def get_property_360(
     
     return {
         "tour_360_url": getattr(property_obj, 'tour_360_url', None),
+        "tour_360_file_id": getattr(property_obj, 'tour_360_file_id', None),
+        "tour_360_uploaded_at": getattr(property_obj, 'tour_360_uploaded_at', None),
         "tour_360_date": getattr(property_obj, 'tour_360_date', None)
     }
 

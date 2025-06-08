@@ -186,7 +186,7 @@
                         {{ property.views or 0 }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        {% if property.tour_360_url %}
+                        {% if property.tour_360_url or property.tour_360_file_id %}
                         <span class="text-blue-600 text-sm">Есть</span>
                         {% else %}
                         <span class="text-gray-400 text-sm">Нет</span>

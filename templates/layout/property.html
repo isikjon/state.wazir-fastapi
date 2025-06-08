@@ -425,7 +425,7 @@
                                     %}В избранное{% endif %}</span>
                             </button>
                             <!-- Показываем кнопку с разными стилями в зависимости от наличия панорамы -->
-                            {% if property.tour_360_url %}
+                            {% if property.has_360 %}
                             <button class="btn" id="view-360-btn">
                                 <i class="fas fa-vr-cardboard mr-1"></i> 360°
                                 Просмотр
@@ -751,8 +751,16 @@
                 </div>
                 <div class="flex-grow">
                     {% if property.tour_360_url %}
+                    <!-- Если есть внешний URL (например Kuula) -->
                     <iframe src="{{ property.tour_360_url }}" allowfullscreen
                         class="w-full h-full"></iframe>
+                    {% elif property.tour_360_optimized_url %}
+                    <!-- Если есть загруженный файл, используем оптимизированную версию -->
+                    <div class="w-full h-full flex items-center justify-center bg-black">
+                        <img src="{{ property.tour_360_optimized_url }}" 
+                             alt="360° панорама" 
+                             class="max-w-full max-h-full object-contain">
+                    </div>
                     {% else %}
                     <div
                         class="flex items-center justify-center h-full bg-gray-100">
@@ -775,7 +783,7 @@
             src="{{ url_for('static', path='layout/assets/js/weather-currency-cache.js') }}"></script>
         <!-- Скрытый элемент для передачи данных из Jinja в JavaScript -->
         <div id="page-data"
-            data-has-tour360="{% if property.tour_360_url %}true{% else %}false{% endif %}"
+            data-has-tour360="{% if property.has_360 %}true{% else %}false{% endif %}"
             style="display:none;"></div>
 
         <script>

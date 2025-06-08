@@ -662,8 +662,8 @@
                                         onclick="event.stopPropagation();">
                                         <i class="fas fa-info-circle"></i> Подробно
                                     </a>
-                                    {% if prop.tour_360_url %}
-                                    <a href="{{ prop.tour_360_url }}"
+                                    {% if prop.has_tour %}
+                                    <a href="{% if prop.tour_360_url %}{{ prop.tour_360_url }}{% else %}{{ url_for('property', property_id=prop.id) }}{% endif %}"
                                         class="action-btn tour-btn"
                                         onclick="event.stopPropagation();">
                                         <i class="fas fa-vr-cardboard"></i> 360° -

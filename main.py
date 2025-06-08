@@ -662,7 +662,7 @@ async def mobile_profile(request: Request, tab: str = None, db: Session = Depend
                                 "status": prop.status,
                                 "notes": prop.notes,  # Дата съемки 360
                                 "tour_360_url": prop.tour_360_url,
-                                "has_tour": bool(prop.tour_360_url),
+                                "has_tour": bool(prop.tour_360_url or prop.tour_360_file_id),  # Обновленная логика проверки
                                 "image_url": get_valid_image_url(main_image.url if main_image else None)
                             })
                         
@@ -700,7 +700,7 @@ async def mobile_profile(request: Request, tab: str = None, db: Session = Depend
                                     "area": prop.area,
                                     "status": prop.status,
                                     "tour_360_url": prop.tour_360_url,
-                                    "has_tour": bool(prop.tour_360_url),
+                                    "has_tour": bool(prop.tour_360_url or prop.tour_360_file_id),  # Обновленная логика проверки
                                     "image_url": get_valid_image_url(main_image.url if main_image else None)
                                 })
                             
@@ -912,8 +912,11 @@ async def mobile_search(
             "rooms": prop.rooms,
             "area": prop.area,
             "floor": prop.floor,
-            "has_tour": bool(prop.tour_360_url),
+            "has_tour": bool(prop.tour_360_url or prop.tour_360_file_id),  # Обновленная логика проверки
             "tour_360_url": prop.tour_360_url,  # Добавляем URL для 360° тура
+            # Добавляем поля для загруженных файлов
+            "tour_360_file_id": prop.tour_360_file_id,
+            "tour_360_optimized_url": prop.tour_360_optimized_url,
             "has_balcony": prop.has_balcony,
             "has_furniture": prop.has_furniture,
             "has_renovation": prop.has_renovation,
@@ -1021,31 +1024,39 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
         "status": property.status.value.lower() if property.status else "draft",
         "is_featured": property.is_featured,
         "tour_360_url": property.tour_360_url,
-        "type": property.type,
+        # Добавляем поля для загруженных 360° панорам
+        "tour_360_file_id": property.tour_360_file_id,
+        "tour_360_original_url": property.tour_360_original_url,
+        "tour_360_optimized_url": property.tour_360_optimized_url,
+        "tour_360_preview_url": property.tour_360_preview_url,
+        "tour_360_thumbnail_url": property.tour_360_thumbnail_url,
+        "tour_360_metadata": property.tour_360_metadata,
+        "tour_360_uploaded_at": property.tour_360_uploaded_at,
+        "has_360": bool(property.tour_360_url or property.tour_360_file_id),  # Добавляем поле has_360
         "rooms": property.rooms,
         "floor": property.floor,
         "building_floors": property.building_floors,
+        "type": property.type or "apartment",
+        "is_owner": is_owner,
+        "notes": property.notes,
         "has_balcony": property.has_balcony,
         "has_furniture": property.has_furniture,
         "has_renovation": property.has_renovation,
         "has_parking": property.has_parking,
-        "notes": property.notes,  # Дата съемки 360
-        "created_at": property.created_at,
-        "updated_at": property.updated_at,
-        "views_count": getattr(property, 'views_count', 0),  # Безопасное получение значения
         "owner": {
             "id": property.owner.id,
-            "full_name": property.owner.full_name,
-            "email": property.owner.email,
-            "phone": property.owner.phone
-        },
-        "images": [{
-            "id": image.id,
-            "url": get_valid_image_url(image.url),
-            "is_main": image.is_main
-        } for image in property.images],
-        "is_favorite": is_favorite,
-        "is_owner": current_user and current_user.id == property.owner_id
+            "full_name": property.owner.full_name or "Неизвестен",
+            "phone": property.owner.phone or "Не указан",
+            "email": property.owner.email or "Не указан",
+            "is_company": property.owner.is_company,
+            "company_name": property.owner.company_name,
+            "logo_url": property.owner.logo_url
+        } if property.owner else None,
+        "images": [{"url": img.url, "is_main": img.is_main} for img in property.images] if property.images else [],
+        "category": {
+            "id": category.id,
+            "name": category.name
+        } if category else None,
     }
     
     # Форматируем похожие объявления
@@ -1615,7 +1626,7 @@ async def admin_properties(
             print(f"Ошибка при получении категории: {e}")
         
         # Проверяем наличие 360° тура
-        has_tour = bool(getattr(prop, 'tour_360_url', None))
+        has_tour = bool(getattr(prop, 'tour_360_url', None) or getattr(prop, 'tour_360_file_id', None))
         
         # Добавляем в список
         property_data = {
@@ -4347,6 +4358,7 @@ async def companies_listings(
                 "views": getattr(prop, 'views', 0),
                 "image_url": main_image.url if main_image else None,
                 "all_images": [img.url for img in all_images],  # Все изображения для слайдера
+                "has_tour": bool(getattr(prop, 'tour_360_url', None) or getattr(prop, 'tour_360_file_id', None)),  # Добавляем поле has_tour
                 "has_balcony": prop.has_balcony,
                 "has_furniture": prop.has_furniture,
                 "has_renovation": prop.has_renovation,

@@ -254,6 +254,9 @@ async def type_error_handler(request, exc):
 # Монтируем директорию media
 app.mount("/media", StaticFiles(directory="media", check_dir=True), name="media")
 
+# Монтируем директорию uploads для панорам
+app.mount("/uploads", StaticFiles(directory="uploads", check_dir=True), name="uploads")
+
 templates = Jinja2Templates(directory="templates")
 
 # Регистрация API роутеров

@@ -441,7 +441,7 @@
     
     // Функция просмотра объявления в модальном окне
     function viewProperty(propertyId) {
-        const propertyData = {{ properties | tojson | safe }};
+        const propertyData = {{ properties_json | tojson | safe }};
         const property = propertyData.find(p => p.id === propertyId);
         
         if (!property) return;

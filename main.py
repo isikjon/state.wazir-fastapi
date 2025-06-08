@@ -4392,11 +4392,20 @@ async def companies_listings(
         pending_count = all_properties.filter(models.Property.status == 'pending').count()
         draft_count = all_properties.filter(models.Property.status == 'draft').count()
         
+        # Создаем версию для JSON (с конвертированными datetime)
+        properties_for_json = []
+        for prop in enhanced_properties:
+            json_prop = prop.copy()
+            if json_prop.get('created_at'):
+                json_prop['created_at'] = json_prop['created_at'].isoformat() if hasattr(json_prop['created_at'], 'isoformat') else str(json_prop['created_at'])
+            properties_for_json.append(json_prop)
+        
         return templates.TemplateResponse("companies/listings.html", {
             "request": request,
             "current_user": current_user,
             "company_name": current_user.company_name,
-            "properties": enhanced_properties,
+            "properties": enhanced_properties,  # Для HTML (с datetime объектами)
+            "properties_json": properties_for_json,  # Для JavaScript (с строками)
             "total_count": total_count,
             "total_pages": total_pages,
             "current_page": page,

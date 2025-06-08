@@ -1,235 +1,483 @@
 {% extends "admin/base.html" %}
 
-{% block title %}Wazir - Панель управления{% endblock %}
+{% block title %}Wazir Недвижимость - Панель управления{% endblock %}
 
 {% block page_title %}Панель управления{% endblock %}
 
 {% block extra_css %}
 <style>
-    .stat-card {
-        border-left: 4px solid var(--color-primary);
+/* Карточки статистики */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--color-primary);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.stat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: white;
+}
+
+.stat-icon.properties { background: linear-gradient(135deg, #f97316, #ea580c); }
+.stat-icon.users { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.stat-icon.requests { background: linear-gradient(135deg, #10b981, #059669); }
+.stat-icon.tickets { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+
+.stat-value {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.stat-change {
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.stat-change.positive { color: #059669; }
+.stat-change.negative { color: #dc2626; }
+
+/* Основные карточки контента */
+.content-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    background: linear-gradient(90deg, #0f172a, #028688);
+    color: white;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card-header h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.card-header .view-all {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: color 0.2s;
+}
+
+.card-header .view-all:hover {
+    color: white;
+}
+
+.card-content {
+    padding: 1.5rem;
+}
+
+/* Таблицы */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th {
+    background: #f9fafb;
+    color: #6b7280;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.data-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+}
+
+.data-table tr:hover {
+    background: #f9fafb;
+}
+
+/* Статусы */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.status-badge.active { background: #dcfce7; color: #166534; }
+.status-badge.pending { background: #fef3c7; color: #92400e; }
+.status-badge.inactive { background: #fee2e2; color: #991b1b; }
+.status-badge.sold { background: #dbeafe; color: #1e40af; }
+
+/* Список заявок */
+.request-item {
+    padding: 1rem 0;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.request-item:last-child {
+    border-bottom: none;
+}
+
+.request-title {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+}
+
+.request-meta {
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.request-date {
+    color: #9ca3af;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+/* Статистика пользователей */
+.user-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.user-stat-item {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.user-stat-value {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+}
+
+.user-stat-label {
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.activity-chart {
+    height: 6rem;
+    background: #f3f4f6;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    margin-top: 1rem;
+}
+
+/* Пустое состояние */
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #6b7280;
+}
+
+.empty-state i {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.5;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
     }
     
-    .stat-value {
-        font-size: 2rem;
-        font-weight: 600;
-        color: var(--text-color);
+    .stat-card {
+        padding: 1rem;
     }
+    
+    .card-header {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+    
+    .data-table {
+        font-size: 0.875rem;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 0.5rem;
+    }
+}
 </style>
-
-{% endblock %} 
+{% endblock %}
 
 {% block content %}
 <div class="p-5">
-    <!-- Статистика -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        <div class="card stat-card p-5">
-            <div class="flex items-start justify-between">
+    <!-- Статистические карточки -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-header">
                 <div>
-                    <p class="text-gray-500 text-sm">Объектов</p>
-                    <p class="stat-value">{{ properties_count }}</p>
+                    <div class="stat-value">{{ properties_count|default(0) }}</div>
+                    <div class="stat-label">Объектов</div>
                 </div>
-                <div
-                    class="w-12 h-12 rounded-full flex items-center justify-center"
-                    style="background-color: rgba(var(--color-primary-rgb), 0.1); color: var(--color-primary);">
+                <div class="stat-icon properties">
                     <i class="fas fa-building"></i>
                 </div>
             </div>
-            <p
-                class="text-sm {% if properties_change >= 0 %}text-green-500{% else %}text-red-500{% endif %} mt-2">
-                {% if properties_change >= 0 %}↑{% else %}↓{% endif
-                %} {{ properties_change|abs }}% с прошлого месяца
-            </p>
+            {% if properties_change is defined %}
+            <div class="stat-change {{ 'positive' if properties_change >= 0 else 'negative' }}">
+                <i class="fas fa-arrow-{{ 'up' if properties_change >= 0 else 'down' }}"></i>
+                {{ properties_change|abs }}% с прошлого месяца
+            </div>
+            {% endif %}
         </div>
 
-        <div class="card stat-card p-5">
-            <div class="flex items-start justify-between">
+        <div class="stat-card">
+            <div class="stat-header">
                 <div>
-                    <p
-                        class="text-gray-500 text-sm">Пользователей</p>
-                    <p class="stat-value">{{ users_count }}</p>
+                    <div class="stat-value">{{ users_count|default(0) }}</div>
+                    <div class="stat-label">Пользователей</div>
                 </div>
-                <div
-                    class="w-12 h-12 rounded-full flex items-center justify-center"
-                    style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                <div class="stat-icon users">
                     <i class="fas fa-users"></i>
                 </div>
             </div>
-            <p
-                class="text-sm {% if users_change >= 0 %}text-green-500{% else %}text-red-500{% endif %} mt-2">
-                {% if users_change >= 0 %}↑{% else %}↓{% endif %} {{
-                users_change|abs }}% с прошлого месяца
-            </p>
+            {% if users_change is defined %}
+            <div class="stat-change {{ 'positive' if users_change >= 0 else 'negative' }}">
+                <i class="fas fa-arrow-{{ 'up' if users_change >= 0 else 'down' }}"></i>
+                {{ users_change|abs }}% с прошлого месяца
+            </div>
+            {% endif %}
         </div>
 
-        <div class="card stat-card p-5">
-            <div class="flex items-start justify-between">
+        <div class="stat-card">
+            <div class="stat-header">
                 <div>
-                    <p class="text-gray-500 text-sm">Заявок</p>
-                    <p class="stat-value">{{ requests_count }}</p>
+                    <div class="stat-value">{{ requests_count|default(0) }}</div>
+                    <div class="stat-label">Заявок</div>
                 </div>
-                <div
-                    class="w-12 h-12 rounded-full flex items-center justify-center"
-                    style="background-color: rgba(16, 185, 129, 0.1); color: #10b981;">
+                <div class="stat-icon requests">
                     <i class="fas fa-clipboard-list"></i>
                 </div>
             </div>
-            <p
-                class="text-sm {% if requests_change >= 0 %}text-green-500{% else %}text-red-500{% endif %} mt-2">
-                {% if requests_change >= 0 %}↑{% else %}↓{% endif %}
+            {% if requests_change is defined %}
+            <div class="stat-change {{ 'positive' if requests_change >= 0 else 'negative' }}">
+                <i class="fas fa-arrow-{{ 'up' if requests_change >= 0 else 'down' }}"></i>
                 {{ requests_change|abs }}% с прошлого месяца
-            </p>
+            </div>
+            {% endif %}
         </div>
 
-        <div class="card stat-card p-5">
-            <div class="flex items-start justify-between">
+        <div class="stat-card">
+            <div class="stat-header">
                 <div>
-                    <p class="text-gray-500 text-sm">Тикетов</p>
-                    <p class="stat-value">{{ tickets_count }}</p>
+                    <div class="stat-value">{{ tickets_count|default(0) }}</div>
+                    <div class="stat-label">Тикетов</div>
                 </div>
-                <div
-                    class="w-12 h-12 rounded-full flex items-center justify-center"
-                    style="background-color: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
+                <div class="stat-icon tickets">
                     <i class="fas fa-headset"></i>
                 </div>
             </div>
-            <p
-                class="text-sm {% if tickets_change >= 0 %}text-green-500{% else %}text-red-500{% endif %} mt-2">
-                {% if tickets_change >= 0 %}↑{% else %}↓{% endif %}
+            {% if tickets_change is defined %}
+            <div class="stat-change {{ 'positive' if tickets_change >= 0 else 'negative' }}">
+                <i class="fas fa-arrow-{{ 'up' if tickets_change >= 0 else 'down' }}"></i>
                 {{ tickets_change|abs }}% с прошлого месяца
-            </p>
+            </div>
+            {% endif %}
         </div>
     </div>
 
     <!-- Последние объекты -->
-    <div class="card p-6 mb-8">
-        <div class="flex justify-between items-center mb-5">
-            <h3
-                class="text-lg font-semibold text-gray-800">Последние
-                объекты</h3>
-            <a href="{{ url_for('admin_properties') }}"
-                style="color: var(--color-primary)"
-                class="hover:opacity-80 text-sm">Посмотреть
-                все</a>
+    <div class="content-card">
+        <div class="card-header">
+            <h3>Последние объекты</h3>
+            <a href="{{ url_for('admin_properties') }}" class="view-all">
+                Посмотреть все →
+            </a>
         </div>
-
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="border-b">
-                        <th
-                            class="pb-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                        <th
-                            class="pb-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Название</th>
-                        <th
-                            class="pb-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Тип</th>
-                        <th
-                            class="pb-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Цена</th>
-                        <th
-                            class="pb-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for property in last_properties %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="py-3 text-sm text-gray-900">#{{
-                            property.id }}</td>
-                        <td class="py-3 text-sm text-gray-900">{{
-                            property.title }}</td>
-                        <td class="py-3 text-sm text-gray-500">
-                            {{ property.property_type_display }}
-                        </td>
-                        <td class="py-3 text-sm text-gray-900">
-                            {{ "{:,.0f}".format(property.price) }} KGZ
-                            {% if property.property_type == 'rent'
-                            %}/мес{% endif %}
-                        </td>
-                        <td class="py-3 text-sm">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                {% if property.status == 'active' %}bg-green-100 text-green-800
-                                {% elif property.status == 'pending' %}bg-yellow-100 text-yellow-800
-                                {% elif property.status == 'inactive' or property.status == 'rejected' %}bg-red-100 text-red-800
-                                {% elif property.status == 'sold' %}bg-blue-100 text-blue-800
-                                {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                {{ property.status_display }}
-                            </span>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6"
-                            class="py-4 text-center text-gray-500">Нет
-                            доступных объектов недвижимости</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="card-content">
+            {% if last_properties %}
+            <div class="overflow-x-auto">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Название</th>
+                            <th>Тип</th>
+                            <th>Цена</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for property in last_properties %}
+                        <tr>
+                            <td><span class="text-gray-500">#{{ property.id }}</span></td>
+                            <td>
+                                <div class="font-medium text-gray-900">{{ property.title }}</div>
+                            </td>
+                            <td>
+                                <span class="text-gray-600">{{ property.property_type_display|default('Не указан') }}</span>
+                            </td>
+                            <td>
+                                <span class="font-semibold text-orange-600">
+                                    {{ "{:,.0f}".format(property.price) }} KGZ
+                                    {% if property.property_type == 'rent' %}/мес{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status-badge {{ property.status }}">
+                                    {{ property.status_display|default(property.status) }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-building"></i>
+                <p>Нет доступных объектов недвижимости</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 
     <!-- Последние заявки -->
-    <div class="card p-6">
-        <div class="flex justify-between items-center mb-5">
-            <h3
-                class="text-lg font-semibold text-gray-800">Последние
-                заявки</h3>
-            <a href="{{ url_for('admin_requests') }}"
-                style="color: var(--color-primary)"
-                class="hover:opacity-80 text-sm">Посмотреть
-                все</a>
+    <div class="content-card">
+        <div class="card-header">
+            <h3>Последние заявки</h3>
+            <a href="{{ url_for('admin_requests') }}" class="view-all">
+                Посмотреть все →
+            </a>
         </div>
-
-        <div class="space-y-4">
-            {% for request in last_requests %}
-            <div class="border-b pb-4">
-                <div class="flex justify-between">
-                    <p class="font-medium text-gray-800">{{
-                        request.title }}</p>
-                    <span class="text-sm text-gray-500">
-                        {{
-                        (request.created_at|string).split(' ')[0]
-                        if request.created_at else 'Н/Д' }}
-                    </span>
+        <div class="card-content">
+            {% if last_requests %}
+            <div class="space-y-1">
+                {% for request in last_requests %}
+                <div class="request-item">
+                    <div>
+                        <div class="request-title">{{ request.title }}</div>
+                        <div class="request-meta">
+                            {{ request.user.full_name if request.user and request.user.full_name else 'Пользователь' }}
+                            {% if request.user and request.user.phone %}
+                            • {{ request.user.phone }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="request-date">
+                        {{ (request.created_at|string).split(' ')[0] if request.created_at else 'Н/Д' }}
+                    </div>
                 </div>
-                <p class="text-sm text-gray-600 mt-1">
-                    {{ request.user.full_name if request.user
-                    and request.user.full_name else
-                    'Пользователь' }},
-                    {{ request.user.phone if request.user and
-                    request.user.phone else 'Телефон не указан'
-                    }}
-                </p>
+                {% endfor %}
             </div>
             {% else %}
-            <div class="py-4 text-center text-gray-500">
-                Нет доступных заявок
+            <div class="empty-state">
+                <i class="fas fa-clipboard-list"></i>
+                <p>Нет доступных заявок</p>
             </div>
-            {% endfor %}
+            {% endif %}
         </div>
     </div>
 
-    <!-- Статистика вместо тикетов -->
-    <div class="card p-6">
-        <div class="flex justify-between items-center mb-5">
-            <h3 class="text-lg font-semibold text-gray-800">Статистика пользователей</h3>
+    <!-- Статистика пользователей -->
+    <div class="content-card">
+        <div class="card-header">
+            <h3>Статистика пользователей</h3>
         </div>
-
-        <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-gray-50 rounded-lg p-4 text-center">
-                    <p class="text-2xl font-bold text-gray-800">{{ users_count|default(0) }}</p>
-                    <p class="text-sm text-gray-600">Всего пользователей</p>
+        <div class="card-content">
+            <div class="user-stats-grid">
+                <div class="user-stat-item">
+                    <div class="user-stat-value">{{ users_count|default(0) }}</div>
+                    <div class="user-stat-label">Всего пользователей</div>
                 </div>
-                <div class="bg-gray-50 rounded-lg p-4 text-center">
-                    <p class="text-2xl font-bold text-gray-800">{{ total_properties|default(0) }}</p>
-                    <p class="text-sm text-gray-600">Всего объектов</p>
+                <div class="user-stat-item">
+                    <div class="user-stat-value">{{ total_properties|default(0) }}</div>
+                    <div class="user-stat-label">Всего объектов</div>
                 </div>
             </div>
             
-            <div class="mt-4 pt-4 border-t">
-                <h4 class="text-md font-medium text-gray-700 mb-2">Активность на сайте</h4>
-                <div class="h-24 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <p class="text-gray-500">График активности будет доступен позже</p>
+            <div style="border-top: 1px solid #e5e7eb; padding-top: 1.5rem;">
+                <h4 style="font-size: 1rem; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">Активность на сайте</h4>
+                <div class="activity-chart">
+                    <div style="text-align: center;">
+                        <i class="fas fa-chart-line" style="font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                        <p style="margin: 0; font-size: 0.875rem;">График активности будет доступен позже</p>
+                    </div>
                 </div>
             </div>
         </div>

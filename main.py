@@ -4108,3 +4108,330 @@ async def export_companies(
         
     except Exception as e:
         return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка экспорта: {str(e)}"})
+
+# === COMPANIES PANEL ROUTES ===
+
+async def check_company_access(request: Request, db: Session):
+    """Проверка доступа компании"""
+    auth_token = request.cookies.get('access_token')
+    if not auth_token:
+        return None
+        
+    try:
+        payload = pyjwt.decode(auth_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        user_id = payload.get("sub")
+        
+        if user_id:
+            user = db.query(models.User).filter(models.User.id == user_id).first()
+            if user and user.role == models.UserRole.COMPANY and user.is_active:
+                return user
+    except:
+        pass
+    
+    return None
+
+@app.get("/companies/login")
+async def companies_login_get(request: Request):
+    """Страница входа для компаний"""
+    return templates.TemplateResponse("companies/login.html", {"request": request})
+
+@app.post("/companies/login")
+async def companies_login_post(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    remember: bool = Form(False),
+    db: Session = Depends(deps.get_db)
+):
+    """Обработка входа компании"""
+    try:
+        # Проверяем учетные данные
+        user = db.query(models.User).filter(
+            models.User.email == email,
+            models.User.role == models.UserRole.COMPANY
+        ).first()
+        
+        if not user or not user.check_password(password):
+            raise HTTPException(status_code=401, detail="Неверный email или пароль")
+        
+        if not user.is_active:
+            raise HTTPException(status_code=403, detail="Аккаунт заблокирован")
+        
+        # Создаем токен
+        access_token = create_access_token(data={
+            "sub": str(user.id),
+            "is_company": True
+        })
+        
+        # Создаем ответ
+        response = JSONResponse(content={"message": "Успешный вход"})
+        
+        # Устанавливаем cookie
+        max_age = 86400 * 30 if remember else 86400  # 30 дней или 1 день
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            max_age=max_age,
+            httponly=True,
+            secure=False  # В продакшене должно быть True
+        )
+        
+        return response
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"DEBUG: Ошибка входа компании: {e}")
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
+
+@app.get("/companies/logout")
+async def companies_logout():
+    """Выход из панели компании"""
+    response = RedirectResponse(url="/companies/login", status_code=302)
+    response.delete_cookie("access_token")
+    return response
+
+@app.get("/companies", response_class=RedirectResponse)
+@app.get("/companies/", response_class=RedirectResponse)
+async def companies_root():
+    """Редирект на дашборд компании"""
+    return RedirectResponse(url="/companies/dashboard", status_code=302)
+
+@app.get("/companies/dashboard", response_class=HTMLResponse)
+async def companies_dashboard(request: Request, db: Session = Depends(deps.get_db)):
+    """Дашборд компании"""
+    current_user = await check_company_access(request, db)
+    if not current_user:
+        return RedirectResponse(url="/companies/login", status_code=302)
+    
+    try:
+        # Получаем статистику компании
+        user_properties = db.query(models.Property).filter(models.Property.user_id == current_user.id)
+        
+        total_properties = user_properties.count()
+        active_properties = user_properties.filter(models.Property.status == 'active').count()
+        
+        # Считаем общие просмотры (примерное значение)
+        total_views = sum([prop.views or 0 for prop in user_properties.all()])
+        
+        # Средняя цена
+        prices = [prop.price for prop in user_properties.all() if prop.price]
+        avg_price = sum(prices) / len(prices) if prices else 0
+        
+        stats = {
+            'total_properties': total_properties,
+            'active_properties': active_properties,
+            'total_views': total_views,
+            'avg_price': avg_price,
+            'properties_growth': 0,  # Можно вычислить рост за месяц
+            'price_change': 0,  # Можно вычислить изменение цены
+        }
+        
+        # Получаем последние объявления
+        recent_properties = user_properties.order_by(models.Property.created_at.desc()).limit(5).all()
+        
+        # Получаем топ объявления по просмотрам
+        top_properties = user_properties.order_by(models.Property.views.desc()).limit(5).all()
+        
+        # Данные для графика (примерные)
+        chart_labels = ['1', '2', '3', '4', '5', '6', '7']
+        chart_data = [10, 15, 8, 12, 20, 18, 25]
+        
+        return templates.TemplateResponse("companies/dashboard.html", {
+            "request": request,
+            "current_user": current_user,
+            "company_name": current_user.company_name,
+            "stats": stats,
+            "recent_properties": recent_properties,
+            "top_properties": top_properties,
+            "chart_labels": chart_labels,
+            "chart_data": chart_data
+        })
+        
+    except Exception as e:
+        print(f"DEBUG: Ошибка в дашборде компании: {e}")
+        return RedirectResponse(url="/companies/login", status_code=302)
+
+@app.get("/companies/listings", response_class=HTMLResponse)
+async def companies_listings(
+    request: Request,
+    search: str = Query(None),
+    status: str = Query(None),
+    property_type: str = Query(None),
+    page: int = Query(1, ge=1),
+    db: Session = Depends(deps.get_db)
+):
+    """Управление объявлениями компании"""
+    current_user = await check_company_access(request, db)
+    if not current_user:
+        return RedirectResponse(url="/companies/login", status_code=302)
+    
+    try:
+        # Базовый запрос
+        query = db.query(models.Property).filter(models.Property.user_id == current_user.id)
+        
+        # Фильтры
+        if search:
+            query = query.filter(models.Property.title.ilike(f"%{search}%"))
+        if status:
+            query = query.filter(models.Property.status == status)
+        if property_type:
+            query = query.filter(models.Property.property_type == property_type)
+        
+        # Пагинация
+        per_page = 20
+        total_count = query.count()
+        total_pages = (total_count + per_page - 1) // per_page
+        offset = (page - 1) * per_page
+        
+        properties = query.order_by(models.Property.created_at.desc()).offset(offset).limit(per_page).all()
+        
+        # Статистика
+        all_properties = db.query(models.Property).filter(models.Property.user_id == current_user.id)
+        active_count = all_properties.filter(models.Property.status == 'active').count()
+        pending_count = all_properties.filter(models.Property.status == 'pending').count()
+        draft_count = all_properties.filter(models.Property.status == 'draft').count()
+        
+        return templates.TemplateResponse("companies/listings.html", {
+            "request": request,
+            "current_user": current_user,
+            "company_name": current_user.company_name,
+            "properties": properties,
+            "total_count": total_count,
+            "active_count": active_count,
+            "pending_count": pending_count,
+            "draft_count": draft_count,
+            "current_page": page,
+            "total_pages": total_pages,
+            "per_page": per_page,
+            "search": search,
+            "status": status,
+            "property_type": property_type
+        })
+        
+    except Exception as e:
+        print(f"DEBUG: Ошибка в списке объявлений компании: {e}")
+        return RedirectResponse(url="/companies/dashboard", status_code=302)
+
+@app.get("/companies/analytics", response_class=HTMLResponse)
+async def companies_analytics(
+    request: Request,
+    days: int = Query(30),
+    db: Session = Depends(deps.get_db)
+):
+    """Аналитика компании"""
+    current_user = await check_company_access(request, db)
+    if not current_user:
+        return RedirectResponse(url="/companies/login", status_code=302)
+    
+    try:
+        # Получаем объявления компании
+        user_properties = db.query(models.Property).filter(models.Property.user_id == current_user.id).all()
+        
+        # Статистика (примерные данные)
+        total_views = sum([prop.views or 0 for prop in user_properties])
+        unique_visitors = int(total_views * 0.7)  # Примерно 70% уникальных
+        contacts = int(total_views * 0.05)  # Примерно 5% конверсия
+        conversion_rate = round((contacts / total_views * 100) if total_views > 0 else 0, 2)
+        
+        stats = {
+            'total_views': total_views,
+            'unique_visitors': unique_visitors,
+            'contacts': contacts,
+            'conversion_rate': conversion_rate,
+            'views_change': 15,  # +15% за период
+            'visitors_change': 12,  # +12% за период
+            'contacts_change': 8,  # +8% за период
+            'conversion_change': -2,  # -2% за период
+            'avg_session_duration': '2:45',
+            'bounce_rate': 35,
+            'pages_per_session': 3.2
+        }
+        
+        # Топ объявления
+        top_properties = sorted(user_properties, key=lambda x: x.views or 0, reverse=True)[:5]
+        
+        # Данные для графиков (примерные)
+        views_chart_labels = ['1 нед', '2 нед', '3 нед', '4 нед']
+        views_chart_data = [120, 150, 180, 200]
+        
+        conversion_chart_labels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+        conversion_views_data = [45, 52, 48, 61, 55, 42, 38]
+        conversion_contacts_data = [2, 3, 2, 4, 3, 2, 1]
+        
+        hourly_data = [5, 3, 2, 8, 15, 25, 30]
+        
+        # Примерные данные для других секций
+        top_locations = [
+            {'city': 'Бишкек', 'country': 'Кыргызстан', 'views': 150},
+            {'city': 'Ош', 'country': 'Кыргызстан', 'views': 85},
+            {'city': 'Алматы', 'country': 'Казахстан', 'views': 42}
+        ]
+        
+        traffic_sources = [
+            {'name': 'Прямые заходы', 'views': 120, 'percentage': 45},
+            {'name': 'Поисковые системы', 'views': 80, 'percentage': 30},
+            {'name': 'Социальные сети', 'views': 40, 'percentage': 15},
+            {'name': 'Другие сайты', 'views': 27, 'percentage': 10}
+        ]
+        
+        device_stats = [
+            {'name': 'Десктоп', 'percentage': 60, 'color': '#144b44'},
+            {'name': 'Мобильные', 'percentage': 35, 'color': '#3b82f6'},
+            {'name': 'Планшеты', 'percentage': 5, 'color': '#10b981'}
+        ]
+        
+        device_labels = ['Десктоп', 'Мобильные', 'Планшеты']
+        device_data = [60, 35, 5]
+        
+        return templates.TemplateResponse("companies/analytics.html", {
+            "request": request,
+            "current_user": current_user,
+            "company_name": current_user.company_name,
+            "stats": stats,
+            "top_properties": top_properties,
+            "top_locations": top_locations,
+            "traffic_sources": traffic_sources,
+            "device_stats": device_stats,
+            "views_chart_labels": views_chart_labels,
+            "views_chart_data": views_chart_data,
+            "conversion_chart_labels": conversion_chart_labels,
+            "conversion_views_data": conversion_views_data,
+            "conversion_contacts_data": conversion_contacts_data,
+            "hourly_data": hourly_data,
+            "device_labels": device_labels,
+            "device_data": device_data
+        })
+        
+    except Exception as e:
+        print(f"DEBUG: Ошибка в аналитике компании: {e}")
+        return RedirectResponse(url="/companies/dashboard", status_code=302)
+
+# API endpoints for companies
+@app.delete("/api/v1/companies/properties/{property_id}")
+async def delete_company_property(
+    property_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    """Удаление объявления компании"""
+    current_user = await check_company_access(request, db)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    # Находим объявление
+    property_obj = db.query(models.Property).filter(
+        models.Property.id == property_id,
+        models.Property.user_id == current_user.id
+    ).first()
+    
+    if not property_obj:
+        raise HTTPException(status_code=404, detail="Объявление не найдено")
+    
+    # Удаляем объявление
+    db.delete(property_obj)
+    db.commit()
+    
+    return {"message": "Объявление удалено"}
+
+# === END COMPANIES PANEL ROUTES ===

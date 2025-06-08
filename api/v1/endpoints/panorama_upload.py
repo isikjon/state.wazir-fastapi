@@ -25,7 +25,7 @@ async def check_admin_access(request: Request, db: Session):
             return RedirectResponse('/admin/login', status_code=303)
         
         # Получаем пользователя из базы данных
-        user = db.query(models.User).filter(models.User.id == payload["user_id"]).first()
+        user = db.query(models.User).filter(models.User.id == payload["sub"]).first()
         return user
         
     except Exception as e:
@@ -47,7 +47,7 @@ async def check_company_access(request: Request, db: Session):
             return None
         
         # Получаем пользователя из базы данных
-        user = db.query(models.User).filter(models.User.id == payload["user_id"]).first()
+        user = db.query(models.User).filter(models.User.id == payload["sub"]).first()
         return user
         
     except Exception as e:

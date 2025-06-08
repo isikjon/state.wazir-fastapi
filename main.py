@@ -4326,7 +4326,7 @@ async def companies_listings(
             # Получаем категорию
             category_name = "Не указана"
             if prop.category_id:
-                category = db.query(models.PropertyCategory).filter(models.PropertyCategory.id == prop.category_id).first()
+                category = db.query(models.Category).filter(models.Category.id == prop.category_id).first()
                 if category:
                     category_name = category.name
             
@@ -4464,6 +4464,8 @@ async def companies_analytics(
             "current_user": current_user,
             "company_name": current_user.company_name,
             "analytics": analytics_data,
+            "stats": analytics_data['total_stats'],  # Добавляем stats для совместимости с шаблоном
+            "top_properties": analytics_data['popular_properties'],
             "days": days
         })
         
@@ -4479,6 +4481,19 @@ async def companies_create_listing(request: Request, db: Session = Depends(deps.
         return RedirectResponse(url="/companies/login", status_code=302)
     
     return templates.TemplateResponse("companies/create-listing.html", {
+        "request": request,
+        "current_user": current_user,
+        "company_name": current_user.company_name
+    })
+
+@app.get("/companies/settings", response_class=HTMLResponse)
+async def companies_settings(request: Request, db: Session = Depends(deps.get_db)):
+    """Страница настроек компании"""
+    current_user = await check_company_access(request, db)
+    if not current_user:
+        return RedirectResponse(url="/companies/login", status_code=302)
+    
+    return templates.TemplateResponse("companies/settings.html", {
         "request": request,
         "current_user": current_user,
         "company_name": current_user.company_name

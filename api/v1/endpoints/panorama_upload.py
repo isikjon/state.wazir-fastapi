@@ -4,7 +4,7 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from app.api import deps
 from app import models
-from app.utils.panorama_processor import panorama_processor
+from app.utils.panorama_processor import panorama_processor, PanoramaProcessor
 from datetime import datetime
 import json
 import os
@@ -131,7 +131,7 @@ async def get_admin_panorama_info(
         logger.exception("Полный стек ошибки:")
         raise HTTPException(status_code=500, detail=f"Ошибка получения данных: {str(e)}")
 
-@router.post("/panorama/admin/properties/{property_id}/360/upload")
+@router.post("/admin/properties/{property_id}/360/upload")
 async def upload_admin_panorama(
     property_id: int,
     request: Request,
@@ -268,7 +268,7 @@ async def upload_admin_panorama(
         logger.exception("Полный стек ошибки:")
         raise HTTPException(status_code=500, detail=f"Ошибка загрузки панорамы: {str(e)}")
 
-@router.delete("/panorama/admin/properties/{property_id}/360")
+@router.delete("/admin/properties/{property_id}/360")
 async def delete_admin_panorama(
     property_id: int,
     request: Request,
@@ -377,7 +377,7 @@ async def get_company_panorama_info(
         logger.exception("Полный стек ошибки:")
         raise HTTPException(status_code=500, detail=f"Ошибка получения данных: {str(e)}")
 
-@router.post("/panorama/companies/properties/{property_id}/360/upload")
+@router.post("/companies/properties/{property_id}/360/upload")
 async def upload_company_panorama(
     property_id: int,
     request: Request,
@@ -510,7 +510,7 @@ async def upload_company_panorama(
         logger.exception("Полный стек ошибки:")
         raise HTTPException(status_code=500, detail=f"Ошибка загрузки панорамы: {str(e)}")
 
-@router.delete("/panorama/companies/properties/{property_id}/360")
+@router.delete("/companies/properties/{property_id}/360")
 async def delete_company_panorama(
     property_id: int,
     request: Request,

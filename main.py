@@ -615,6 +615,8 @@ async def mobile_profile(request: Request, tab: str = None, db: Session = Depend
                 user = db.query(models.User).filter(models.User.id == user_id).first()
                 
                 if user:
+                    print(f"DEBUG: Загружен пользователь: {user.email}, роль: {user.role}")
+                    
                     # Получаем объявления пользователя с изображениями
                     try:
                         user_listings = db.query(models.Property).options(
@@ -640,6 +642,8 @@ async def mobile_profile(request: Request, tab: str = None, db: Session = Depend
                                 "has_tour": bool(prop.tour_360_url),
                                 "image_url": get_valid_image_url(main_image.url if main_image else None)
                             })
+                        
+                        print(f"DEBUG: Найдено {len(formatted_user_listings)} объявлений пользователя")
                         
                     except Exception as e:
                         print(f"DEBUG: Ошибка при получении объявлений пользователя: {e}")
@@ -689,11 +693,42 @@ async def mobile_profile(request: Request, tab: str = None, db: Session = Depend
     if not user:
         return RedirectResponse('/mobile/auth', status_code=303)
     
+    # Создаем расширенный объект пользователя для шаблона
+    user_data = {
+        "id": user.id,
+        "email": user.email,
+        "phone": user.phone,
+        "is_active": user.is_active,
+        "role": user.role.value if user.role else "USER",
+        "created_at": user.created_at
+    }
+    
+    # Определяем отображаемые данные в зависимости от роли
+    if user.role == models.UserRole.COMPANY:
+        user_data.update({
+            "full_name": user.company_name or "Компания",
+            "display_name": user.company_name or "Компания", 
+            "company_name": user.company_name,
+            "company_number": user.company_number,
+            "company_owner": user.company_owner,
+            "company_address": user.company_address,
+            "company_description": user.company_description,
+            "avatar_url": user.company_logo_url,
+            "is_company": True
+        })
+    else:
+        user_data.update({
+            "full_name": user.full_name or f"Пользователь {user.id}",
+            "display_name": user.full_name or f"Пользователь {user.id}",
+            "avatar_url": None,
+            "is_company": False
+        })
+    
     return templates.TemplateResponse(
         "layout/profile.html", 
         {
             "request": request, 
-            "user": user, 
+            "user": user_data, 
             "user_listings": formatted_user_listings, 
             "saved_listings": formatted_saved_listings,
             "active_tab": tab or "listings",
@@ -1100,14 +1135,27 @@ async def get_user(user_id: int, db: Session = Depends(deps.get_db)):
         
         # Если пользователь найден, формируем ответ с его данными
         if user:
-            print(f"DEBUG: Пользователь найден в БД: {user.email}, {user.full_name}")
+            print(f"DEBUG: Пользователь найден в БД: {user.email}, {user.full_name}, роль: {user.role}")
+            
+            # Определяем отображаемое имя в зависимости от роли
+            if user.role == models.UserRole.COMPANY:
+                display_name = user.company_name or user.full_name or "Компания"
+                avatar_url = user.company_logo_url or f"/static/img/company{user_id}.png"
+            else:
+                display_name = user.full_name or f"Пользователь {user_id}"
+                avatar_url = f"/static/img/avatar{user_id}.png"
+            
             return {
                 "id": user.id,
                 "email": user.email,
-                "full_name": user.full_name,
-                "avatar": user.avatar if user.avatar else f"/static/img/avatar{user_id}.png",
+                "full_name": display_name,
+                "avatar": avatar_url,
                 "status": "Онлайн" if user.is_active else "Не в сети",
-                "is_active": user.is_active
+                "is_active": user.is_active,
+                "role": user.role.value if user.role else "USER",
+                "company_name": user.company_name,
+                "company_number": user.company_number,
+                "phone": user.phone
             }
         else:
             print(f"DEBUG: Пользователь с ID {user_id} не найден в БД")
@@ -1118,7 +1166,8 @@ async def get_user(user_id: int, db: Session = Depends(deps.get_db)):
                 "full_name": f"User {user_id}",
                 "avatar": f"/static/img/avatar{user_id}.png",
                 "status": "Пользователь",
-                "is_active": False
+                "is_active": False,
+                "role": "USER"
             }
     except Exception as e:
         print(f"ERROR: Ошибка при получении пользователя: {e}")
@@ -1129,7 +1178,8 @@ async def get_user(user_id: int, db: Session = Depends(deps.get_db)):
             "full_name": f"User {user_id}",
             "avatar": f"/static/img/avatar{user_id}.png",
             "status": "Пользователь",
-            "is_active": True
+            "is_active": True,
+            "role": "USER"
         }
 
 # API для получения сообщений чата

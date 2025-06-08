@@ -3924,14 +3924,3 @@ async def export_companies(
         
     except Exception as e:
         return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка экспорта: {str(e)}"})
-
-if __name__ == "__main__":
-    # Исправляем изображения при старте
-    try:
-    from fix_images import fix_missing_images
-    fix_missing_images()
-    except ImportError:
-        print("fix_images module not found, skipping image fixes")
-    
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

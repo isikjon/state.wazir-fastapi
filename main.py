@@ -1002,6 +1002,14 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
         ).first()
         is_favorite = favorite is not None
     
+    # Проверяем, является ли текущий пользователь владельцем объявления
+    is_owner = current_user and current_user.id == property.owner_id if property.owner else False
+    
+    # Получаем первую категорию объявления (если есть)
+    category = None
+    if property.categories:
+        category = property.categories[0]
+    
     # Получаем похожие объявления (того же типа, в том же городе)
     similar_properties = db.query(models.Property).options(
         joinedload(models.Property.images)

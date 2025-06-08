@@ -17,9 +17,9 @@
             href="{{ url_for('static', path='layout/assets/scss/main.css') }}">
         <link rel="stylesheet"
             href="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.css" />
-        <!-- Photo Sphere Viewer for 360° panorama viewing -->
-        <script src="https://cdn.jsdelivr.net/npm/photo-sphere-viewer@5/dist/psv.min.js"></script>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photo-sphere-viewer@5/dist/psv.min.css" />
+        <!-- Pannellum for 360° panorama viewing -->
+        <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css" />
         <style>
             .btn favorite-btn {
                 width: 100%;
@@ -1077,28 +1077,24 @@
                         $('#modal-360').removeClass('hidden');
                         $('body').addClass('overflow-hidden'); // Запретить прокрутку страницы
                         
-                        // Инициализируем Photo Sphere Viewer
+                        // Инициализируем Pannellum
                         setTimeout(function() {
                             if (!panoramaViewer) {
                                 try {
-                                    panoramaViewer = new PhotoSphereViewer.Viewer({
-                                        container: document.querySelector('#panorama-sphere'),
-                                        panorama: '{{ property.tour_360_optimized_url }}',
-                                        defaultYaw: '130deg',
-                                        navbar: [
-                                            'zoom',
-                                            'move',
-                                            'fullscreen'
-                                        ],
-                                        loadingImg: null,
-                                        loadingTxt: 'Загрузка панорамы...',
-                                        lang: {
-                                            zoom: 'Приблизить',
-                                            zoomOut: 'Отдалить',
-                                            zoomIn: 'Приблизить',
-                                            move: 'Перемещение',
-                                            fullscreen: 'Полный экран'
-                                        }
+                                    panoramaViewer = pannellum.viewer('panorama-sphere', {
+                                        "type": "equirectangular",
+                                        "panorama": "{{ property.tour_360_optimized_url }}",
+                                        "autoLoad": true,
+                                        "autoRotate": -2,
+                                        "autoRotateInactivityDelay": 3000,
+                                        "showFullscreenCtrl": true,
+                                        "showZoomCtrl": true,
+                                        "mouseZoom": true,
+                                        "dragToLook": true,
+                                        "loadButtonLabel": "Загрузить панораму",
+                                        "loadingLabel": "Загрузка...",
+                                        "bylineLabel": "360° Панорама",
+                                        "nothingLabel": "Панорама не найдена"
                                     });
                                 } catch (error) {
                                     console.error('Ошибка инициализации панорамы:', error);
@@ -1106,7 +1102,7 @@
                                         '<div class="flex items-center justify-center h-full"><p class="text-gray-500">Ошибка загрузки панорамы</p></div>';
                                 }
                             }
-                        }, 300);
+                        }, 200);
                     });
                 }
                 
@@ -1122,6 +1118,7 @@
                             panoramaViewer = null;
                         } catch (error) {
                             console.log('Ошибка при закрытии панорамы:', error);
+                            panoramaViewer = null;
                         }
                     }
                 });

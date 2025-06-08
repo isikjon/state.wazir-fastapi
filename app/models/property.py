@@ -49,6 +49,19 @@ class Property(Base, TimestampMixin):
     has_furniture = Column(Boolean, default=False)  # Наличие мебели
     has_renovation = Column(Boolean, default=False)  # Наличие ремонта
     has_parking = Column(Boolean, default=False)  # Наличие парковки
+    
+    # Новые поля удобств
+    has_elevator = Column(Boolean, default=False)  # Лифт
+    has_security = Column(Boolean, default=False)  # Охрана
+    has_internet = Column(Boolean, default=False)  # Интернет
+    has_air_conditioning = Column(Boolean, default=False)  # Кондиционер
+    has_heating = Column(Boolean, default=False)  # Отопление
+    has_yard = Column(Boolean, default=False)  # Двор/сад
+    has_pool = Column(Boolean, default=False)  # Бассейн
+    has_gym = Column(Boolean, default=False)  # Спортзал
+    bathroom_type = Column(String(50), nullable=True)  # Тип санузла
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)  # Категория
+    
     notes = Column(String(255), nullable=True)  # Поле для хранения даты съемки
     
     owner_id = Column(Integer, ForeignKey("users.id"))
@@ -89,6 +102,16 @@ class Property(Base, TimestampMixin):
             "has_balcony": self.has_balcony,
             "has_renovation": self.has_renovation,
             "has_parking": self.has_parking,
+            "has_elevator": self.has_elevator,
+            "has_security": self.has_security,
+            "has_internet": self.has_internet,
+            "has_air_conditioning": self.has_air_conditioning,
+            "has_heating": self.has_heating,
+            "has_yard": self.has_yard,
+            "has_pool": self.has_pool,
+            "has_gym": self.has_gym,
+            "bathroom_type": self.bathroom_type,
+            "category_id": self.category_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

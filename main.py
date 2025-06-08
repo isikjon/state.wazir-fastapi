@@ -3785,18 +3785,11 @@ async def create_company(
         if existing_email:
             return JSONResponse(status_code=400, content={"success": False, "message": "Пользователь с таким email уже существует"})
         
-        # Проверяем уникальность телефона
-        existing_phone = db.query(models.User).filter(models.User.phone == phone).first()
-        if existing_phone:
-            return JSONResponse(status_code=400, content={"success": False, "message": "Пользователь с таким телефоном уже существует"})
-        
-        # Проверяем уникальность номера компании
-        existing_number = db.query(models.User).filter(
-            models.User.company_number == company_number,
-            models.User.role == models.UserRole.COMPANY
-        ).first()
-        if existing_number:
-            return JSONResponse(status_code=400, content={"success": False, "message": "Компания с таким номером уже существует"})
+        # Проверяем уникальность телефона (если указан)
+        if phone:
+            existing_phone = db.query(models.User).filter(models.User.phone == phone).first()
+            if existing_phone:
+                return JSONResponse(status_code=400, content={"success": False, "message": "Пользователь с таким телефоном уже существует"})
         
         # Хешируем пароль
         hashed_password = pwd_context.hash(password)
@@ -4443,15 +4436,25 @@ async def create_company_property(
     price: float = Form(...),
     address: str = Form(...),
     city: str = Form("Бишкек"),
+    category_id: int = Form(None),
     area: float = Form(None),
     rooms: int = Form(None),
     floor: int = Form(None),
     building_floors: int = Form(None),
+    bathroom_type: str = Form(None),
     type: str = Form("apartment"),
     has_balcony: bool = Form(False),
     has_furniture: bool = Form(False),
     has_renovation: bool = Form(False),
     has_parking: bool = Form(False),
+    has_elevator: bool = Form(False),
+    has_security: bool = Form(False),
+    has_internet: bool = Form(False),
+    has_air_conditioning: bool = Form(False),
+    has_heating: bool = Form(False),
+    has_yard: bool = Form(False),
+    has_pool: bool = Form(False),
+    has_gym: bool = Form(False),
     status: str = Form("pending"),
     db: Session = Depends(deps.get_db)
 ):
@@ -4468,15 +4471,25 @@ async def create_company_property(
             price=price,
             address=address,
             city=city,
+            category_id=category_id,
             area=area,
             rooms=rooms,
             floor=floor,
             building_floors=building_floors,
+            bathroom_type=bathroom_type,
             type=type,
             has_balcony=has_balcony,
             has_furniture=has_furniture,
             has_renovation=has_renovation,
             has_parking=has_parking,
+            has_elevator=has_elevator,
+            has_security=has_security,
+            has_internet=has_internet,
+            has_air_conditioning=has_air_conditioning,
+            has_heating=has_heating,
+            has_yard=has_yard,
+            has_pool=has_pool,
+            has_gym=has_gym,
             status=models.PropertyStatus.DRAFT if status == "draft" else models.PropertyStatus.PENDING,
             owner_id=current_user.id
         )
@@ -4496,3 +4509,12 @@ async def create_company_property(
         raise HTTPException(status_code=500, detail="Ошибка при создании объявления")
 
 # === END COMPANIES PANEL ROUTES ===
+
+# API для получения категорий
+@app.get("/api/v1/categories")
+async def get_categories(db: Session = Depends(deps.get_db)):
+    """Получение списка всех категорий"""
+    categories = db.query(models.Category).all()
+    return [{"id": cat.id, "name": cat.name, "description": cat.description} for cat in categories]
+
+# API для работы с заявками (Requests)

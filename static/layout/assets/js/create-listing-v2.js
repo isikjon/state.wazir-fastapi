@@ -6,6 +6,54 @@
 let uploadedPhotos = 0;
 const maxPhotos = 10;
 
+// Загрузка городов из JSON файла
+async function loadCities() {
+    try {
+        const response = await fetch('/static/data/cities.json');
+        const data = await response.json();
+        
+        const citySelect = document.getElementById('city');
+        citySelect.innerHTML = '<option value="">Выберите город</option>';
+        
+        data.regions.forEach(region => {
+            // Добавляем группу региона
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = region.name;
+            
+            region.cities.forEach(city => {
+                const option = document.createElement('option');
+                option.value = city;
+                option.textContent = city;
+                optgroup.appendChild(option);
+            });
+            
+            citySelect.appendChild(optgroup);
+        });
+    } catch (error) {
+        console.error('Ошибка загрузки городов:', error);
+    }
+}
+
+// Загрузка категорий из БД
+async function loadCategories() {
+    try {
+        const response = await fetch('/api/v1/categories');
+        const categories = await response.json();
+        
+        const categorySelect = document.getElementById('category');
+        categorySelect.innerHTML = '<option value="">Выберите категорию</option>';
+        
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            categorySelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Ошибка загрузки категорий:', error);
+    }
+}
+
 $(document).ready(function() {
     console.log('Document ready - New version V2');
     // Инициализация счетчика символов для описания
@@ -486,4 +534,8 @@ $(document).ready(function() {
     // Загружаем данные о погоде и курсе валют
     getWeather();
     getCurrencyRate();
+
+    // Загружаем данные
+    loadCities();
+    loadCategories();
 });

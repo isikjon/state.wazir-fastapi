@@ -81,6 +81,16 @@ class PropertyCreate(PropertyBase):
     has_balcony: Optional[bool] = False
     has_renovation: Optional[bool] = False
     has_parking: Optional[bool] = False
+    has_elevator: Optional[bool] = False
+    has_security: Optional[bool] = False
+    has_internet: Optional[bool] = False
+    has_air_conditioning: Optional[bool] = False
+    has_heating: Optional[bool] = False
+    has_yard: Optional[bool] = False
+    has_pool: Optional[bool] = False
+    has_gym: Optional[bool] = False
+    bathroom_type: Optional[str] = None
+    category_id: Optional[int] = None
     type: Optional[str] = "apartment"
 
 

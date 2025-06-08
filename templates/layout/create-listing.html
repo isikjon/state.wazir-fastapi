@@ -249,11 +249,7 @@
                                 <label for="category" class="form-label">Категория</label>
                                 <select id="category" class="form-select">
                                     <option value="">Выберите категорию</option>
-                                    <option value="1">Продажа</option>
-                                    <option value="2">Аренда</option>
-                                    <option value="3">Новостройки</option>
-                                    <option value="5">Коммерческая</option>
-                                    <option value="6">Ипотека</option>
+                                    <!-- Категории будут загружены через JavaScript -->
                                 </select>
                                 <div class="category-validation-error text-red-500 text-sm mt-2 hidden">
                                     Пожалуйста, выберите категорию
@@ -291,13 +287,8 @@
                                 <label for="city"
                                     class="form-label">Город</label>
                                 <select id="city" class="form-select">
-                                    <option value>Выберите город</option>
-                                    <option value="bishkek">Бишкек</option>
-                                    <option value="osh">Ош</option>
-                                    <option
-                                        value="jalal-abad">Жалал-Абад</option>
-                                    <option value="karakol">Каракол</option>
-                                    <option value="tokmok">Токмок</option>
+                                    <option value="">Выберите город</option>
+                                    <!-- Города будут загружены через JavaScript -->
                                 </select>
                                 <div
                                     class="city-validation-error text-red-500 text-sm mt-2 hidden">
@@ -472,18 +463,34 @@
                                             class="text-gray-700">Мебель</label>
                                     </div>
                                     <div class="checkbox-container">
-                                        <input type="checkbox" id="refrigerator"
+                                        <input type="checkbox" id="balcony"
                                             class="form-checkbox">
-                                        <label for="refrigerator"
-                                            class="text-gray-700">Холодильник</label>
+                                        <label for="balcony"
+                                            class="text-gray-700">Балкон/лоджия</label>
                                     </div>
                                     <div class="checkbox-container">
-                                        <input type="checkbox"
-                                            id="washing-machine"
+                                        <input type="checkbox" id="renovation"
                                             class="form-checkbox">
-                                        <label for="washing-machine"
-                                            class="text-gray-700">Стиральная
-                                            машина</label>
+                                        <label for="renovation"
+                                            class="text-gray-700">Ремонт</label>
+                                    </div>
+                                    <div class="checkbox-container">
+                                        <input type="checkbox" id="parking"
+                                            class="form-checkbox">
+                                        <label for="parking"
+                                            class="text-gray-700">Парковка</label>
+                                    </div>
+                                    <div class="checkbox-container">
+                                        <input type="checkbox" id="elevator"
+                                            class="form-checkbox">
+                                        <label for="elevator"
+                                            class="text-gray-700">Лифт</label>
+                                    </div>
+                                    <div class="checkbox-container">
+                                        <input type="checkbox" id="security"
+                                            class="form-checkbox">
+                                        <label for="security"
+                                            class="text-gray-700">Охрана</label>
                                     </div>
                                     <div class="checkbox-container">
                                         <input type="checkbox" id="internet"
@@ -493,16 +500,34 @@
                                     </div>
                                     <div class="checkbox-container">
                                         <input type="checkbox"
-                                            id="air-conditioner"
+                                            id="air-conditioning"
                                             class="form-checkbox">
-                                        <label for="air-conditioner"
+                                        <label for="air-conditioning"
                                             class="text-gray-700">Кондиционер</label>
                                     </div>
                                     <div class="checkbox-container">
-                                        <input type="checkbox" id="tv"
+                                        <input type="checkbox" id="heating"
                                             class="form-checkbox">
-                                        <label for="tv"
-                                            class="text-gray-700">Телевизор</label>
+                                        <label for="heating"
+                                            class="text-gray-700">Отопление</label>
+                                    </div>
+                                    <div class="checkbox-container">
+                                        <input type="checkbox" id="yard"
+                                            class="form-checkbox">
+                                        <label for="yard"
+                                            class="text-gray-700">Двор/сад</label>
+                                    </div>
+                                    <div class="checkbox-container">
+                                        <input type="checkbox" id="pool"
+                                            class="form-checkbox">
+                                        <label for="pool"
+                                            class="text-gray-700">Бассейн</label>
+                                    </div>
+                                    <div class="checkbox-container">
+                                        <input type="checkbox" id="gym"
+                                            class="form-checkbox">
+                                        <label for="gym"
+                                            class="text-gray-700">Спортзал</label>
                                     </div>
                                 </div>
                             </div>

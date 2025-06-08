@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Depends, Form, status, HTTPException, Query, WebSocket, WebSocketDisconnect, Response
+from fastapi import FastAPI, Request, Depends, Form, status, HTTPException, Query, WebSocket, WebSocketDisconnect, Response, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,7 +10,7 @@ from app.api import deps
 from app.utils.security import verify_password
 from app import models
 from app.models.user import User
-from sqlalchemy import func, desc, or_, and_
+from sqlalchemy import func, desc, or_, and_, asc, text
 from datetime import datetime, timedelta
 from sqlalchemy.types import String
 import pandas as pd
@@ -4456,6 +4456,7 @@ async def create_company_property(
     has_pool: bool = Form(False),
     has_gym: bool = Form(False),
     status: str = Form("pending"),
+    photos: List[UploadFile] = File(default=[]),
     db: Session = Depends(deps.get_db)
 ):
     """Создание объявления компании"""
@@ -4463,8 +4464,14 @@ async def create_company_property(
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
     
+    print(f"DEBUG: Создание объявления компании пользователем {current_user.id}")
+    print(f"DEBUG: Данные объявления: title={title}, price={price}, city={city}")
+    print(f"DEBUG: Удобства: elevator={has_elevator}, security={has_security}, internet={has_internet}")
+    print(f"DEBUG: Количество фотографий: {len(photos)}")
+    
     try:
         # Создаем объявление
+        print("DEBUG: Создание объекта Property в базе данных...")
         property_obj = models.Property(
             title=title,
             description=description,
@@ -4497,6 +4504,50 @@ async def create_company_property(
         db.add(property_obj)
         db.commit()
         db.refresh(property_obj)
+        print(f"DEBUG: Объявление создано с ID: {property_obj.id}")
+        
+        # Обработка загрузки фотографий
+        if photos and len([p for p in photos if p.filename]):
+            print(f"DEBUG: Начинаем загрузку {len(photos)} фотографий...")
+            
+            # Создаем папку для медиа файлов
+            media_dir = os.path.join("media", "properties", str(property_obj.id))
+            os.makedirs(media_dir, exist_ok=True)
+            print(f"DEBUG: Создана папка для медиа: {media_dir}")
+            
+            for i, photo in enumerate(photos):
+                if photo.filename:
+                    try:
+                        # Генерируем уникальное имя файла
+                        file_extension = os.path.splitext(photo.filename)[1] or '.jpg'
+                        unique_filename = f"{uuid.uuid4()}{file_extension}"
+                        file_path = os.path.join(media_dir, unique_filename)
+                        
+                        # Сохраняем файл
+                        content = await photo.read()
+                        with open(file_path, "wb") as f:
+                            f.write(content)
+                        
+                        file_url = f"/media/properties/{property_obj.id}/{unique_filename}"
+                        print(f"DEBUG: Фото {i+1} сохранено: {file_path}, URL: {file_url}, размер: {len(content)} байт")
+                        
+                        # Создаем запись в БД
+                        is_main = (i == 0)  # Первое фото - главное
+                        image = models.PropertyImage(
+                            url=file_url,
+                            property_id=property_obj.id,
+                            is_main=is_main
+                        )
+                        db.add(image)
+                        print(f"DEBUG: Изображение добавлено в БД, is_main: {is_main}")
+                        
+                    except Exception as e:
+                        print(f"ERROR: Ошибка при сохранении фото {i+1}: {e}")
+            
+            db.commit()
+            print("DEBUG: Все изображения сохранены в БД")
+        else:
+            print("DEBUG: Фотографии не предоставлены")
         
         return {
             "success": True,
@@ -4505,7 +4556,10 @@ async def create_company_property(
         }
         
     except Exception as e:
-        print(f"DEBUG: Ошибка создания объявления: {e}")
+        print(f"ERROR: Ошибка создания объявления: {e}")
+        print(f"ERROR: Тип ошибки: {type(e).__name__}")
+        import traceback
+        print(f"ERROR: Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="Ошибка при создании объявления")
 
 # === END COMPANIES PANEL ROUTES ===

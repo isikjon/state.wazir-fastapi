@@ -4313,24 +4313,36 @@ async def companies_listings(
         # Обогащаем каждое объявление дополнительными данными
         enhanced_properties = []
         for prop in properties_raw:
-            # Получаем главное изображение
-            main_image = db.query(models.PropertyImage).filter(
-                models.PropertyImage.property_id == prop.id,
-                models.PropertyImage.is_main == True
-            ).first()
+            # Получаем ВСЕ изображения для слайдера
+            all_images = db.query(models.PropertyImage).filter(
+                models.PropertyImage.property_id == prop.id
+            ).order_by(models.PropertyImage.is_main.desc()).all()
             
-            if not main_image:
-                # Если нет главного, берем первое доступное
-                main_image = db.query(models.PropertyImage).filter(
-                    models.PropertyImage.property_id == prop.id
-                ).first()
+            # Главное изображение
+            main_image = None
+            if all_images:
+                main_image = all_images[0]  # Первое изображение или главное
             
             # Получаем категорию
             category_name = "Не указана"
             if prop.category_id:
-                category = db.query(models.Category).filter(models.Category.id == prop.category_id).first()
+                category = db.query(models.PropertyCategory).filter(models.PropertyCategory.id == prop.category_id).first()
                 if category:
                     category_name = category.name
+            
+            # Получаем данные владельца компании
+            owner_company = db.query(models.User).filter(models.User.id == prop.owner_id).first()
+            owner_name = "Не указан"
+            if owner_company:
+                # Если это компания, показываем название компании и владельца
+                if hasattr(owner_company, 'company_name') and owner_company.company_name:
+                    owner_name = f"{owner_company.company_name}"
+                    if hasattr(owner_company, 'company_owner') and owner_company.company_owner:
+                        owner_name += f" ({owner_company.company_owner})"
+                elif hasattr(owner_company, 'full_name') and owner_company.full_name:
+                    owner_name = owner_company.full_name
+                elif hasattr(owner_company, 'email') and owner_company.email:
+                    owner_name = owner_company.email
             
             # Создаем объект с дополнительными полями
             enhanced_prop = {
@@ -4348,9 +4360,11 @@ async def companies_listings(
                 "type": prop.type,
                 "property_type": prop.type,  # Добавляем алиас для совместимости с шаблоном
                 "category_name": category_name,
+                "owner_name": owner_name,  # Добавляем имя владельца
                 "created_at": prop.created_at,
                 "views": getattr(prop, 'views', 0),
                 "image_url": main_image.url if main_image else None,
+                "all_images": [img.url for img in all_images],  # Все изображения для слайдера
                 "has_balcony": prop.has_balcony,
                 "has_furniture": prop.has_furniture,
                 "has_renovation": prop.has_renovation,
@@ -4370,7 +4384,7 @@ async def companies_listings(
         
         print(f"DEBUG: Загружено {len(enhanced_properties)} объявлений для компании {current_user.id}")
         if enhanced_properties:
-            print(f"DEBUG: Первое объявление - image_url: {enhanced_properties[0]['image_url']}, category: {enhanced_properties[0]['category_name']}")
+            print(f"DEBUG: Первое объявление - image_url: {enhanced_properties[0]['image_url']}, category: {enhanced_properties[0]['category_name']}, owner: {enhanced_properties[0]['owner_name']}")
         
         # Статистика
         all_properties = db.query(models.Property).filter(models.Property.owner_id == current_user.id)

@@ -27,7 +27,7 @@
         
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Статус</label>
-            <select id="statusFilter" class="block w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+            <select id="statusFilter" class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
                 <option value="">Все статусы</option>
                 <option value="active">Активные</option>
                 <option value="pending">На модерации</option>
@@ -38,108 +38,85 @@
         
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Тип</label>
-            <select id="typeFilter" class="block w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+            <select id="typeFilter" class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
                 <option value="">Все типы</option>
-                <option value="sale">Продажа</option>
-                <option value="rent">Аренда</option>
+                <option value="apartment">Квартира</option>
+                <option value="house">Дом</option>
+                <option value="commercial">Коммерческая</option>
+                <option value="land">Участок</option>
             </select>
         </div>
         
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Сортировка</label>
-            <select id="sortFilter" class="block w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
-                <option value="created_desc">По дате (новые)</option>
-                <option value="created_asc">По дате (старые)</option>
-                <option value="price_desc">По цене (дорогие)</option>
-                <option value="price_asc">По цене (дешевые)</option>
-                <option value="views_desc">По просмотрам</option>
-            </select>
+        <div class="flex items-end">
+            <button type="button" class="w-full bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                Применить
+            </button>
         </div>
     </div>
 </div>
 
 <!-- Статистика -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-    <div class="bg-white rounded-lg p-4 border border-gray-200">
-        <div class="flex items-center">
-            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                <i class="fas fa-list text-blue-600"></i>
-            </div>
-            <div>
-                <p class="text-sm text-gray-600">Всего</p>
-                <p class="text-lg font-semibold text-gray-900">{{ total_count or 0 }}</p>
-            </div>
+<div class="bg-white rounded-lg p-6 border border-gray-200 mb-6">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="text-center">
+            <div class="text-3xl font-bold text-primary">{{ total_count }}</div>
+            <div class="text-sm text-gray-500">Всего объявлений</div>
         </div>
-    </div>
-    
-    <div class="bg-white rounded-lg p-4 border border-gray-200">
-        <div class="flex items-center">
-            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                <i class="fas fa-check text-green-600"></i>
-            </div>
-            <div>
-                <p class="text-sm text-gray-600">Активные</p>
-                <p class="text-lg font-semibold text-gray-900">{{ active_count or 0 }}</p>
-            </div>
+        <div class="text-center">
+            <div class="text-3xl font-bold text-green-600">{{ active_count }}</div>
+            <div class="text-sm text-gray-500">Активных</div>
         </div>
-    </div>
-    
-    <div class="bg-white rounded-lg p-4 border border-gray-200">
-        <div class="flex items-center">
-            <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
-                <i class="fas fa-clock text-yellow-600"></i>
-            </div>
-            <div>
-                <p class="text-sm text-gray-600">На модерации</p>
-                <p class="text-lg font-semibold text-gray-900">{{ pending_count or 0 }}</p>
-            </div>
+        <div class="text-center">
+            <div class="text-3xl font-bold text-yellow-600">{{ pending_count }}</div>
+            <div class="text-sm text-gray-500">На модерации</div>
         </div>
-    </div>
-    
-    <div class="bg-white rounded-lg p-4 border border-gray-200">
-        <div class="flex items-center">
-            <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                <i class="fas fa-file-alt text-gray-600"></i>
-            </div>
-            <div>
-                <p class="text-sm text-gray-600">Черновики</p>
-                <p class="text-lg font-semibold text-gray-900">{{ draft_count or 0 }}</p>
-            </div>
+        <div class="text-center">
+            <div class="text-3xl font-bold text-gray-600">{{ draft_count }}</div>
+            <div class="text-sm text-gray-500">Черновиков</div>
         </div>
     </div>
 </div>
 
-<!-- Список объявлений -->
+<!-- Основной контент -->
 <div class="bg-white rounded-lg border border-gray-200">
+    <!-- Header с переключателем вида -->
     <div class="px-6 py-4 border-b border-gray-200">
         <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900">Мои объявления</h3>
+            <div class="flex items-center space-x-4">
+                <h2 class="text-lg font-semibold text-gray-900">Объявления</h2>
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-primary focus:ring-primary">
+                    <label for="selectAll" class="text-sm text-gray-600">Выбрать все</label>
+                </div>
+            </div>
+            
             <div class="flex items-center space-x-2">
-                <button id="gridView" class="p-2 text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-th-large"></i>
-                </button>
-                <button id="listView" class="p-2 text-primary">
+                <button id="listViewBtn" class="p-2 text-gray-400 hover:text-gray-600 border rounded active">
                     <i class="fas fa-list"></i>
+                </button>
+                <button id="gridViewBtn" class="p-2 text-gray-400 hover:text-gray-600 border rounded">
+                    <i class="fas fa-th"></i>
                 </button>
             </div>
         </div>
     </div>
     
-    <!-- Table View -->
-    <div id="tableView" class="overflow-x-auto">
+    <!-- Table View (по умолчанию) -->
+    <div id="listView" class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        <input type="checkbox" id="selectAllTable" class="rounded border-gray-300 text-primary focus:ring-primary">
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Объявление</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Цена</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Тип</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Автор</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Стоимость</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата создания</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Просмотры</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
-                    <th class="relative px-6 py-3"><span class="sr-only">Действия</span></th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">360° Тур</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -169,55 +146,57 @@
                         </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm font-medium text-gray-900">{{ "{:,.0f}".format(property.price) }} ₽</div>
+                        <div class="flex items-center">
+                            <i class="fas fa-user text-gray-400 mr-2"></i>
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">{{ property.owner_name }}</div>
+                                <div class="text-sm text-gray-500">ID: {{ property.id }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ "{:,.0f}".format(property.price) }} KGZ</div>
                         {% if property.property_type == 'rent' %}
                         <div class="text-xs text-gray-500">в месяц</div>
                         {% endif %}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        {% if property.property_type == 'sale' %}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            Продажа
-                        </span>
-                        {% else %}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                            Аренда
-                        </span>
-                        {% endif %}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
                         {% if property.status == 'active' %}
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <i class="fas fa-check mr-1"></i>Активно
+                            Активно
                         </span>
                         {% elif property.status == 'pending' %}
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                            <i class="fas fa-clock mr-1"></i>На модерации
+                            На проверке
                         </span>
                         {% elif property.status == 'draft' %}
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            <i class="fas fa-file-alt mr-1"></i>Черновик
+                            Черновик
                         </span>
                         {% else %}
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            <i class="fas fa-times mr-1"></i>Отклонено
+                            Отклонено
                         </span>
                         {% endif %}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div class="flex items-center">
-                            <i class="fas fa-eye text-gray-400 mr-1"></i>
-                            {{ property.views or 0 }}
-                        </div>
-                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {{ property.created_at.strftime('%d.%m.%Y') if property.created_at else '-' }}
+                        {{ property.created_at.strftime('%Y-%m-%d %H:%M:%S') if property.created_at else '-' }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {{ property.views or 0 }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if property.tour_360_url %}
+                        <span class="text-blue-600 text-sm">Есть</span>
+                        {% else %}
+                        <span class="text-gray-400 text-sm">Нет</span>
+                        {% endif %}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div class="flex items-center space-x-2">
-                            <a href="/companies/listings/{{ property.id }}" class="text-primary hover:text-primary-dark" title="Просмотр">
+                            <button onclick="viewProperty({{ property.id }})" class="text-primary hover:text-primary-dark" title="Просмотр">
                                 <i class="fas fa-eye"></i>
-                            </a>
+                            </button>
                             <a href="/companies/listings/{{ property.id }}/edit" class="text-gray-400 hover:text-gray-600" title="Редактировать">
                                 <i class="fas fa-edit"></i>
                             </a>
@@ -231,10 +210,10 @@
                 
                 {% if not properties %}
                 <tr>
-                    <td colspan="8" class="px-6 py-12 text-center">
+                    <td colspan="9" class="px-6 py-12 text-center">
                         <i class="fas fa-plus-circle text-4xl text-gray-300 mb-4"></i>
                         <p class="text-gray-500 mb-4">У вас пока нет объявлений</p>
-                        <a href="/companies/listings/create" class="btn-primary px-4 py-2 rounded-lg text-white text-sm font-medium">
+                        <a href="/companies/create-listing" class="btn-primary px-4 py-2 rounded-lg text-white text-sm font-medium">
                             Создать первое объявление
                         </a>
                     </td>
@@ -284,7 +263,7 @@
                     </div>
                     
                     <p class="text-xs text-gray-500 mb-2">{{ property.address }}</p>
-                    <p class="text-lg font-semibold text-primary mb-2">{{ "{:,.0f}".format(property.price) }} ₽</p>
+                    <p class="text-lg font-semibold text-primary mb-2">{{ "{:,.0f}".format(property.price) }} KGZ</p>
                     
                     <div class="flex items-center justify-between text-xs text-gray-500 mb-3">
                         <span><i class="fas fa-eye mr-1"></i>{{ property.views or 0 }}</span>
@@ -292,9 +271,9 @@
                     </div>
                     
                     <div class="flex items-center space-x-2">
-                        <a href="/companies/listings/{{ property.id }}" class="flex-1 bg-primary text-white text-xs font-medium py-2 px-3 rounded-lg text-center hover:bg-primary-dark">
+                        <button onclick="viewProperty({{ property.id }})" class="flex-1 bg-primary text-white text-xs font-medium py-2 px-3 rounded-lg text-center hover:bg-primary-dark">
                             Просмотр
-                        </a>
+                        </button>
                         <a href="/companies/listings/{{ property.id }}/edit" class="bg-gray-100 text-gray-700 text-xs font-medium py-2 px-3 rounded-lg hover:bg-gray-200">
                             Изменить
                         </a>
@@ -304,74 +283,127 @@
             {% endfor %}
         </div>
     </div>
-    
-    <!-- Pagination -->
-    {% if total_pages > 1 %}
-    <div class="px-6 py-4 border-t border-gray-200">
-        <div class="flex items-center justify-between">
-            <div class="text-sm text-gray-700">
-                Показано {{ ((current_page - 1) * per_page + 1) }} - {{ min(current_page * per_page, total_count) }} из {{ total_count }} результатов
-            </div>
-            <div class="flex items-center space-x-2">
-                {% if current_page > 1 %}
-                <a href="?page={{ current_page - 1 }}" class="px-3 py-2 text-sm text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                    Назад
-                </a>
-                {% endif %}
+</div>
+
+<!-- Модальное окно для просмотра объявления -->
+<div id="propertyModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 id="modalTitle" class="text-lg font-semibold text-gray-900"></h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="mt-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Слайдер изображений -->
+                <div class="relative">
+                    <div id="imageSlider" class="relative bg-gray-200 rounded-lg overflow-hidden" style="height: 400px;">
+                        <div id="imageContainer" class="flex transition-transform duration-300 ease-in-out h-full">
+                            <!-- Изображения будут добавлены через JavaScript -->
+                        </div>
+                        
+                        <!-- Кнопки навигации -->
+                        <button id="prevBtn" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 hidden">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button id="nextBtn" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 hidden">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        
+                        <!-- Индикаторы -->
+                        <div id="indicators" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2"></div>
+                    </div>
+                </div>
                 
-                {% for page in range(1, total_pages + 1) %}
-                    {% if page == current_page %}
-                    <span class="px-3 py-2 text-sm text-white bg-primary border border-primary rounded-lg">
-                        {{ page }}
-                    </span>
-                    {% elif page <= 3 or page >= total_pages - 2 or (page >= current_page - 1 and page <= current_page + 1) %}
-                    <a href="?page={{ page }}" class="px-3 py-2 text-sm text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                        {{ page }}
-                    </a>
-                    {% elif page == 4 or page == total_pages - 3 %}
-                    <span class="px-3 py-2 text-sm text-gray-500">...</span>
-                    {% endif %}
-                {% endfor %}
-                
-                {% if current_page < total_pages %}
-                <a href="?page={{ current_page + 1 }}" class="px-3 py-2 text-sm text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                    Далее
-                </a>
-                {% endif %}
+                <!-- Информация об объявлении -->
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-900 mb-2">Адрес</h4>
+                        <p id="modalAddress" class="text-gray-600"></p>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-900 mb-2">Описание</h4>
+                        <p id="modalDescription" class="text-gray-600"></p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <div class="text-2xl font-bold text-primary" id="modalPrice"></div>
+                            <div class="text-sm text-gray-500">Цена</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-gray-900" id="modalArea"></div>
+                            <div class="text-sm text-gray-500">Площадь</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-gray-900" id="modalRooms"></div>
+                            <div class="text-sm text-gray-500">Комнаты</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-gray-900" id="modalFloor"></div>
+                            <div class="text-sm text-gray-500">Этаж</div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-900 mb-2">Статистика</h4>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-500">Просмотры:</span>
+                                <span id="modalViews" class="font-medium ml-2">0</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Дата создания:</span>
+                                <span id="modalDate" class="font-medium ml-2"></span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Статус:</span>
+                                <span id="modalStatus" class="font-medium ml-2"></span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Собственник:</span>
+                                <span id="modalOwner" class="font-medium ml-2"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+        
+        <div class="flex justify-end mt-6 pt-3 border-t">
+            <button onclick="closeModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">
+                Закрыть
+            </button>
+        </div>
     </div>
-    {% endif %}
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    // View toggle
-    const gridViewBtn = document.getElementById('gridView');
-    const listViewBtn = document.getElementById('listView');
-    const tableView = document.getElementById('tableView');
-    const gridView = document.getElementById('gridView');
+    let currentSlide = 0;
+    let totalSlides = 0;
     
-    gridViewBtn.addEventListener('click', function() {
-        tableView.classList.add('hidden');
-        gridView.classList.remove('hidden');
-        gridViewBtn.classList.add('text-primary');
-        gridViewBtn.classList.remove('text-gray-400');
-        listViewBtn.classList.add('text-gray-400');
-        listViewBtn.classList.remove('text-primary');
+    // Переключение между видами
+    document.getElementById('listViewBtn').addEventListener('click', function() {
+        document.getElementById('listView').classList.remove('hidden');
+        document.getElementById('gridView').classList.add('hidden');
+        this.classList.add('active');
+        document.getElementById('gridViewBtn').classList.remove('active');
     });
-    
-    listViewBtn.addEventListener('click', function() {
-        gridView.classList.add('hidden');
-        tableView.classList.remove('hidden');
-        listViewBtn.classList.add('text-primary');
-        listViewBtn.classList.remove('text-gray-400');
-        gridViewBtn.classList.add('text-gray-400');
-        gridViewBtn.classList.remove('text-primary');
+
+    document.getElementById('gridViewBtn').addEventListener('click', function() {
+        document.getElementById('gridView').classList.remove('hidden');
+        document.getElementById('listView').classList.add('hidden');
+        this.classList.add('active');
+        document.getElementById('listViewBtn').classList.remove('active');
     });
-    
-    // Filters
+
+    // Функции фильтрации
     function applyFilters() {
         const search = document.getElementById('searchInput').value.toLowerCase();
         const status = document.getElementById('statusFilter').value;
@@ -407,38 +439,152 @@
         checkboxes.forEach(cb => cb.checked = this.checked);
     });
     
-    // Delete function
-    async function deleteProperty(propertyId) {
-        const result = await Swal.fire({
-            title: 'Удалить объявление?',
-            text: 'Это действие нельзя отменить',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc2626',
-            cancelButtonColor: '#6b7280',
-            confirmButtonText: 'Удалить',
-            cancelButtonText: 'Отмена'
+    // Функция просмотра объявления в модальном окне
+    function viewProperty(propertyId) {
+        const propertyData = {{ properties | tojson | safe }};
+        const property = propertyData.find(p => p.id === propertyId);
+        
+        if (!property) return;
+        
+        // Заполнение данных модального окна
+        document.getElementById('modalTitle').textContent = property.title;
+        document.getElementById('modalAddress').textContent = property.address;
+        document.getElementById('modalDescription').textContent = property.description;
+        document.getElementById('modalPrice').textContent = new Intl.NumberFormat('ru-RU').format(property.price) + ' KGZ';
+        document.getElementById('modalArea').textContent = (property.area || '-') + (property.area ? ' м²' : '');
+        document.getElementById('modalRooms').textContent = property.rooms || '-';
+        document.getElementById('modalFloor').textContent = (property.floor && property.building_floors) ? `${property.floor}/${property.building_floors}` : '-';
+        document.getElementById('modalViews').textContent = property.views || 0;
+        document.getElementById('modalDate').textContent = property.created_at ? new Date(property.created_at).toLocaleDateString('ru-RU') : '-';
+        document.getElementById('modalOwner').textContent = property.owner_name || 'Не указан';
+        
+        // Заполнение статуса
+        const statusElement = document.getElementById('modalStatus');
+        switch(property.status) {
+            case 'active':
+                statusElement.textContent = 'Активно';
+                statusElement.className = 'font-medium ml-2 text-green-600';
+                break;
+            case 'pending':
+                statusElement.textContent = 'На проверке';
+                statusElement.className = 'font-medium ml-2 text-yellow-600';
+                break;
+            case 'draft':
+                statusElement.textContent = 'Черновик';
+                statusElement.className = 'font-medium ml-2 text-gray-600';
+                break;
+            default:
+                statusElement.textContent = 'Отклонено';
+                statusElement.className = 'font-medium ml-2 text-red-600';
+        }
+        
+        // Загрузка изображений в слайдер
+        setupImageSlider(property.all_images || [property.image_url].filter(Boolean));
+        
+        // Показ модального окна
+        document.getElementById('propertyModal').classList.remove('hidden');
+    }
+    
+    // Настройка слайдера изображений
+    function setupImageSlider(images) {
+        const container = document.getElementById('imageContainer');
+        const indicators = document.getElementById('indicators');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        
+        container.innerHTML = '';
+        indicators.innerHTML = '';
+        currentSlide = 0;
+        totalSlides = images.length;
+        
+        if (totalSlides === 0) {
+            container.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-100"><i class="fas fa-image text-gray-400 text-4xl"></i></div>';
+            prevBtn.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+            return;
+        }
+        
+        // Создание изображений
+        images.forEach((image, index) => {
+            const img = document.createElement('img');
+            img.src = image;
+            img.className = 'w-full h-full object-cover flex-shrink-0';
+            img.style.width = '100%';
+            container.appendChild(img);
+            
+            // Создание индикаторов
+            const indicator = document.createElement('div');
+            indicator.className = `w-2 h-2 rounded-full cursor-pointer ${index === 0 ? 'bg-white' : 'bg-white bg-opacity-50'}`;
+            indicator.onclick = () => goToSlide(index);
+            indicators.appendChild(indicator);
         });
         
-        if (result.isConfirmed) {
-            try {
-                const response = await fetch(`/api/v1/companies/properties/${propertyId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
-                
-                if (response.ok) {
-                    Swal.fire('Удалено!', 'Объявление было удалено', 'success');
-                    location.reload();
-                } else {
-                    throw new Error('Ошибка при удалении');
-                }
-            } catch (error) {
-                Swal.fire('Ошибка!', 'Не удалось удалить объявление', 'error');
-            }
+        // Показ кнопок навигации только если больше одного изображения
+        if (totalSlides > 1) {
+            prevBtn.classList.remove('hidden');
+            nextBtn.classList.remove('hidden');
+            
+            prevBtn.onclick = () => goToSlide(currentSlide - 1);
+            nextBtn.onclick = () => goToSlide(currentSlide + 1);
+        } else {
+            prevBtn.classList.add('hidden');
+            nextBtn.classList.add('hidden');
         }
     }
+    
+    function goToSlide(slideIndex) {
+        if (slideIndex < 0) slideIndex = totalSlides - 1;
+        if (slideIndex >= totalSlides) slideIndex = 0;
+        
+        currentSlide = slideIndex;
+        const container = document.getElementById('imageContainer');
+        container.style.transform = `translateX(-${currentSlide * 100}%)`;
+        
+        // Обновление индикаторов
+        const indicators = document.querySelectorAll('#indicators > div');
+        indicators.forEach((indicator, index) => {
+            indicator.className = `w-2 h-2 rounded-full cursor-pointer ${index === currentSlide ? 'bg-white' : 'bg-white bg-opacity-50'}`;
+        });
+    }
+    
+    function closeModal() {
+        document.getElementById('propertyModal').classList.add('hidden');
+    }
+    
+    // Delete function
+    async function deleteProperty(propertyId) {
+        if (!confirm('Вы уверены, что хотите удалить это объявление?')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/v1/companies/properties/${propertyId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Ошибка при удалении объявления');
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            alert('Ошибка при удалении объявления');
+        }
+    }
+    
+    // Закрытие модального окна по нажатию Escape
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeModal();
+        }
+    });
+    
+    // Закрытие модального окна по клику вне его
+    document.getElementById('propertyModal').addEventListener('click', function(event) {
+        if (event.target === this) {
+            closeModal();
+        }
+    });
 </script>
 {% endblock %} 

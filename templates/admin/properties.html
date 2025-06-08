@@ -92,6 +92,8 @@
                             class="py-3 px-4 text-left font-medium">Объявление</th>
                         <th class="py-3 px-4 text-left font-medium">Автор</th>
                         <th
+                            class="py-3 px-4 text-left font-medium">Категория</th>
+                        <th
                             class="py-3 px-4 text-left font-medium">Стоимость</th>
                         <th class="py-3 px-4 text-left font-medium">Статус</th>
                         <th class="py-3 px-4 text-left font-medium">Дата
@@ -124,6 +126,9 @@
                                     <div
                                         class="text-xs text-gray-500 truncate max-w-xs">{{
                                         property.address }}</div>
+                                    {% if property.rooms %}
+                                    <div class="text-xs text-gray-400">{{ property.rooms }} комн. • {{ property.area or 'Н/Д' }} м²</div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </td>
@@ -139,6 +144,15 @@
                                 </div>
                             </div>
                         </td>
+                        <td class="py-3 px-4">
+                            {% if property.category %}
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                {{ property.category.name }}
+                            </span>
+                            {% else %}
+                            <span class="text-xs text-gray-400">Не указана</span>
+                            {% endif %}
+                        </td>
                         <td class="py-3 px-4 font-medium text-orange-500">{{
                             property.price_formatted }}</td>
                         <td class="py-3 px-4">
@@ -153,7 +167,7 @@
 
                         </td>
                         <td class="py-3 px-4 text-sm text-gray-500">{{
-                            property.created_at }}</td>
+                            property.created_at[:10] if property.created_at else 'Н/Д' }}</td>
                         <td class="py-3 px-4 text-sm">{{ property.views }}</td>
                         <td class="py-3 px-4">
                             {% if property.has_tour %}
@@ -169,23 +183,9 @@
                                 <button type="button"
                                     class="p-1.5 bg-gray-100 rounded-md text-gray-600 hover:bg-gray-200 view-property"
                                     title="Просмотр"
-                                    onclick="event.preventDefault(); event.stopPropagation();"
-                                    data-property-id="{{ property.id }}"
-                                    data-property-title="{{ property.title }}"
-                                    data-property-address="{{ property.address }}"
-                                    data-property-price="{{ property.price_formatted }}"
-                                    data-property-area="{{ property.area }}"
-                                    data-property-status="{{ property.status_display }}"
-                                    data-property-owner="{{ property.owner_name }}"
-                                    data-property-image="{{ property.image_url }}"
-                                    data-property-rooms="{{ property.rooms }}"
-                                    data-property-floor="{{ property.floor }}"
-                                    data-property-building-floors="{{ property.building_floors }}"
-                                    data-property-views="{{ property.views }}"
-                                    data-property-created="{{ property.created_at }}">
+                                    data-property='{{ property | tojson | safe }}'>
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <input type="hidden" class="property-description-hidden" value="{{ property.description|replace('\n', ' ')|e }}">
                                 <button
                                     class="p-1.5 bg-green-100 rounded-md text-green-600 hover:bg-green-200 upload-360-btn"
                                     title="Загрузить 360° панораму"
@@ -198,7 +198,7 @@
                     {% endfor %}
                     {% else %}
                     <tr>
-                        <td colspan="8"
+                        <td colspan="9"
                             class="py-10 px-4 text-center text-gray-500">
                             <div class="text-5xl opacity-30 mb-3">
                                 <i class="fas fa-building"></i>
@@ -221,8 +221,8 @@
                 объявлений
             </div>
             <div class="flex space-x-1">
-                {% if page > 1 %}
-                <a href="{{ url_for('admin_properties', page=page-1) }}{% if query_params %}{{ query_params }}{% endif %}"
+                {% if current_page > 1 %}
+                <a href="{{ url_for('admin_properties', page=current_page-1) }}{% if status %}&status={{ status }}{% endif %}{% if property_type %}&property_type={{ property_type }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
                     class="w-8 h-8 flex items-center justify-center rounded border text-gray-600 hover:bg-gray-100">
                     <i class="fas fa-chevron-left text-xs"></i>
                 </a>
@@ -234,14 +234,14 @@
                 {% endif %}
 
                 {% for p in pages %}
-                <a href="{{ url_for('admin_properties', page=p) }}{% if query_params %}{{ query_params }}{% endif %}"
+                <a href="{{ url_for('admin_properties', page=p) }}{% if status %}&status={{ status }}{% endif %}{% if property_type %}&property_type={{ property_type }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
                     class="w-8 h-8 flex items-center justify-center rounded border {% if p == current_page %}bg-orange-500 text-white border-orange-500{% else %}text-gray-600 hover:bg-gray-100{% endif %}">
                     {{ p }}
                 </a>
                 {% endfor %}
 
-                {% if page < total_pages %}
-                <a href="{{ url_for('admin_properties', page=page+1) }}{% if query_params %}{{ query_params }}{% endif %}"
+                {% if current_page < total_pages %}
+                <a href="{{ url_for('admin_properties', page=current_page+1) }}{% if status %}&status={{ status }}{% endif %}{% if property_type %}&property_type={{ property_type }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
                     class="w-8 h-8 flex items-center justify-center rounded border text-gray-600 hover:bg-gray-100">
                     <i class="fas fa-chevron-right text-xs"></i>
                 </a>
@@ -256,183 +256,158 @@
         {% endif %}
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
-<script src="{{ url_for('static', path='js/property-360-fixed.js') }}"></script>
-<!-- Добавляем скрытое поле для токена авторизации -->
-<input type="hidden" id="admin-token" value="{{ request.cookies.get('access_token', '') }}">
-<script>
-            $(document).ready(function() {
-        // Просмотр объявления
-        $('.properties-card').on('click', '.fa-eye', function() {
-            const row = $(this).closest('tr');
-            const propertyId = row.find('td:first-child div div:nth-child(2)').text().replace('ID: ', '');
-            window.open(`/property/${propertyId}`, '_blank');
-        });
+<!-- Модальное окно просмотра объявления -->
+<div id="property-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-10 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b pb-3 mb-4">
+            <h3 id="property-modal-title" class="text-lg font-semibold text-gray-900"></h3>
+            <button class="close-modal text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
         
-        // Редактирование объявления
-        $('.properties-card').on('click', '.fa-edit', function() {
-            const row = $(this).closest('tr');
-            const propertyId = row.find('td:first-child div div:nth-child(2)').text().replace('ID: ', '');
-            window.location.href = `/admin/properties/${propertyId}/edit`;
-        });
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Слайдер изображений -->
+            <div class="relative">
+                <div id="image-slider" class="relative bg-gray-200 rounded-lg overflow-hidden" style="height: 400px;">
+                    <div id="image-container" class="flex transition-transform duration-300 ease-in-out h-full">
+                        <!-- Изображения будут добавлены через JavaScript -->
+                    </div>
+                    
+                    <!-- Кнопки навигации -->
+                    <button id="prev-btn" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 hidden">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button id="next-btn" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 hidden">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    
+                    <!-- Индикаторы -->
+                    <div id="indicators" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2"></div>
+                </div>
+            </div>
+            
+            <!-- Информация об объявлении -->
+            <div class="space-y-4">
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-900 mb-2">Основная информация</h4>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-500">ID:</span>
+                            <span id="property-modal-id" class="font-medium ml-2"></span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Статус:</span>
+                            <span id="property-modal-status" class="font-medium ml-2"></span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Категория:</span>
+                            <span id="property-modal-category" class="font-medium ml-2"></span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Тип:</span>
+                            <span id="property-modal-type" class="font-medium ml-2"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-900 mb-2">Адрес</h4>
+                    <p id="property-modal-address" class="text-gray-600"></p>
+                    <p id="property-modal-city" class="text-gray-500 text-sm"></p>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-900 mb-2">Описание</h4>
+                    <p id="property-modal-description" class="text-gray-600"></p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <div class="text-2xl font-bold text-primary" id="property-modal-price"></div>
+                        <div class="text-sm text-gray-500">Цена</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-gray-900" id="property-modal-area"></div>
+                        <div class="text-sm text-gray-500">Площадь</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-gray-900" id="property-modal-rooms"></div>
+                        <div class="text-sm text-gray-500">Комнаты</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-gray-900" id="property-modal-floor"></div>
+                        <div class="text-sm text-gray-500">Этаж</div>
+                    </div>
+                </div>
+                
+                <!-- Удобства -->
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-900 mb-2">Удобства</h4>
+                    <div id="property-modal-amenities" class="grid grid-cols-3 gap-2 text-sm"></div>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-900 mb-2">Владелец</h4>
+                    <div class="text-sm">
+                        <div>
+                            <span class="text-gray-500">Имя:</span>
+                            <span id="property-modal-owner" class="font-medium ml-2"></span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Email:</span>
+                            <span id="property-modal-owner-email" class="font-medium ml-2"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-900 mb-2">Статистика</h4>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-500">Просмотры:</span>
+                            <span id="property-modal-views" class="font-medium ml-2"></span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Дата создания:</span>
+                            <span id="property-modal-created" class="font-medium ml-2"></span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">360° тур:</span>
+                            <span id="property-modal-tour" class="font-medium ml-2"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
-        // Удаление объявления
-        $('.properties-card').on('click', '.fa-trash', function() {
-            const row = $(this).closest('tr');
-            const propertyId = row.find('td:first-child div div:nth-child(2)').text().replace('ID: ', '');
-            if (confirm(`Вы уверены, что хотите удалить объявление #${propertyId}?`)) {
-                fetch(`/api/v1/properties/${propertyId}`, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        row.fadeOut(300, function() {
-                            $(this).remove();
-                        });
-                    } else {
-                        alert(`Ошибка при удалении: ${data.message}`);
-                    }
-                })
-                .catch(error => {
-                    console.error('Ошибка:', error);
-                    alert('Произошла ошибка при удалении объявления');
-                });
-            }
-                });
-            });
-        </script>
-<script>
-$(document).ready(function() {
-    // Обработка клика по кнопке просмотра объекта
-    $('.view-property').on('click', function(e) {
-        // Предотвращаем переход по ссылке
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Извлекаем данные объекта из атрибутов data-*
-        const id = $(this).data('property-id');
-        const title = $(this).data('property-title');
-        const address = $(this).data('property-address');
-        const price = $(this).data('property-price');
-        const area = $(this).data('property-area');
-        const status = $(this).data('property-status');
-        const owner = $(this).data('property-owner');
-        const image = $(this).data('property-image');
-        const description = $(this).closest('tr').find('.property-description-hidden').val() || 'Нет описания';
-        const rooms = $(this).data('property-rooms') || 'Н/Д';
-        const floor = $(this).data('property-floor') || 'Н/Д';
-        const buildingFloors = $(this).data('property-building-floors') || 'Н/Д';
-        const views = $(this).data('property-views') || '0';
-        const created = $(this).data('property-created');
-        
-        console.log('Клик по кнопке просмотра', id, title);
-        
-        // Заполняем модальное окно данными
-        $('#property-modal-title').text(title);
-        $('#property-modal-id').text(id);
-        $('#property-modal-image').attr('src', image);
-        $('#property-modal-address').text(address);
-        $('#property-modal-price').text(price);
-        $('#property-modal-area').text(area ? area + ' м²' : 'Не указано');
-        $('#property-modal-status').text(status);
-        $('#property-modal-rooms').text(rooms);
-        $('#property-modal-floor').text(floor + '/' + buildingFloors);
-        $('#property-modal-description').text(description);
-        $('#property-modal-owner').text(owner);
-        $('#property-modal-views').text(views);
-        $('#property-modal-created').text(created);
-        
-        // Отображаем модальное окно
-        $('#property-modal').removeClass('hidden');
-        
-        return false;
-    });
-    
-    // Закрытие модального окна
-    $('.close-modal, #property-modal-backdrop').on('click', function() {
-        $('#property-modal').addClass('hidden');
-    });
-    
-    // Предотвращаем закрытие модального окна при клике на его содержимое
-    $('.modal-content').on('click', function(e) {
-        e.stopPropagation();
-    });
-    
-    $('.property-filters').on('change', function() {
-        $('#filter-form').submit();
-    });
-    
-    // Нажатие на кнопку расширенного поиска
-    $('#toggle-filters').on('click', function() {
-        $('.advanced-filters').slideToggle();
-    });
-    
-    // Переключение всех комнат
-    $('#all-rooms').on('click', function() {
-        if($(this).is(':checked')) {
-            $('.room-checkbox').prop('checked', false);
-        }
-    });
-    
-    $('.room-checkbox').on('click', function() {
-        if($(this).is(':checked')) {
-            $('#all-rooms').prop('checked', false);
-        }
-    });
-    
-    // Переключение всех районов
-    $('#all-districts').on('click', function() {
-        if($(this).is(':checked')) {
-            $('.district-checkbox').prop('checked', false);
-        }
-    });
-    
-    $('.district-checkbox').on('click', function() {
-        if($(this).is(':checked')) {
-            $('#all-districts').prop('checked', false);
-        }
-    });
-    
-    // Переключение контекстного меню для объявлений
-    $('.property-actions-trigger').on('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const menu = $(this).next('.property-actions-menu');
-        $('.property-actions-menu').not(menu).removeClass('show');
-        menu.toggleClass('show');
-    });
-    
-    // Скрыть контекстное меню при клике вне его
-    $(document).on('click', function() {
-        $('.property-actions-menu').removeClass('show');
-    });
-});
-</script>
+        <div class="flex justify-end mt-6 pt-3 border-t">
+            <button class="close-modal bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg mr-2">
+                Закрыть
+            </button>
+        </div>
+    </div>
+</div>
 
 <!-- Модальное окно для загрузки 360° панорамы -->
 <div id="upload-360-modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
     <div id="upload-360-modal-backdrop" class="fixed inset-0 bg-black bg-opacity-50"></div>
     <div class="flex items-center justify-center min-h-screen p-4">
         <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-lg relative">
-            <!-- Заголовок модального окна -->
             <div class="flex items-center justify-between p-4 border-b">
                 <h2 class="text-xl font-semibold">Загрузка 360° панорамы</h2>
                 <button class="close-upload-360-modal text-gray-500 hover:text-gray-700 focus:outline-none">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <!-- Содержимое модального окна -->
             <div class="p-4">
                 <form id="upload-360-form" method="post" enctype="multipart/form-data">
                     <input type="hidden" id="property-id-for-360" name="property_id" value="">
                     <div class="mb-4">
                         <label for="tour-360-url" class="block text-sm font-medium text-gray-700 mb-1">URL 360° панорамы</label>
-                        <input type="text" id="tour-360-url" name="tour_360_url" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="https://kuula.co/share/xxxxxxx?logo=0&info=0&fs=1&vr=1&zoom=1&sd=1&thumbs=1&alpha=0.60">
-                        <p class="text-sm text-gray-500 mt-1">Вставьте ссылку на 360° панораму (например, с сервиса Kuula)</p>
+                        <input type="text" id="tour-360-url" name="tour_360_url" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="https://kuula.co/share/xxxxxxx">
+                        <p class="text-sm text-gray-500 mt-1">Вставьте ссылку на 360° панораму</p>
                     </div>
                     <div class="mb-4">
                         <label for="tour-360-date" class="block text-sm font-medium text-gray-700 mb-1">Дата съемки 360°</label>
@@ -447,88 +422,216 @@ $(document).ready(function() {
         </div>
     </div>
 </div>
+{% endblock %}
 
-<!-- Модальное окно для просмотра объекта -->
-<div id="property-modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
-    <div id="property-modal-backdrop" class="fixed inset-0 bg-black bg-opacity-50"></div>
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-90vh overflow-y-auto relative">
-            <!-- Заголовок модального окна -->
-            <div class="flex items-center justify-between p-4 border-b">
-                <h2 class="text-xl font-semibold" id="property-modal-title"></h2>
-                <button class="close-modal text-gray-500 hover:text-gray-700 focus:outline-none">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <!-- Контент модального окна -->
-            <div class="p-6">
-                <div class="flex flex-col md:flex-row gap-6">
-                    <!-- Левая колонка с изображением -->
-                    <div class="md:w-2/5">
-                        <div class="relative bg-gray-100 rounded-lg overflow-hidden mb-4">
-                            <img id="property-modal-image" src="" alt="Фото объекта" class="w-full h-64 object-cover">
-                            <div class="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs font-medium">
-                                ID: <span id="property-modal-id"></span>
-                            </div>
-                        </div>
-                        <div class="p-4 bg-gray-50 rounded-lg">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-gray-600">Цена:</span>
-                                <span class="font-semibold text-orange-500" id="property-modal-price"></span>
-                            </div>
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-gray-600">Площадь:</span>
-                                <span class="font-medium" id="property-modal-area"></span>
-                            </div>
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-gray-600">Комнаты:</span>
-                                <span class="font-medium" id="property-modal-rooms"></span>
-                            </div>
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-gray-600">Этаж:</span>
-                                <span class="font-medium" id="property-modal-floor"></span>
-                            </div>
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-gray-600">Статус:</span>
-                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800" id="property-modal-status"></span>
-                            </div>
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-gray-600">Собственник:</span>
-                                <span class="font-medium" id="property-modal-owner"></span>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Правая колонка с информацией -->
-                    <div class="md:w-3/5">
-                        <div class="mb-4">
-                            <h3 class="text-lg font-medium mb-2">Адрес</h3>
-                            <p class="text-gray-700" id="property-modal-address"></p>
-                        </div>
-                        <div class="mb-4">
-                            <h3 class="text-lg font-medium mb-2">Описание</h3>
-                            <p class="text-gray-700" id="property-modal-description"></p>
-                        </div>
-                        <div class="mb-4">
-                            <h3 class="text-lg font-medium mb-2">Статистика</h3>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="p-3 bg-gray-50 rounded-lg">
-                                    <div class="text-gray-500 text-sm">Просмотры</div>
-                                    <div class="font-semibold text-lg" id="property-modal-views"></div>
-                                </div>
-                                <div class="p-3 bg-gray-50 rounded-lg">
-                                    <div class="text-gray-500 text-sm">Дата создания</div>
-                                    <div class="font-semibold text-lg" id="property-modal-created"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- Футер модального окна -->
-            <div class="border-t p-4 flex justify-end gap-2">
-                <button class="close-modal px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:outline-none">Закрыть</button>
-            </div>
-        </div>
-    </div>
-</div>
+{% block extra_js %}
+<script>
+let currentSlide = 0;
+let totalSlides = 0;
+
+$(document).ready(function() {
+    // Функция просмотра объявления в модальном окне
+    $('.view-property').on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const propertyData = $(this).data('property');
+        
+        if (!propertyData) return;
+        
+        // Заполнение данных модального окна
+        $('#property-modal-title').text(propertyData.title);
+        $('#property-modal-id').text(propertyData.id);
+        $('#property-modal-address').text(propertyData.address);
+        $('#property-modal-city').text(propertyData.city);
+        $('#property-modal-description').text(propertyData.description || 'Описание не указано');
+        $('#property-modal-price').text(propertyData.price_formatted);
+        $('#property-modal-area').text((propertyData.area || 'Н/Д') + (propertyData.area ? ' м²' : ''));
+        $('#property-modal-rooms').text(propertyData.rooms || 'Н/Д');
+        $('#property-modal-floor').text((propertyData.floor && propertyData.building_floors) ? `${propertyData.floor}/${propertyData.building_floors}` : 'Н/Д');
+        $('#property-modal-views').text(propertyData.views || 0);
+        $('#property-modal-created').text(propertyData.created_at ? propertyData.created_at.substring(0, 10) : 'Н/Д');
+        $('#property-modal-owner').text(propertyData.owner_name || 'Не указан');
+        $('#property-modal-owner-email').text(propertyData.owner_email || 'Не указан');
+        $('#property-modal-category').text(propertyData.category ? propertyData.category.name : 'Не указана');
+        $('#property-modal-type').text(propertyData.type === 'apartment' ? 'Квартира' : 
+                                       propertyData.type === 'house' ? 'Дом' : 
+                                       propertyData.type === 'commercial' ? 'Коммерческое' : 'Другое');
+        $('#property-modal-tour').text(propertyData.has_tour ? 'Есть' : 'Нет');
+        
+        // Заполнение удобств
+        const amenities = [];
+        if (propertyData.has_balcony) amenities.push('Балкон');
+        if (propertyData.has_furniture) amenities.push('Мебель');
+        if (propertyData.has_renovation) amenities.push('Ремонт');
+        if (propertyData.has_parking) amenities.push('Парковка');
+        if (propertyData.has_elevator) amenities.push('Лифт');
+        if (propertyData.has_security) amenities.push('Охрана');
+        if (propertyData.has_internet) amenities.push('Интернет');
+        if (propertyData.has_air_conditioning) amenities.push('Кондиционер');
+        if (propertyData.has_heating) amenities.push('Отопление');
+        if (propertyData.has_yard) amenities.push('Двор/сад');
+        if (propertyData.has_pool) amenities.push('Бассейн');
+        if (propertyData.has_gym) amenities.push('Спортзал');
+        
+        const amenitiesHtml = amenities.length > 0 ? 
+            amenities.map(a => `<span class="text-green-600"><i class="fas fa-check mr-1"></i>${a}</span>`).join('') :
+            '<span class="text-gray-500">Удобства не указаны</span>';
+        
+        $('#property-modal-amenities').html(amenitiesHtml);
+        
+        // Загрузка изображений в слайдер
+        setupImageSlider(propertyData.all_images || [{url: propertyData.image_url, is_main: true}]);
+        
+        // Показ модального окна
+        $('#property-modal').removeClass('hidden');
+    });
+
+    // 360° функционал
+    $('.upload-360-btn').on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const propertyId = $(this).data('property-id');
+        $('#property-id-for-360').val(propertyId);
+        $('#upload-360-modal').removeClass('hidden');
+        
+        // Сброс формы
+        $('#tour-360-url').val('');
+        $('#tour-360-date').val('');
+        
+        // Загружаем существующие данные 360°
+        fetch(`/api/v1/admin/properties/${propertyId}/360`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.tour_360_url) {
+                    $('#tour-360-url').val(data.tour_360_url);
+                }
+                if (data.tour_360_date) {
+                    $('#tour-360-date').val(data.tour_360_date);
+                }
+            })
+            .catch(error => console.error('Ошибка загрузки данных 360°:', error));
+    });
+
+    $('.close-upload-360-modal, #upload-360-modal-backdrop').on('click', function() {
+        $('#upload-360-modal').addClass('hidden');
+    });
+
+    $('#save-360-btn').on('click', function() {
+        const propertyId = $('#property-id-for-360').val();
+        const tourUrl = $('#tour-360-url').val();
+        const tourDate = $('#tour-360-date').val();
+        
+        if (!tourUrl.trim()) {
+            alert('Пожалуйста, укажите URL 360° панорамы');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('tour_360_url', tourUrl);
+        if (tourDate) {
+            formData.append('tour_360_date', tourDate);
+        }
+        
+        fetch(`/api/v1/admin/properties/${propertyId}/360`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('360° панорама успешно сохранена!');
+                $('#upload-360-modal').addClass('hidden');
+                location.reload();
+            } else {
+                alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка при сохранении данных 360°:', error);
+            alert('Произошла ошибка при сохранении данных');
+        });
+    });
+
+    // Закрытие модального окна
+    $('.close-modal, #property-modal').on('click', function(e) {
+        if (e.target === this) {
+            $('#property-modal').addClass('hidden');
+        }
+    });
+
+    // Фильтры
+    $('.property-filters').on('change', function() {
+        $('#filter-form').submit();
+    });
+
+    // Закрытие модального окна по нажатию Escape
+    $(document).on('keydown', function(event) {
+        if (event.key === 'Escape') {
+            $('#property-modal').addClass('hidden');
+            $('#upload-360-modal').addClass('hidden');
+        }
+    });
+});
+
+// Настройка слайдера изображений
+function setupImageSlider(images) {
+    const container = $('#image-container');
+    const indicators = $('#indicators');
+    const prevBtn = $('#prev-btn');
+    const nextBtn = $('#next-btn');
+    
+    container.empty();
+    indicators.empty();
+    currentSlide = 0;
+    totalSlides = images.length;
+    
+    if (totalSlides === 0) {
+        container.html('<div class="w-full h-full flex items-center justify-center bg-gray-100"><i class="fas fa-image text-gray-400 text-4xl"></i></div>');
+        prevBtn.addClass('hidden');
+        nextBtn.addClass('hidden');
+        return;
+    }
+    
+    // Создание изображений
+    images.forEach((image, index) => {
+        const img = $('<img>').attr({
+            'src': image.url,
+            'class': 'w-full h-full object-cover flex-shrink-0',
+            'style': 'width: 100%'
+        });
+        container.append(img);
+        
+        // Создание индикаторов
+        const indicator = $('<div>').attr({
+            'class': `w-2 h-2 rounded-full cursor-pointer ${index === 0 ? 'bg-white' : 'bg-white bg-opacity-50'}`
+        }).on('click', () => goToSlide(index));
+        indicators.append(indicator);
+    });
+    
+    // Показ кнопок навигации только если больше одного изображения
+    if (totalSlides > 1) {
+        prevBtn.removeClass('hidden').off('click').on('click', () => goToSlide(currentSlide - 1));
+        nextBtn.removeClass('hidden').off('click').on('click', () => goToSlide(currentSlide + 1));
+    } else {
+        prevBtn.addClass('hidden');
+        nextBtn.addClass('hidden');
+    }
+}
+
+function goToSlide(slideIndex) {
+    if (slideIndex < 0) slideIndex = totalSlides - 1;
+    if (slideIndex >= totalSlides) slideIndex = 0;
+    
+    currentSlide = slideIndex;
+    const container = $('#image-container');
+    container.css('transform', `translateX(-${currentSlide * 100}%)`);
+    
+    // Обновление индикаторов
+    $('#indicators > div').each((index, indicator) => {
+        $(indicator).attr('class', `w-2 h-2 rounded-full cursor-pointer ${index === currentSlide ? 'bg-white' : 'bg-white bg-opacity-50'}`);
+    });
+}
+</script>
 {% endblock %}

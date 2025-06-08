@@ -1556,14 +1556,27 @@ async def admin_properties(
     enhanced_properties = []
     
     for prop in properties_results:
-        # Находим главное изображение или используем заглушку
-        image_url = "/static/layout/assets/img/property-placeholder.jpg"
-        if prop.images:
-            main_images = [img for img in prop.images if img.is_main]
-            if main_images:
-                image_url = main_images[0].url
-            else:
-                image_url = prop.images[0].url if prop.images else image_url
+        # Получаем все изображения объявления
+        property_images = []
+        main_image_url = "/static/layout/assets/img/property-placeholder.jpg"
+        
+        try:
+            for img in prop.images:
+                if img.url:
+                    property_images.append({
+                        'url': img.url,
+                        'is_main': img.is_main
+                    })
+                    # Устанавливаем главное изображение
+                    if img.is_main:
+                        main_image_url = img.url
+            
+            # Если нет главного изображения, берем первое
+            if main_image_url == "/static/layout/assets/img/property-placeholder.jpg" and property_images:
+                main_image_url = property_images[0]['url']
+                
+        except Exception as e:
+            print(f"Ошибка при получении изображений для объявления ID={prop.id}: {e}")
         
         # Форматируем цену
         price_formatted = f"{prop.price:,.0f} KGZ" if prop.price else "Цена не указана"
@@ -1577,7 +1590,7 @@ async def admin_properties(
             "sold": "Продано"
         }
         
-        status_val = prop.status.value if prop.status else "draft"
+        status_val = prop.status if prop.status else "draft"
         status_display = status_map.get(status_val, "Неизвестно")
         
         # Проверяем наличие 360° тура
@@ -1586,31 +1599,66 @@ async def admin_properties(
         # Количество просмотров для объектов на модерации - 0
         views = 0 if status_val == "pending" else prop.views if hasattr(prop, 'views') and prop.views else 0
         
+        # Получаем информацию о категории
+        category_info = None
+        try:
+            property_category = db.query(models.PropertyCategory).filter(
+                models.PropertyCategory.property_id == prop.id
+            ).first()
+            
+            if property_category:
+                category = db.query(models.Category).filter(
+                    models.Category.id == property_category.category_id
+                ).first()
+                if category:
+                    category_info = {'name': category.name, 'id': category.id}
+        except Exception as e:
+            print(f"Ошибка при получении категории: {e}")
+            category_info = None
+        
         # Добавляем данные в массив
         enhanced_properties.append({
             "id": prop.id,
             "title": prop.title or f"Объект #{prop.id}",
-            "description": prop.description,
+            "description": prop.description or "",
             "price": prop.price,
             "price_formatted": price_formatted,
             "address": prop.address or "Адрес не указан",
-            "city": prop.city,
+            "city": prop.city or "Бишкек",
             "area": prop.area,
             "status": status_val,
             "status_display": status_display,
             "owner_id": prop.owner_id,
             "owner_name": prop.owner.full_name if prop.owner else "Нет данных",
-            "image_url": image_url,
-            "created_at": prop.created_at.isoformat() if prop.created_at else None,  # Конвертируем datetime в строку
+            "owner_email": prop.owner.email if prop.owner else "",
+            "image_url": main_image_url,
+            "all_images": property_images,  # Все изображения для слайдера
+            "created_at": prop.created_at.isoformat() if prop.created_at else None,
             "views": views,
             "has_tour": has_tour,
+            "tour_360_url": prop.tour_360_url if hasattr(prop, 'tour_360_url') else None,
+            "tour_360_date": prop.tour_360_date if hasattr(prop, 'tour_360_date') else None,
+            # Характеристики объекта
             "rooms": prop.rooms,
             "floor": prop.floor,
             "building_floors": prop.building_floors,
-            "has_balcony": prop.has_balcony,
-            "has_furniture": prop.has_furniture,
-            "has_renovation": prop.has_renovation,
-            "has_parking": prop.has_parking
+            "bathroom_type": prop.bathroom_type if hasattr(prop, 'bathroom_type') else None,
+            "type": prop.type or "apartment",
+            # Удобства
+            "has_balcony": prop.has_balcony if hasattr(prop, 'has_balcony') else False,
+            "has_furniture": prop.has_furniture if hasattr(prop, 'has_furniture') else False,
+            "has_renovation": prop.has_renovation if hasattr(prop, 'has_renovation') else False,
+            "has_parking": prop.has_parking if hasattr(prop, 'has_parking') else False,
+            "has_elevator": prop.has_elevator if hasattr(prop, 'has_elevator') else False,
+            "has_security": prop.has_security if hasattr(prop, 'has_security') else False,
+            "has_internet": prop.has_internet if hasattr(prop, 'has_internet') else False,
+            "has_air_conditioning": prop.has_air_conditioning if hasattr(prop, 'has_air_conditioning') else False,
+            "has_heating": prop.has_heating if hasattr(prop, 'has_heating') else False,
+            "has_yard": prop.has_yard if hasattr(prop, 'has_yard') else False,
+            "has_pool": prop.has_pool if hasattr(prop, 'has_pool') else False,
+            "has_gym": prop.has_gym if hasattr(prop, 'has_gym') else False,
+            # Категория
+            "category": category_info
         })
     
     # Вычисляем начальный и конечный индексы для пагинации
@@ -1683,6 +1731,9 @@ async def admin_requests(request: Request, tab: str = Query('listings'), status:
     if isinstance(user, RedirectResponse):
         return user
     
+    # Получаем все категории для фильтра
+    categories = db.query(models.Category).all()
+    
     # Получаем количество объявлений по типам
     try:
         # Для таба tours будем считать объявления с запросом на съемку 360
@@ -1692,13 +1743,13 @@ async def admin_requests(request: Request, tab: str = Query('listings'), status:
         
         # Для таба listings будем считать только объявления со статусом PENDING
         listing_requests_count = db.query(models.Property).filter(
-            models.Property.status == 'PENDING'
+            models.Property.status == 'pending'
         ).count()
     except Exception as e:
         print(f"Error counting properties: {e}")
         tour_requests_count = 0
         listing_requests_count = 0
-    
+
     # Получаем список объявлений из БД
     try:
         # Создаем базовый запрос к таблице properties
@@ -1714,23 +1765,23 @@ async def admin_requests(request: Request, tab: str = Query('listings'), status:
             # Для таба tours берем только принятые объявления с запросом на съемку 360
             query = query.filter(
                 models.Property.tour_360_url.like('%example.com%'),
-                models.Property.status.in_(['ACTIVE', 'PROCESSING'])
+                models.Property.status.in_(['active', 'processing'])
             )
         elif tab == 'listings':
             # Для таба listings берем все объявления со статусом PENDING (на модерации)
             query = query.filter(
-                models.Property.status == 'PENDING'
+                models.Property.status == 'pending'
             )
             
         # Фильтрация по статусу, если указан
         if status:
             if status == 'new':
-                query = query.filter(models.Property.status.in_(['NEW', 'PENDING']))
+                query = query.filter(models.Property.status.in_(['new', 'pending']))
             else:
                 status_map = {
-                    'in_progress': 'PROCESSING',
-                    'completed': 'ACTIVE',
-                    'rejected': 'REJECTED'
+                    'in_progress': 'processing',
+                    'completed': 'active',
+                    'rejected': 'rejected'
                 }
                 if status in status_map:
                     query = query.filter(models.Property.status == status_map[status])
@@ -1782,12 +1833,12 @@ async def admin_requests(request: Request, tab: str = Query('listings'), status:
         
         # Маппинг статусов из БД в формат для шаблона
         status_map_reverse = {
-            'NEW': 'new',
-            'PENDING': 'new',
-            'PROCESSING': 'in_progress',
-            'ACTIVE': 'completed',
-            'REJECTED': 'rejected',
-            'INACTIVE': 'rejected'
+            'new': 'new',
+            'pending': 'new',
+            'processing': 'in_progress',
+            'active': 'completed',
+            'rejected': 'rejected',
+            'inactive': 'rejected'
         }
         
         for prop in properties:
@@ -1873,102 +1924,47 @@ async def admin_requests(request: Request, tab: str = Query('listings'), status:
         end_idx = min(start_idx + len(requests_data), total_items)
         
     except Exception as e:
-        print(f"Error getting requests: {e}")
+        print(f"Ошибка в получении заявок: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
         requests_data = []
         total_items = 0
         total_pages = 1
+        start_idx = 0
+        end_idx = 0
     
-    # Пагинация
-    items_per_page = 10
-    total_pages = (total_items + items_per_page - 1) // items_per_page if total_items > 0 else 1
-    
-    # Проверяем корректность номера страницы
-    if page > total_pages and total_pages > 0:
-        page = total_pages
-    
-    # Получаем элементы для текущей страницы
-    start_idx = (page - 1) * items_per_page
-    end_idx = min(start_idx + items_per_page, total_items)
-    page_items = requests_data[start_idx:end_idx] if total_items > 0 else []
-    
-    # Вычисляем метрики для отображения
-    try:
-        metrics_query = db.query(models.Property)
-        
-        # Фильтрация по типу объявления
-        if tab == 'tours':
-            metrics_query = metrics_query.filter(
-                models.Property.tour_360_url.isnot(None),
-                models.Property.tour_360_url != ''
-            )
-        elif tab == 'listings':
-            metrics_query = metrics_query.filter(
-                or_(models.Property.tour_360_url.is_(None),
-                   models.Property.tour_360_url == '')
-            )
-        
-        # Количество принятых/активных объявлений
-        accepted_count = metrics_query.filter(models.Property.status == 'ACTIVE').count()
-        
-        # Количество отклоненных объявлений
-        rejected_count = metrics_query.filter(models.Property.status.in_(['REJECTED', 'INACTIVE'])).count()
-        
-        # Количество ожидающих объявлений
-        pending_count = metrics_query.filter(
-            models.Property.status.in_(['NEW', 'PENDING', 'PROCESSING'])
-        ).count()
-        
-        # Формируем метрики
-        metrics = {
-            'accepted': accepted_count,
-            'rejected': rejected_count,
-            'pending': pending_count,
-            'avg_time': "1.2 дня"  # Упрощенное значение
-        }
-    except Exception as e:
-        print(f"Error calculating metrics: {e}")
-        metrics = {
-            'accepted': 0,
-            'rejected': 0,
-            'pending': 0,
-            'avg_time': "0 дней"
-        }
-
-    # Формируем строку параметров запроса для пагинации
+    # Получаем параметры запроса для пагинации
     query_params = ""
+    if tab:
+        query_params += f"&tab={tab}"
     if status:
         query_params += f"&status={status}"
     if property_type:
         query_params += f"&property_type={property_type}"
     if search:
         query_params += f"&search={search}"
-        
+    
     # Генерируем список страниц для навигации
     page_range = range(max(1, page - 2), min(total_pages + 1, page + 3))
     
-    # Получаем все категории для фильтра
-    categories = db.query(models.Category).all()
-    
     return templates.TemplateResponse("admin/requests.html", {
         "request": request,
-        "user": user,
+        "current_admin": user,
+        "requests": requests_data,
         "tab": tab,
         "status": status,
         "property_type": property_type,
         "search": search,
-        "requests": page_items,
-        "tour_requests_count": tour_requests_count,
-        "listing_requests_count": listing_requests_count,
-        "metrics": metrics,
-        "page": page,
+        "categories": categories,  # Добавляем категории
+        "total_items": total_items,
         "total_pages": total_pages,
-        "total_requests": total_items,
-        "items_per_page": items_per_page,
+        "current_page": page,
+        "pages": page_range,
         "start_item": start_idx + 1 if total_items > 0 else 0,
         "end_item": end_idx,
-        "pages": page_range,
-        "query_params": query_params,
-        "categories": categories,
+        "listing_requests_count": listing_requests_count,
+        "tour_requests_count": tour_requests_count,
+        "query_params": query_params
     })
 
 @app.get("/admin/settings", response_class=HTMLResponse, name="admin_settings")
@@ -4915,3 +4911,80 @@ async def get_property_360(
     }
 
 # API для работы с заявками (Requests)
+
+@app.get("/api/v1/admin/properties/{property_id}/360")
+async def get_admin_property_360(
+    property_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    """Получение данных 360° панорамы для админки"""
+    # Проверяем доступ администратора
+    user = await check_admin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return {"success": False, "message": "Доступ запрещен"}
+    
+    try:
+        # Получаем объявление
+        property_obj = db.query(models.Property).filter(
+            models.Property.id == property_id
+        ).first()
+        
+        if not property_obj:
+            return {"success": False, "message": "Объявление не найдено"}
+        
+        return {
+            "success": True,
+            "tour_360_url": property_obj.tour_360_url if hasattr(property_obj, 'tour_360_url') else None,
+            "tour_360_date": property_obj.tour_360_date.isoformat() if hasattr(property_obj, 'tour_360_date') and property_obj.tour_360_date else None
+        }
+        
+    except Exception as e:
+        print(f"Ошибка при получении данных 360°: {e}")
+        return {"success": False, "message": f"Ошибка сервера: {str(e)}"}
+
+@app.post("/api/v1/admin/properties/{property_id}/360")
+async def update_admin_property_360(
+    property_id: int,
+    request: Request,
+    tour_360_url: str = Form(...),
+    tour_360_date: str = Form(None),
+    db: Session = Depends(deps.get_db)
+):
+    """Обновление 360° панорамы объявления в админке"""
+    # Проверяем доступ администратора
+    user = await check_admin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return {"success": False, "message": "Доступ запрещен"}
+    
+    try:
+        # Получаем объявление
+        property_obj = db.query(models.Property).filter(
+            models.Property.id == property_id
+        ).first()
+        
+        if not property_obj:
+            return {"success": False, "message": "Объявление не найдено"}
+        
+        # Обновляем данные 360°
+        if hasattr(property_obj, 'tour_360_url'):
+            property_obj.tour_360_url = tour_360_url
+        
+        if tour_360_date and hasattr(property_obj, 'tour_360_date'):
+            try:
+                from datetime import datetime
+                property_obj.tour_360_date = datetime.fromisoformat(tour_360_date).date()
+            except ValueError:
+                pass  # Игнорируем неверный формат даты
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "360° панорама успешно обновлена"
+        }
+        
+    except Exception as e:
+        print(f"Ошибка при обновлении 360°: {e}")
+        db.rollback()
+        return {"success": False, "message": f"Ошибка сервера: {str(e)}"}

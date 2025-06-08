@@ -1,59 +1,55 @@
-from fastapi import FastAPI, Request, Depends, Form, status, HTTPException, Query, WebSocket, WebSocketDisconnect, Response, UploadFile, File
+import os
+import uuid
+import json
+import sys
+import asyncio
+import subprocess
+import openpyxl
+import pandas as pd
+import random
+from datetime import datetime, timedelta
+from typing import Dict, Any, Optional, List
+from io import BytesIO
+from uuid import uuid4
+
+from fastapi import FastAPI, Request, Depends, Form, status, HTTPException, Query, WebSocket, WebSocketDisconnect, Response, UploadFile, File, APIRouter
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
+from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func, desc, or_, and_, asc, text
+from sqlalchemy.types import String
+
+from passlib.context import CryptContext
+from jose import JWTError, jwt
+from jose import jwt as pyjwt
+
 from config import settings
 from api.v1.api import api_router
-from sqlalchemy.orm import Session, joinedload
 from app.api import deps
 from app.utils.security import verify_password
 from app import models
 from app.models.user import User
-from sqlalchemy import func, desc, or_, and_, asc, text
-from datetime import datetime, timedelta
-from sqlalchemy.types import String
-import pandas as pd
-import os
-from uuid import uuid4
-import json
-from flask import jsonify
-import random
-from starlette.middleware.sessions import SessionMiddleware
-from typing import Dict, Any, Optional, List
-from starlette.middleware.base import BaseHTTPMiddleware
-from jose import jwt as pyjwt
 from app.models.token import TokenPayload
-from fastapi import APIRouter
 from app.models.chat import AppChatModel, AppChatMessageModel
 from app.models.chat_message import ChatMessage
 from app.websockets.chat_manager import ConnectionManager as WebSocketManager
 from app.utils.image_helper import get_valid_image_url
 from app.models.property import PropertyCategory
-import sys
+
 try:
     import psutil
 except ImportError:
     psutil = None
-import asyncio
-import subprocess
-import openpyxl
-from io import BytesIO
-import uuid
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
-import json
-from sqlalchemy.orm import Session
-from sqlalchemy import desc, asc, and_, or_, func, text
-from fastapi import FastAPI, Request, Depends, Form, status, HTTPException, Query, WebSocket, WebSocketDisconnect, Response, UploadFile, File
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from passlib.context import CryptContext
-from jose import JWTError, jwt
-from fastapi.middleware.base import BaseHTTPMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware as StarletteBaseHTTPMiddleware
+
+try:
+    from flask import jsonify
+except ImportError:
+    pass
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()

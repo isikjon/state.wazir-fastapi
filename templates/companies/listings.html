@@ -197,9 +197,9 @@
                             <button onclick="viewProperty({{ property.id }})" class="text-primary hover:text-primary-dark" title="Просмотр">
                                 <i class="fas fa-eye"></i>
                             </button>
-                            <a href="/companies/listings/{{ property.id }}/edit" class="text-gray-400 hover:text-gray-600" title="Редактировать">
+                            <button onclick="editProperty({{ property.id }})" class="text-gray-400 hover:text-gray-600" title="Редактировать">
                                 <i class="fas fa-edit"></i>
-                            </a>
+                            </button>
                             <button onclick="open360Modal({{ property.id }})" class="text-green-600 hover:text-green-800" title="360° панорама">
                                 <i class="fas fa-vr-cardboard"></i>
                             </button>
@@ -415,6 +415,100 @@
                 <button class="close-upload-360-modal px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:outline-none">Отмена</button>
                 <button id="save-360-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none">Сохранить</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования объявления -->
+<div id="edit-property-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="text-lg font-semibold text-gray-900">Редактирование объявления</h3>
+            <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="mt-4">
+            <input type="hidden" id="edit-property-id" value="">
+            <div class="grid grid-cols-1 gap-6">
+                <div>
+                    <label for="edit-title" class="block text-sm font-medium text-gray-700 mb-2">Название</label>
+                    <input type="text" id="edit-title" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+                </div>
+                <div>
+                    <label for="edit-description" class="block text-sm font-medium text-gray-700 mb-2">Описание</label>
+                    <textarea id="edit-description" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm" rows="3"></textarea>
+                </div>
+                <div>
+                    <label for="edit-price" class="block text-sm font-medium text-gray-700 mb-2">Цена</label>
+                    <input type="text" id="edit-price" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+                </div>
+                <div>
+                    <label for="edit-address" class="block text-sm font-medium text-gray-700 mb-2">Адрес</label>
+                    <input type="text" id="edit-address" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+                </div>
+                <div>
+                    <label for="edit-city" class="block text-sm font-medium text-gray-700 mb-2">Город</label>
+                    <input type="text" id="edit-city" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+                </div>
+                <div>
+                    <label for="edit-category" class="block text-sm font-medium text-gray-700 mb-2">Категория</label>
+                    <select id="edit-category" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+                        <option value="">Выберите категорию</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="edit-area" class="block text-sm font-medium text-gray-700 mb-2">Площадь</label>
+                    <input type="text" id="edit-area" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+                </div>
+                <div>
+                    <label for="edit-rooms" class="block text-sm font-medium text-gray-700 mb-2">Комнаты</label>
+                    <input type="text" id="edit-rooms" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+                </div>
+                <div>
+                    <label for="edit-floor" class="block text-sm font-medium text-gray-700 mb-2">Этаж</label>
+                    <input type="text" id="edit-floor" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+                </div>
+                <div>
+                    <label for="edit-building-floors" class="block text-sm font-medium text-gray-700 mb-2">Этажей</label>
+                    <input type="text" id="edit-building-floors" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+                </div>
+                <div>
+                    <label for="edit-type" class="block text-sm font-medium text-gray-700 mb-2">Тип</label>
+                    <select id="edit-type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+                        <option value="">Выберите тип</option>
+                        <option value="apartment">Квартира</option>
+                        <option value="house">Дом</option>
+                        <option value="commercial">Коммерческая</option>
+                        <option value="land">Участок</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="edit-has-balcony" class="block text-sm font-medium text-gray-700 mb-2">Балкон</label>
+                    <input type="checkbox" id="edit-has-balcony" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+                </div>
+                <div>
+                    <label for="edit-has-furniture" class="block text-sm font-medium text-gray-700 mb-2">Мебель</label>
+                    <input type="checkbox" id="edit-has-furniture" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+                </div>
+                <div>
+                    <label for="edit-has-renovation" class="block text-sm font-medium text-gray-700 mb-2">Ремонт</label>
+                    <input type="checkbox" id="edit-has-renovation" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+                </div>
+                <div>
+                    <label for="edit-has-parking" class="block text-sm font-medium text-gray-700 mb-2">Парковка</label>
+                    <input type="checkbox" id="edit-has-parking" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex justify-end mt-6 pt-3 border-t">
+            <button id="save-edit-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg mr-2">Сохранить</button>
+            <button onclick="closeEditModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg">Отмена</button>
         </div>
     </div>
 </div>
@@ -636,18 +730,18 @@
         document.getElementById('tour-360-url').value = '';
         document.getElementById('tour-360-date').value = '';
         
-        // Попытка загрузить существующие данные 360° (если API реализован)
-        // fetch(`/api/v1/companies/properties/${propertyId}/360`)
-        //     .then(response => response.json())
-        //     .then(data => {
-        //         if (data.tour_360_url) {
-        //             document.getElementById('tour-360-url').value = data.tour_360_url;
-        //         }
-        //         if (data.tour_360_date) {
-        //             document.getElementById('tour-360-date').value = data.tour_360_date;
-        //         }
-        //     })
-        //     .catch(error => console.error('Ошибка загрузки данных 360°:', error));
+        // Загружаем существующие данные 360°
+        fetch(`/api/v1/companies/properties/${propertyId}/360`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.tour_360_url) {
+                    document.getElementById('tour-360-url').value = data.tour_360_url;
+                }
+                if (data.tour_360_date) {
+                    document.getElementById('tour-360-date').value = data.tour_360_date;
+                }
+            })
+            .catch(error => console.error('Ошибка загрузки данных 360°:', error));
     }
     
     // Закрытие модального окна 360°
@@ -666,31 +760,146 @@
             return;
         }
         
-        // Здесь должен быть запрос на сохранение в API
-        // Пока что просто показываем уведомление
-        alert('360° панорама успешно сохранена!\n\nURL: ' + tourUrl + (tourDate ? '\nДата: ' + tourDate : ''));
-        close360Modal();
-        
-        // Можно обновить таблицу без перезагрузки страницы
-        // Найти строку с propertyId и обновить колонку "360° Тур"
-        const propertyRow = document.querySelector(`tr[data-property-id="${propertyId}"]`);
-        if (propertyRow) {
-            const tourCell = propertyRow.querySelector('td:nth-child(8)'); // Колонка "360° Тур"
-            if (tourCell) {
-                tourCell.innerHTML = '<span class="text-blue-600 text-sm">Есть</span>';
-            }
+        // Отправляем данные на сервер
+        const formData = new FormData();
+        formData.append('tour_360_url', tourUrl);
+        if (tourDate) {
+            formData.append('tour_360_date', tourDate);
         }
+        
+        fetch(`/api/v1/companies/properties/${propertyId}/360`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                close360Modal();
+                
+                // Обновляем статус в таблице если объявление ушло на модерацию
+                if (data.status === 'pending') {
+                    location.reload(); // Перезагружаем страницу для обновления статуса
+                } else {
+                    // Обновляем колонку 360° тура
+                    const propertyRow = document.querySelector(`tr td:contains("ID: ${propertyId}")`);
+                    if (propertyRow) {
+                        const row = propertyRow.closest('tr');
+                        const tourCell = row.querySelector('td:nth-child(8)');
+                        if (tourCell) {
+                            tourCell.innerHTML = '<span class="text-blue-600 text-sm">Есть</span>';
+                        }
+                    }
+                }
+            } else {
+                alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка при сохранении данных 360°:', error);
+            alert('Произошла ошибка при сохранении данных');
+        });
     }
     
-    // Обработчики событий для модального окна 360°
+    // === ФУНКЦИИ ДЛЯ РЕДАКТИРОВАНИЯ ОБЪЯВЛЕНИЙ ===
+    
+    // Открытие модального окна редактирования
+    function editProperty(propertyId) {
+        document.getElementById('edit-property-id').value = propertyId;
+        document.getElementById('edit-property-modal').classList.remove('hidden');
+        
+        // Загружаем данные объявления
+        fetch(`/api/v1/companies/properties/${propertyId}`)
+            .then(response => response.json())
+            .then(data => {
+                // Заполняем форму
+                document.getElementById('edit-title').value = data.title || '';
+                document.getElementById('edit-description').value = data.description || '';
+                document.getElementById('edit-price').value = data.price || '';
+                document.getElementById('edit-address').value = data.address || '';
+                document.getElementById('edit-city').value = data.city || 'Бишкек';
+                document.getElementById('edit-category').value = data.category_id || '';
+                document.getElementById('edit-area').value = data.area || '';
+                document.getElementById('edit-rooms').value = data.rooms || '';
+                document.getElementById('edit-floor').value = data.floor || '';
+                document.getElementById('edit-building-floors').value = data.building_floors || '';
+                document.getElementById('edit-type').value = data.type || 'apartment';
+                
+                // Чекбоксы
+                document.getElementById('edit-has-balcony').checked = data.has_balcony || false;
+                document.getElementById('edit-has-furniture').checked = data.has_furniture || false;
+                document.getElementById('edit-has-renovation').checked = data.has_renovation || false;
+                document.getElementById('edit-has-parking').checked = data.has_parking || false;
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки данных объявления:', error);
+                alert('Ошибка загрузки данных объявления');
+            });
+    }
+    
+    // Закрытие модального окна редактирования
+    function closeEditModal() {
+        document.getElementById('edit-property-modal').classList.add('hidden');
+    }
+    
+    // Сохранение изменений объявления
+    function savePropertyChanges() {
+        const propertyId = document.getElementById('edit-property-id').value;
+        const formData = new FormData();
+        
+        // Собираем данные формы
+        formData.append('title', document.getElementById('edit-title').value);
+        formData.append('description', document.getElementById('edit-description').value);
+        formData.append('price', document.getElementById('edit-price').value);
+        formData.append('address', document.getElementById('edit-address').value);
+        formData.append('city', document.getElementById('edit-city').value);
+        formData.append('category_id', document.getElementById('edit-category').value);
+        formData.append('area', document.getElementById('edit-area').value);
+        formData.append('rooms', document.getElementById('edit-rooms').value);
+        formData.append('floor', document.getElementById('edit-floor').value);
+        formData.append('building_floors', document.getElementById('edit-building-floors').value);
+        formData.append('type', document.getElementById('edit-type').value);
+        
+        // Чекбоксы
+        formData.append('has_balcony', document.getElementById('edit-has-balcony').checked);
+        formData.append('has_furniture', document.getElementById('edit-has-furniture').checked);
+        formData.append('has_renovation', document.getElementById('edit-has-renovation').checked);
+        formData.append('has_parking', document.getElementById('edit-has-parking').checked);
+        
+        // Отправляем на сервер
+        fetch(`/api/v1/companies/properties/${propertyId}`, {
+            method: 'PUT',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                closeEditModal();
+                // Перезагружаем страницу для отображения изменений
+                location.reload();
+            } else {
+                alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка при сохранении объявления:', error);
+            alert('Произошла ошибка при сохранении данных');
+        });
+    }
+    
+    // === ОБРАБОТЧИКИ СОБЫТИЙ ===
     document.addEventListener('DOMContentLoaded', function() {
-        // Кнопки закрытия модального окна
+        // Кнопки закрытия модального окна 360°
         document.querySelectorAll('.close-upload-360-modal').forEach(button => {
             button.addEventListener('click', close360Modal);
         });
         
-        // Кнопка сохранения
+        // Кнопка сохранения 360°
         document.getElementById('save-360-btn').addEventListener('click', save360Data);
+        
+        // Кнопка сохранения редактирования
+        document.getElementById('save-edit-btn').addEventListener('click', savePropertyChanges);
         
         // Закрытие по клику на фон
         document.getElementById('upload-360-modal-backdrop').addEventListener('click', close360Modal);
@@ -699,6 +908,7 @@
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
                 close360Modal();
+                closeEditModal();
             }
         });
     });

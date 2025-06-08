@@ -4400,12 +4400,16 @@ async def companies_listings(
                 json_prop['created_at'] = json_prop['created_at'].isoformat() if hasattr(json_prop['created_at'], 'isoformat') else str(json_prop['created_at'])
             properties_for_json.append(json_prop)
         
+        # Получаем категории для формы редактирования
+        categories = db.query(models.Category).all()
+        
         return templates.TemplateResponse("companies/listings.html", {
             "request": request,
             "current_user": current_user,
             "company_name": current_user.company_name,
             "properties": enhanced_properties,  # Для HTML (с datetime объектами)
             "properties_json": properties_for_json,  # Для JavaScript (с строками)
+            "categories": categories,  # Добавляем категории
             "total_count": total_count,
             "total_pages": total_pages,
             "current_page": page,
@@ -4671,13 +4675,243 @@ async def create_company_property(
         print(f"ERROR: Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="Ошибка при создании объявления")
 
-# === END COMPANIES PANEL ROUTES ===
-
-# API для получения категорий
 @app.get("/api/v1/categories")
 async def get_categories(db: Session = Depends(deps.get_db)):
-    """Получение списка всех категорий"""
+    """Получение списка категорий"""
     categories = db.query(models.Category).all()
-    return [{"id": cat.id, "name": cat.name, "description": cat.description} for cat in categories]
+    return [{"id": cat.id, "name": cat.name} for cat in categories]
+
+@app.get("/api/v1/companies/properties/{property_id}")
+async def get_company_property(
+    property_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    """Получение данных объявления для редактирования"""
+    current_user = await check_company_access(request, db)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Не авторизован")
+    
+    # Проверяем что объявление принадлежит компании
+    property_obj = db.query(models.Property).filter(
+        models.Property.id == property_id,
+        models.Property.owner_id == current_user.id
+    ).first()
+    
+    if not property_obj:
+        raise HTTPException(status_code=404, detail="Объявление не найдено")
+    
+    return {
+        "id": property_obj.id,
+        "title": property_obj.title,
+        "description": property_obj.description,
+        "price": property_obj.price,
+        "address": property_obj.address,
+        "city": property_obj.city,
+        "category_id": property_obj.category_id,
+        "area": property_obj.area,
+        "rooms": property_obj.rooms,
+        "floor": property_obj.floor,
+        "building_floors": property_obj.building_floors,
+        "bathroom_type": property_obj.bathroom_type,
+        "type": property_obj.type,
+        "has_balcony": property_obj.has_balcony,
+        "has_furniture": property_obj.has_furniture,
+        "has_renovation": property_obj.has_renovation,
+        "has_parking": property_obj.has_parking,
+        "has_elevator": getattr(property_obj, 'has_elevator', False),
+        "has_security": getattr(property_obj, 'has_security', False),
+        "has_internet": getattr(property_obj, 'has_internet', False),
+        "has_air_conditioning": getattr(property_obj, 'has_air_conditioning', False),
+        "has_heating": getattr(property_obj, 'has_heating', False),
+        "has_yard": getattr(property_obj, 'has_yard', False),
+        "has_pool": getattr(property_obj, 'has_pool', False),
+        "has_gym": getattr(property_obj, 'has_gym', False),
+        "tour_360_url": getattr(property_obj, 'tour_360_url', None),
+        "status": property_obj.status
+    }
+
+@app.put("/api/v1/companies/properties/{property_id}")
+async def update_company_property(
+    property_id: int,
+    request: Request,
+    title: str = Form(...),
+    description: str = Form(...),
+    price: float = Form(...),
+    address: str = Form(...),
+    city: str = Form("Бишкек"),
+    category_id: int = Form(None),
+    area: float = Form(None),
+    rooms: int = Form(None),
+    floor: int = Form(None),
+    building_floors: int = Form(None),
+    bathroom_type: str = Form(None),
+    type: str = Form("apartment"),
+    has_balcony: bool = Form(False),
+    has_furniture: bool = Form(False),
+    has_renovation: bool = Form(False),
+    has_parking: bool = Form(False),
+    has_elevator: bool = Form(False),
+    has_security: bool = Form(False),
+    has_internet: bool = Form(False),
+    has_air_conditioning: bool = Form(False),
+    has_heating: bool = Form(False),
+    has_yard: bool = Form(False),
+    has_pool: bool = Form(False),
+    has_gym: bool = Form(False),
+    db: Session = Depends(deps.get_db)
+):
+    """Обновление объявления компании"""
+    current_user = await check_company_access(request, db)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Не авторизован")
+    
+    # Проверяем что объявление принадлежит компании
+    property_obj = db.query(models.Property).filter(
+        models.Property.id == property_id,
+        models.Property.owner_id == current_user.id
+    ).first()
+    
+    if not property_obj:
+        raise HTTPException(status_code=404, detail="Объявление не найдено")
+    
+    # Сохраняем старые данные для проверки изменений
+    old_data = {
+        "title": property_obj.title,
+        "description": property_obj.description,
+        "price": property_obj.price,
+        "address": property_obj.address,
+        "area": property_obj.area,
+        "rooms": property_obj.rooms
+    }
+    
+    # Обновляем данные
+    property_obj.title = title
+    property_obj.description = description
+    property_obj.price = price
+    property_obj.address = address
+    property_obj.city = city
+    property_obj.category_id = category_id
+    property_obj.area = area
+    property_obj.rooms = rooms
+    property_obj.floor = floor
+    property_obj.building_floors = building_floors
+    property_obj.bathroom_type = bathroom_type
+    property_obj.type = type
+    property_obj.has_balcony = has_balcony
+    property_obj.has_furniture = has_furniture
+    property_obj.has_renovation = has_renovation
+    property_obj.has_parking = has_parking
+    
+    # Устанавливаем дополнительные поля если они есть в модели
+    if hasattr(property_obj, 'has_elevator'):
+        property_obj.has_elevator = has_elevator
+    if hasattr(property_obj, 'has_security'):
+        property_obj.has_security = has_security
+    if hasattr(property_obj, 'has_internet'):
+        property_obj.has_internet = has_internet
+    if hasattr(property_obj, 'has_air_conditioning'):
+        property_obj.has_air_conditioning = has_air_conditioning
+    if hasattr(property_obj, 'has_heating'):
+        property_obj.has_heating = has_heating
+    if hasattr(property_obj, 'has_yard'):
+        property_obj.has_yard = has_yard
+    if hasattr(property_obj, 'has_pool'):
+        property_obj.has_pool = has_pool
+    if hasattr(property_obj, 'has_gym'):
+        property_obj.has_gym = has_gym
+    
+    # Проверяем, были ли изменения
+    new_data = {
+        "title": title,
+        "description": description,
+        "price": price,
+        "address": address,
+        "area": area,
+        "rooms": rooms
+    }
+    
+    has_changes = old_data != new_data
+    
+    # Если были изменения, отправляем на модерацию
+    if has_changes and property_obj.status == 'active':
+        property_obj.status = 'pending'
+        print(f"DEBUG: Объявление {property_id} отправлено на модерацию из-за изменений")
+    
+    db.commit()
+    
+    return {
+        "success": True, 
+        "message": "Объявление успешно обновлено" + (" и отправлено на модерацию" if has_changes and property_obj.status == 'pending' else ""),
+        "status": property_obj.status
+    }
+
+@app.post("/api/v1/companies/properties/{property_id}/360")
+async def update_property_360(
+    property_id: int,
+    request: Request,
+    tour_360_url: str = Form(...),
+    tour_360_date: str = Form(None),
+    db: Session = Depends(deps.get_db)
+):
+    """Обновление 360° тура объявления"""
+    current_user = await check_company_access(request, db)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Не авторизован")
+    
+    # Проверяем что объявление принадлежит компании
+    property_obj = db.query(models.Property).filter(
+        models.Property.id == property_id,
+        models.Property.owner_id == current_user.id
+    ).first()
+    
+    if not property_obj:
+        raise HTTPException(status_code=404, detail="Объявление не найдено")
+    
+    # Проверяем были ли изменения в 360° туре
+    old_tour_url = getattr(property_obj, 'tour_360_url', None)
+    has_360_changes = old_tour_url != tour_360_url
+    
+    # Обновляем 360° тур
+    if hasattr(property_obj, 'tour_360_url'):
+        property_obj.tour_360_url = tour_360_url
+    
+    # Если были изменения в 360° и объявление активно, отправляем на модерацию
+    if has_360_changes and property_obj.status == 'active':
+        property_obj.status = 'pending'
+        print(f"DEBUG: Объявление {property_id} отправлено на модерацию из-за изменений в 360° туре")
+    
+    db.commit()
+    
+    return {
+        "success": True, 
+        "message": "360° тур успешно обновлен" + (" и отправлен на модерацию" if has_360_changes and property_obj.status == 'pending' else ""),
+        "status": property_obj.status
+    }
+
+@app.get("/api/v1/companies/properties/{property_id}/360")
+async def get_property_360(
+    property_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    """Получение данных 360° тура"""
+    current_user = await check_company_access(request, db)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Не авторизован")
+    
+    # Проверяем что объявление принадлежит компании
+    property_obj = db.query(models.Property).filter(
+        models.Property.id == property_id,
+        models.Property.owner_id == current_user.id
+    ).first()
+    
+    if not property_obj:
+        raise HTTPException(status_code=404, detail="Объявление не найдено")
+    
+    return {
+        "tour_360_url": getattr(property_obj, 'tour_360_url', None),
+        "tour_360_date": getattr(property_obj, 'tour_360_date', None)
+    }
 
 # API для работы с заявками (Requests)

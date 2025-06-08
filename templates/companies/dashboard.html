@@ -12,6 +12,29 @@
 {% endblock %}
 
 {% block content %}
+<!-- Быстрые действия -->
+<div class="bg-white rounded-lg p-6 border border-gray-200 mb-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">Быстрые действия</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <a href="/companies/create-listing" class="flex flex-col items-center p-4 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+            <i class="fas fa-plus text-xl mb-2"></i>
+            <span class="text-sm font-medium">Создать объявление</span>
+        </a>
+        <a href="/companies/listings" class="flex flex-col items-center p-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+            <i class="fas fa-list text-xl mb-2"></i>
+            <span class="text-sm font-medium">Мои объявления</span>
+        </a>
+        <a href="/companies/analytics" class="flex flex-col items-center p-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+            <i class="fas fa-chart-line text-xl mb-2"></i>
+            <span class="text-sm font-medium">Аналитика</span>
+        </a>
+        <a href="/companies/profile" class="flex flex-col items-center p-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+            <i class="fas fa-user text-xl mb-2"></i>
+            <span class="text-sm font-medium">Профиль</span>
+        </a>
+    </div>
+</div>
+
 <!-- Статистические карточки -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
     <!-- Общее количество объявлений -->

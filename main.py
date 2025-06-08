@@ -4345,87 +4345,63 @@ async def companies_analytics(
         return RedirectResponse(url="/companies/login", status_code=302)
     
     try:
-        # Получаем объявления компании
-        user_properties = db.query(models.Property).filter(models.Property.user_id == current_user.id).all()
-        
-        # Статистика (примерные данные)
-        total_views = sum([prop.views or 0 for prop in user_properties])
-        unique_visitors = int(total_views * 0.7)  # Примерно 70% уникальных
-        contacts = int(total_views * 0.05)  # Примерно 5% конверсия
-        conversion_rate = round((contacts / total_views * 100) if total_views > 0 else 0, 2)
-        
-        stats = {
-            'total_views': total_views,
-            'unique_visitors': unique_visitors,
-            'contacts': contacts,
-            'conversion_rate': conversion_rate,
-            'views_change': 15,  # +15% за период
-            'visitors_change': 12,  # +12% за период
-            'contacts_change': 8,  # +8% за период
-            'conversion_change': -2,  # -2% за период
-            'avg_session_duration': '2:45',
-            'bounce_rate': 35,
-            'pages_per_session': 3.2
+        # Примерные данные для аналитики
+        analytics_data = {
+            'views_data': {
+                'labels': ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+                'data': [120, 150, 90, 180, 200, 160, 140]
+            },
+            'conversion_data': {
+                'labels': ['Просмотры', 'Звонки', 'Встречи', 'Сделки'],
+                'data': [1000, 150, 45, 12]
+            },
+            'geography_data': [
+                {'region': 'Бишкек', 'views': 450, 'percentage': 65},
+                {'region': 'Ош', 'views': 120, 'percentage': 17},
+                {'region': 'Каракол', 'views': 80, 'percentage': 12},
+                {'region': 'Другие', 'views': 45, 'percentage': 6}
+            ],
+            'traffic_sources': [
+                {'source': 'Поиск', 'visits': 320, 'percentage': 45},
+                {'source': 'Соц. сети', 'visits': 180, 'percentage': 25},
+                {'source': 'Прямые заходы', 'visits': 140, 'percentage': 20},
+                {'source': 'Реклама', 'visits': 70, 'percentage': 10}
+            ],
+            'popular_properties': db.query(models.Property).filter(
+                models.Property.owner_id == current_user.id
+            ).order_by(models.Property.created_at.desc()).limit(5).all(),
+            'total_stats': {
+                'total_views': 695,
+                'total_calls': 28,
+                'total_messages': 15,
+                'conversion_rate': 4.0
+            }
         }
-        
-        # Топ объявления
-        top_properties = sorted(user_properties, key=lambda x: x.views or 0, reverse=True)[:5]
-        
-        # Данные для графиков (примерные)
-        views_chart_labels = ['1 нед', '2 нед', '3 нед', '4 нед']
-        views_chart_data = [120, 150, 180, 200]
-        
-        conversion_chart_labels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
-        conversion_views_data = [45, 52, 48, 61, 55, 42, 38]
-        conversion_contacts_data = [2, 3, 2, 4, 3, 2, 1]
-        
-        hourly_data = [5, 3, 2, 8, 15, 25, 30]
-        
-        # Примерные данные для других секций
-        top_locations = [
-            {'city': 'Бишкек', 'country': 'Кыргызстан', 'views': 150},
-            {'city': 'Ош', 'country': 'Кыргызстан', 'views': 85},
-            {'city': 'Алматы', 'country': 'Казахстан', 'views': 42}
-        ]
-        
-        traffic_sources = [
-            {'name': 'Прямые заходы', 'views': 120, 'percentage': 45},
-            {'name': 'Поисковые системы', 'views': 80, 'percentage': 30},
-            {'name': 'Социальные сети', 'views': 40, 'percentage': 15},
-            {'name': 'Другие сайты', 'views': 27, 'percentage': 10}
-        ]
-        
-        device_stats = [
-            {'name': 'Десктоп', 'percentage': 60, 'color': '#144b44'},
-            {'name': 'Мобильные', 'percentage': 35, 'color': '#3b82f6'},
-            {'name': 'Планшеты', 'percentage': 5, 'color': '#10b981'}
-        ]
-        
-        device_labels = ['Десктоп', 'Мобильные', 'Планшеты']
-        device_data = [60, 35, 5]
         
         return templates.TemplateResponse("companies/analytics.html", {
             "request": request,
             "current_user": current_user,
             "company_name": current_user.company_name,
-            "stats": stats,
-            "top_properties": top_properties,
-            "top_locations": top_locations,
-            "traffic_sources": traffic_sources,
-            "device_stats": device_stats,
-            "views_chart_labels": views_chart_labels,
-            "views_chart_data": views_chart_data,
-            "conversion_chart_labels": conversion_chart_labels,
-            "conversion_views_data": conversion_views_data,
-            "conversion_contacts_data": conversion_contacts_data,
-            "hourly_data": hourly_data,
-            "device_labels": device_labels,
-            "device_data": device_data
+            "analytics": analytics_data,
+            "days": days
         })
         
     except Exception as e:
         print(f"DEBUG: Ошибка в аналитике компании: {e}")
-        return RedirectResponse(url="/companies/dashboard", status_code=302)
+        return RedirectResponse(url="/companies/login", status_code=302)
+
+@app.get("/companies/create-listing", response_class=HTMLResponse)
+async def companies_create_listing(request: Request, db: Session = Depends(deps.get_db)):
+    """Страница создания объявления компании"""
+    current_user = await check_company_access(request, db)
+    if not current_user:
+        return RedirectResponse(url="/companies/login", status_code=302)
+    
+    return templates.TemplateResponse("companies/create-listing.html", {
+        "request": request,
+        "current_user": current_user,
+        "company_name": current_user.company_name
+    })
 
 # API endpoints for companies
 @app.delete("/api/v1/companies/properties/{property_id}")
@@ -4439,19 +4415,84 @@ async def delete_company_property(
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
     
-    # Находим объявление
-    property_obj = db.query(models.Property).filter(
-        models.Property.id == property_id,
-        models.Property.owner_id == current_user.id  # Проверяем, что объявление принадлежит текущей компании
-    ).first()
+    try:
+        # Получаем объявление
+        property_obj = db.query(models.Property).filter(
+            models.Property.id == property_id,
+            models.Property.owner_id == current_user.id  # Проверяем, что объявление принадлежит текущей компании
+        ).first()
+        
+        if not property_obj:
+            raise HTTPException(status_code=404, detail="Объявление не найдено")
+        
+        # Удаляем объявление
+        db.delete(property_obj)
+        db.commit()
+        
+        return {"success": True, "message": "Объявление удалено"}
+        
+    except Exception as e:
+        print(f"DEBUG: Ошибка удаления объявления: {e}")
+        raise HTTPException(status_code=500, detail="Ошибка при удалении объявления")
+
+@app.post("/api/v1/companies/properties")
+async def create_company_property(
+    request: Request,
+    title: str = Form(...),
+    description: str = Form(...),
+    price: float = Form(...),
+    address: str = Form(...),
+    city: str = Form("Бишкек"),
+    area: float = Form(None),
+    rooms: int = Form(None),
+    floor: int = Form(None),
+    building_floors: int = Form(None),
+    type: str = Form("apartment"),
+    has_balcony: bool = Form(False),
+    has_furniture: bool = Form(False),
+    has_renovation: bool = Form(False),
+    has_parking: bool = Form(False),
+    status: str = Form("pending"),
+    db: Session = Depends(deps.get_db)
+):
+    """Создание объявления компании"""
+    current_user = await check_company_access(request, db)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
     
-    if not property_obj:
-        raise HTTPException(status_code=404, detail="Объявление не найдено")
-    
-    # Удаляем объявление
-    db.delete(property_obj)
-    db.commit()
-    
-    return {"message": "Объявление удалено"}
+    try:
+        # Создаем объявление
+        property_obj = models.Property(
+            title=title,
+            description=description,
+            price=price,
+            address=address,
+            city=city,
+            area=area,
+            rooms=rooms,
+            floor=floor,
+            building_floors=building_floors,
+            type=type,
+            has_balcony=has_balcony,
+            has_furniture=has_furniture,
+            has_renovation=has_renovation,
+            has_parking=has_parking,
+            status=models.PropertyStatus.DRAFT if status == "draft" else models.PropertyStatus.PENDING,
+            owner_id=current_user.id
+        )
+        
+        db.add(property_obj)
+        db.commit()
+        db.refresh(property_obj)
+        
+        return {
+            "success": True,
+            "message": "Объявление создано" if status == "draft" else "Объявление отправлено на модерацию",
+            "property_id": property_obj.id
+        }
+        
+    except Exception as e:
+        print(f"DEBUG: Ошибка создания объявления: {e}")
+        raise HTTPException(status_code=500, detail="Ошибка при создании объявления")
 
 # === END COMPANIES PANEL ROUTES ===

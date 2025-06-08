@@ -431,21 +431,26 @@ let totalSlides = 0;
 
 $(document).ready(function() {
     // Функция просмотра объявления в модальном окне
-    $('.view-property').on('click', function(e) {
+    $(document).on('click', '.view-property', function(e) {
         e.preventDefault();
         e.stopPropagation();
         
         const propertyData = $(this).data('property');
         
-        if (!propertyData) return;
+        if (!propertyData) {
+            console.error('Property data not found');
+            return;
+        }
+        
+        console.log('Property data:', propertyData);
         
         // Заполнение данных модального окна
-        $('#property-modal-title').text(propertyData.title);
-        $('#property-modal-id').text(propertyData.id);
-        $('#property-modal-address').text(propertyData.address);
-        $('#property-modal-city').text(propertyData.city);
+        $('#property-modal-title').text(propertyData.title || 'Без названия');
+        $('#property-modal-id').text(propertyData.id || '');
+        $('#property-modal-address').text(propertyData.address || 'Не указан');
+        $('#property-modal-city').text(propertyData.city || 'Не указан');
         $('#property-modal-description').text(propertyData.description || 'Описание не указано');
-        $('#property-modal-price').text(propertyData.price_formatted);
+        $('#property-modal-price').text(propertyData.price_formatted || 'Не указана');
         $('#property-modal-area').text((propertyData.area || 'Н/Д') + (propertyData.area ? ' м²' : ''));
         $('#property-modal-rooms').text(propertyData.rooms || 'Н/Д');
         $('#property-modal-floor').text((propertyData.floor && propertyData.building_floors) ? `${propertyData.floor}/${propertyData.building_floors}` : 'Н/Д');
@@ -454,9 +459,13 @@ $(document).ready(function() {
         $('#property-modal-owner').text(propertyData.owner_name || 'Не указан');
         $('#property-modal-owner-email').text(propertyData.owner_email || 'Не указан');
         $('#property-modal-category').text(propertyData.category ? propertyData.category.name : 'Не указана');
-        $('#property-modal-type').text(propertyData.type === 'apartment' ? 'Квартира' : 
-                                       propertyData.type === 'house' ? 'Дом' : 
-                                       propertyData.type === 'commercial' ? 'Коммерческое' : 'Другое');
+        
+        const typeMap = {
+            'apartment': 'Квартира',
+            'house': 'Дом',
+            'commercial': 'Коммерческое'
+        };
+        $('#property-modal-type').text(typeMap[propertyData.type] || 'Другое');
         $('#property-modal-tour').text(propertyData.has_tour ? 'Есть' : 'Нет');
         
         // Заполнение удобств
@@ -481,14 +490,15 @@ $(document).ready(function() {
         $('#property-modal-amenities').html(amenitiesHtml);
         
         // Загрузка изображений в слайдер
-        setupImageSlider(propertyData.all_images || [{url: propertyData.image_url, is_main: true}]);
+        const images = propertyData.all_images || [{url: propertyData.image_url, is_main: true}];
+        setupImageSlider(images);
         
         // Показ модального окна
         $('#property-modal').removeClass('hidden');
     });
 
     // 360° функционал
-    $('.upload-360-btn').on('click', function(e) {
+    $(document).on('click', '.upload-360-btn', function(e) {
         e.preventDefault();
         e.stopPropagation();
         
@@ -514,11 +524,15 @@ $(document).ready(function() {
             .catch(error => console.error('Ошибка загрузки данных 360°:', error));
     });
 
-    $('.close-upload-360-modal, #upload-360-modal-backdrop').on('click', function() {
-        $('#upload-360-modal').addClass('hidden');
+    // Закрытие модального окна 360°
+    $(document).on('click', '.close-upload-360-modal, #upload-360-modal-backdrop', function(e) {
+        if (e.target === this) {
+            $('#upload-360-modal').addClass('hidden');
+        }
     });
 
-    $('#save-360-btn').on('click', function() {
+    // Сохранение 360°
+    $(document).on('click', '#save-360-btn', function() {
         const propertyId = $('#property-id-for-360').val();
         const tourUrl = $('#tour-360-url').val();
         const tourDate = $('#tour-360-date').val();
@@ -554,15 +568,22 @@ $(document).ready(function() {
         });
     });
 
-    // Закрытие модального окна
-    $('.close-modal, #property-modal').on('click', function(e) {
+    // Закрытие основного модального окна
+    $(document).on('click', '.close-modal', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $('#property-modal').addClass('hidden');
+    });
+    
+    // Закрытие модального окна при клике на фон
+    $(document).on('click', '#property-modal', function(e) {
         if (e.target === this) {
             $('#property-modal').addClass('hidden');
         }
     });
 
     // Фильтры
-    $('.property-filters').on('change', function() {
+    $(document).on('change', '.property-filters', function() {
         $('#filter-form').submit();
     });
 
@@ -596,8 +617,9 @@ function setupImageSlider(images) {
     
     // Создание изображений
     images.forEach((image, index) => {
+        const imgUrl = typeof image === 'string' ? image : image.url;
         const img = $('<img>').attr({
-            'src': image.url,
+            'src': imgUrl,
             'class': 'w-full h-full object-cover flex-shrink-0',
             'style': 'width: 100%'
         });

@@ -219,9 +219,9 @@
             </div>
 
             <div class="pagination">
-                {% if page > 1 %}
+                {% if current_page > 1 %}
                 <a
-                    href="{{ url_for('admin_requests') }}?tab={{ tab }}&page={{ page - 1 }}{{ query_params }}"
+                    href="{{ url_for('admin_requests') }}?tab={{ tab }}&page={{ current_page - 1 }}{{ query_params }}"
                     class="pagination-btn">
                     <i class="fas fa-chevron-left"></i>
                 </a>
@@ -232,7 +232,7 @@
                 {% endif %}
 
                 {% for p in pages %}
-                {% if p == page %}
+                {% if p == current_page %}
                 <span class="pagination-btn active">{{ p }}</span>
                 {% else %}
                 <a
@@ -241,9 +241,9 @@
                 {% endif %}
                 {% endfor %}
 
-                {% if page < total_pages %}
+                {% if current_page < total_pages %}
                 <a
-                    href="{{ url_for('admin_requests') }}?tab={{ tab }}&page={{ page + 1 }}{{ query_params }}"
+                    href="{{ url_for('admin_requests') }}?tab={{ tab }}&page={{ current_page + 1 }}{{ query_params }}"
                     class="pagination-btn">
                     <i class="fas fa-chevron-right"></i>
                 </a>

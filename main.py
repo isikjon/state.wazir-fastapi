@@ -1516,90 +1516,89 @@ async def admin_properties(
     if property_type:
         try:
             property_type_id = int(property_type)
-            # Фильтруем по категории (связь с таблицей categories через PropertyCategory)
+            # Фильтруем по категории через связь PropertyCategory
             properties_query = properties_query.join(models.PropertyCategory).filter(
                 models.PropertyCategory.category_id == property_type_id
             )
         except (ValueError, TypeError):
-            # Если не удалось преобразовать в число, игнорируем фильтр
-            pass
-            
+            # Если property_type не число, фильтруем по типу объекта
+            properties_query = properties_query.filter(models.Property.type == property_type)
+    
     if search:
         search_term = f"%{search}%"
         properties_query = properties_query.filter(
             or_(
                 models.Property.title.ilike(search_term),
-                models.Property.description.ilike(search_term),
-                models.Property.address.ilike(search_term)
+                models.Property.address.ilike(search_term),
+                models.Property.description.ilike(search_term)
             )
         )
     
-    # Получаем общее количество записей после применения фильтров
-    total_items = properties_query.count()
+    # Получаем общее количество объявлений
+    total_properties = properties_query.count()
     
-    # Настройка пагинации
+    # Пагинация
     items_per_page = 10
-    total_pages = (total_items + items_per_page - 1) // items_per_page if total_items > 0 else 1
+    total_pages = (total_properties + items_per_page - 1) // items_per_page if total_properties > 0 else 1
     
-    # Проверка корректности номера страницы
+    # Проверяем корректность номера страницы
     if page > total_pages and total_pages > 0:
         page = total_pages
-        
-    # Получаем данные с пагинацией
+    
+    # Применяем пагинацию
     start_idx = (page - 1) * items_per_page
-    properties_query = properties_query.order_by(desc(models.Property.created_at)).offset(start_idx).limit(items_per_page)
+    properties_paginated = properties_query.order_by(desc(models.Property.created_at)).offset(start_idx).limit(items_per_page).all()
     
-    # Получаем результаты запроса
-    properties_results = properties_query.all()
+    # Преобразуем объекты недвижимости в нужный формат
+    properties_formatted = []
     
-    # Подготавливаем данные для отображения в шаблоне
-    enhanced_properties = []
-    
-    for prop in properties_results:
-        # Получаем все изображения объявления
-        property_images = []
-        main_image_url = "/static/layout/assets/img/property-placeholder.jpg"
+    for prop in properties_paginated:
+        # Форматирование цены
+        if prop.price:
+            if prop.price >= 1000000:
+                price_formatted = f"{prop.price/1000000:.1f} млн KGZ".replace('.0', '')
+            else:
+                price_formatted = f"{prop.price/1000:.1f} тыс KGZ".replace('.0', '')
+        else:
+            price_formatted = "Цена не указана"
+        
+        # Статус для отображения
+        status_display_map = {
+            'active': 'Активно',
+            'pending': 'На проверке',
+            'rejected': 'Отклонено',
+            'draft': 'Черновик',
+            'sold': 'Продано',
+            'inactive': 'Неактивно'
+        }
+        status_display = status_display_map.get(prop.status, prop.status or 'Неизвестно')
+        
+        # Получаем информацию о владельце
+        owner_name = prop.owner.full_name if prop.owner and prop.owner.full_name else "Пользователь"
+        owner_email = prop.owner.email if prop.owner and prop.owner.email else ""
+        
+        # Получаем главное изображение
+        main_image_url = "/static/images/default-property.jpg"
+        all_images = []
         
         try:
             for img in prop.images:
                 if img.url:
-                    property_images.append({
+                    all_images.append({
                         'url': img.url,
                         'is_main': img.is_main
                     })
-                    # Устанавливаем главное изображение
                     if img.is_main:
                         main_image_url = img.url
-            
+                        
             # Если нет главного изображения, берем первое
-            if main_image_url == "/static/layout/assets/img/property-placeholder.jpg" and property_images:
-                main_image_url = property_images[0]['url']
+            if main_image_url == "/static/images/default-property.jpg" and all_images:
+                main_image_url = all_images[0]['url']
                 
         except Exception as e:
             print(f"Ошибка при получении изображений для объявления ID={prop.id}: {e}")
         
-        # Форматируем цену
-        price_formatted = f"{prop.price:,.0f} KGZ" if prop.price else "Цена не указана"
-        
-        # Определяем понятный статус для отображения
-        status_map = {
-            "draft": "Черновик",
-            "pending": "На проверке",
-            "active": "Активно",
-            "rejected": "Отклонено",
-            "sold": "Продано"
-        }
-        
-        status_val = prop.status if prop.status else "draft"
-        status_display = status_map.get(status_val, "Неизвестно")
-        
-        # Проверяем наличие 360° тура
-        has_tour = bool(prop.tour_360_url) if hasattr(prop, 'tour_360_url') and prop.tour_360_url else False
-        
-        # Количество просмотров для объектов на модерации - 0
-        views = 0 if status_val == "pending" else prop.views if hasattr(prop, 'views') and prop.views else 0
-        
-        # Получаем информацию о категории
+        # Получаем категорию
         category_info = None
         try:
             property_category = db.query(models.PropertyCategory).filter(
@@ -1614,88 +1613,75 @@ async def admin_properties(
                     category_info = {'name': category.name, 'id': category.id}
         except Exception as e:
             print(f"Ошибка при получении категории: {e}")
-            category_info = None
         
-        # Добавляем данные в массив
-        enhanced_properties.append({
-            "id": prop.id,
-            "title": prop.title or f"Объект #{prop.id}",
-            "description": prop.description or "",
-            "price": prop.price,
-            "price_formatted": price_formatted,
-            "address": prop.address or "Адрес не указан",
-            "city": prop.city or "Бишкек",
-            "area": prop.area,
-            "status": status_val,
-            "status_display": status_display,
-            "owner_id": prop.owner_id,
-            "owner_name": prop.owner.full_name if prop.owner else "Нет данных",
-            "owner_email": prop.owner.email if prop.owner else "",
-            "image_url": main_image_url,
-            "all_images": property_images,  # Все изображения для слайдера
-            "created_at": prop.created_at.isoformat() if prop.created_at else None,
-            "views": views,
-            "has_tour": has_tour,
-            "tour_360_url": prop.tour_360_url if hasattr(prop, 'tour_360_url') else None,
-            "tour_360_date": prop.tour_360_date if hasattr(prop, 'tour_360_date') else None,
-            # Характеристики объекта
-            "rooms": prop.rooms,
-            "floor": prop.floor,
-            "building_floors": prop.building_floors,
-            "bathroom_type": prop.bathroom_type if hasattr(prop, 'bathroom_type') else None,
-            "type": prop.type or "apartment",
+        # Проверяем наличие 360° тура
+        has_tour = bool(getattr(prop, 'tour_360_url', None))
+        
+        # Добавляем в список
+        property_data = {
+            'id': prop.id,
+            'title': prop.title or f"Объект №{prop.id}",
+            'address': prop.address or "Адрес не указан",
+            'city': prop.city or "Бишкек",
+            'description': prop.description or "",
+            'price': prop.price or 0,
+            'price_formatted': price_formatted,
+            'area': prop.area,
+            'rooms': prop.rooms,
+            'floor': prop.floor,
+            'building_floors': prop.building_floors,
+            'bathroom_type': getattr(prop, 'bathroom_type', None),
+            'type': prop.type or "apartment",
+            'status': prop.status,
+            'status_display': status_display,
+            'views': getattr(prop, 'views', 0),
+            'created_at': prop.created_at.isoformat() if prop.created_at else "",
+            'owner_name': owner_name,
+            'owner_email': owner_email,
+            'owner_id': prop.owner_id,
+            'image_url': main_image_url,
+            'all_images': all_images,
+            'category': category_info,
+            'has_tour': has_tour,
             # Удобства
-            "has_balcony": prop.has_balcony if hasattr(prop, 'has_balcony') else False,
-            "has_furniture": prop.has_furniture if hasattr(prop, 'has_furniture') else False,
-            "has_renovation": prop.has_renovation if hasattr(prop, 'has_renovation') else False,
-            "has_parking": prop.has_parking if hasattr(prop, 'has_parking') else False,
-            "has_elevator": prop.has_elevator if hasattr(prop, 'has_elevator') else False,
-            "has_security": prop.has_security if hasattr(prop, 'has_security') else False,
-            "has_internet": prop.has_internet if hasattr(prop, 'has_internet') else False,
-            "has_air_conditioning": prop.has_air_conditioning if hasattr(prop, 'has_air_conditioning') else False,
-            "has_heating": prop.has_heating if hasattr(prop, 'has_heating') else False,
-            "has_yard": prop.has_yard if hasattr(prop, 'has_yard') else False,
-            "has_pool": prop.has_pool if hasattr(prop, 'has_pool') else False,
-            "has_gym": prop.has_gym if hasattr(prop, 'has_gym') else False,
-            # Категория
-            "category": category_info
-        })
+            'has_balcony': getattr(prop, 'has_balcony', False),
+            'has_furniture': getattr(prop, 'has_furniture', False),
+            'has_renovation': getattr(prop, 'has_renovation', False),
+            'has_parking': getattr(prop, 'has_parking', False),
+            'has_elevator': getattr(prop, 'has_elevator', False),
+            'has_security': getattr(prop, 'has_security', False),
+            'has_internet': getattr(prop, 'has_internet', False),
+            'has_air_conditioning': getattr(prop, 'has_air_conditioning', False),
+            'has_heating': getattr(prop, 'has_heating', False),
+            'has_yard': getattr(prop, 'has_yard', False),
+            'has_pool': getattr(prop, 'has_pool', False),
+            'has_gym': getattr(prop, 'has_gym', False),
+        }
+        
+        properties_formatted.append(property_data)
     
-    # Вычисляем начальный и конечный индексы для пагинации
-    start_item = start_idx + 1 if total_items > 0 else 0
-    end_item = min(start_idx + len(enhanced_properties), total_items)
-    
-    # Формируем параметры запроса для пагинации
-    query_params = ""
-    if status:
-        query_params += f"&status={status}"
-    if property_type:
-        query_params += f"&property_type={property_type}"
-    if search:
-        query_params += f"&search={search}"
+    # Вычисляем данные для пагинации
+    start_item = start_idx + 1 if total_properties > 0 else 0
+    end_item = min(start_idx + len(properties_formatted), total_properties)
     
     # Генерируем список страниц для навигации
     page_range = range(max(1, page - 2), min(total_pages + 1, page + 3))
     
-    return templates.TemplateResponse(
-        "admin/properties.html",
-        {
-            "request": request,
-            "current_admin": user,  # Передаем данные администратора
-            "properties": enhanced_properties,
-            "total_pages": total_pages,
-            "current_page": page,
-            "pages": page_range,
-            "show_ellipsis": total_pages > 5,
-            "start_item": start_item,
-            "end_item": end_item,
-            "total_properties": total_items,
-            "search_query": search or "",
-            "status": status,
-            "property_type": property_type,
-            "categories": categories,  # Передаем категории для выпадающего списка
-        }
-    )
+    return templates.TemplateResponse("admin/properties.html", {
+        "request": request,
+        "current_admin": user,
+        "properties": properties_formatted,
+        "categories": categories,
+        "status": status,
+        "property_type": property_type,
+        "search_query": search,
+        "total_properties": total_properties,
+        "total_pages": total_pages,
+        "current_page": page,
+        "pages": page_range,
+        "start_item": start_item,
+        "end_item": end_item
+    })
 
 # Функция для проверки доступа администратора
 async def check_admin_access(request: Request, db: Session):

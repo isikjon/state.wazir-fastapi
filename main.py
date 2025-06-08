@@ -954,7 +954,7 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
         "address": property.address,
         "city": property.city,
         "area": property.area,
-        "status": property.status,
+        "status": property.status.value.lower() if property.status else "draft",
         "is_featured": property.is_featured,
         "tour_360_url": property.tour_360_url,
         "type": property.type,
@@ -2603,13 +2603,13 @@ async def superadmin_properties(
             "price_formatted": price_formatted,
             "rooms": prop.rooms,
             "area": prop.area,
-            "status": prop.status.value if prop.status else "draft",
+            "status": prop.status.value.lower() if prop.status else "draft",
             "status_display": {
-                "ACTIVE": "Активно",
-                "PENDING": "На модерации", 
-                "REJECTED": "Отклонено",
-                "DRAFT": "Черновик"
-            }.get(prop.status.value if prop.status else "draft", "Неизвестно"),
+                "active": "Активно",
+                "pending": "На модерации", 
+                "rejected": "Отклонено",
+                "draft": "Черновик"
+            }.get(prop.status.value.lower() if prop.status else "draft", "Неизвестно"),
             "owner_id": prop.owner_id,
             "owner_name": owner_name,
             "image_url": image_url,

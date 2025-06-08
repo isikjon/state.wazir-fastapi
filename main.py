@@ -39,6 +39,21 @@ import asyncio
 import subprocess
 import openpyxl
 from io import BytesIO
+import uuid
+from typing import List, Optional, Dict, Any
+from datetime import datetime, timedelta
+import json
+from sqlalchemy.orm import Session
+from sqlalchemy import desc, asc, and_, or_, func, text
+from fastapi import FastAPI, Request, Depends, Form, status, HTTPException, Query, WebSocket, WebSocketDisconnect, Response, UploadFile, File
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from passlib.context import CryptContext
+from jose import JWTError, jwt
+from fastapi.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware as StarletteBaseHTTPMiddleware
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
@@ -4280,7 +4295,7 @@ async def companies_listings(
         return RedirectResponse(url="/companies/login", status_code=302)
     
     try:
-        # Базовый запрос
+        # Базовый запрос с загрузкой связанных данных
         query = db.query(models.Property).filter(models.Property.owner_id == current_user.id)
         
         # Фильтры
@@ -4297,7 +4312,69 @@ async def companies_listings(
         total_pages = (total_count + per_page - 1) // per_page
         offset = (page - 1) * per_page
         
-        properties = query.order_by(models.Property.created_at.desc()).offset(offset).limit(per_page).all()
+        properties_raw = query.order_by(models.Property.created_at.desc()).offset(offset).limit(per_page).all()
+        
+        # Обогащаем каждое объявление дополнительными данными
+        enhanced_properties = []
+        for prop in properties_raw:
+            # Получаем главное изображение
+            main_image = db.query(models.PropertyImage).filter(
+                models.PropertyImage.property_id == prop.id,
+                models.PropertyImage.is_main == True
+            ).first()
+            
+            if not main_image:
+                # Если нет главного, берем первое доступное
+                main_image = db.query(models.PropertyImage).filter(
+                    models.PropertyImage.property_id == prop.id
+                ).first()
+            
+            # Получаем категорию
+            category_name = "Не указана"
+            if prop.category_id:
+                category = db.query(models.Category).filter(models.Category.id == prop.category_id).first()
+                if category:
+                    category_name = category.name
+            
+            # Создаем объект с дополнительными полями
+            enhanced_prop = {
+                "id": prop.id,
+                "title": prop.title,
+                "description": prop.description,
+                "price": prop.price,
+                "address": prop.address,
+                "city": prop.city,
+                "area": prop.area,
+                "rooms": prop.rooms,
+                "floor": prop.floor,
+                "building_floors": prop.building_floors,
+                "status": prop.status,
+                "type": prop.type,
+                "property_type": prop.type,  # Добавляем алиас для совместимости с шаблоном
+                "category_name": category_name,
+                "created_at": prop.created_at,
+                "views": getattr(prop, 'views', 0),
+                "image_url": main_image.url if main_image else None,
+                "has_balcony": prop.has_balcony,
+                "has_furniture": prop.has_furniture,
+                "has_renovation": prop.has_renovation,
+                "has_parking": prop.has_parking,
+                "has_elevator": getattr(prop, 'has_elevator', False),
+                "has_security": getattr(prop, 'has_security', False),
+                "has_internet": getattr(prop, 'has_internet', False),
+                "has_air_conditioning": getattr(prop, 'has_air_conditioning', False),
+                "has_heating": getattr(prop, 'has_heating', False),
+                "has_yard": getattr(prop, 'has_yard', False),
+                "has_pool": getattr(prop, 'has_pool', False),
+                "has_gym": getattr(prop, 'has_gym', False),
+                "bathroom_type": getattr(prop, 'bathroom_type', None),
+                "category_id": prop.category_id
+            }
+            enhanced_properties.append(enhanced_prop)
+        
+        print(f"DEBUG: Загружено {len(enhanced_properties)} объявлений для компании {current_user.id}")
+        if enhanced_properties:
+            print(f"DEBUG: Первое объявление - image_url: {enhanced_properties[0]['image_url']}, category: {enhanced_properties[0]['category_name']}")
         
         # Статистика
         all_properties = db.query(models.Property).filter(models.Property.owner_id == current_user.id)
@@ -4309,22 +4386,23 @@ async def companies_listings(
             "request": request,
             "current_user": current_user,
             "company_name": current_user.company_name,
-            "properties": properties,
+            "properties": enhanced_properties,
             "total_count": total_count,
+            "total_pages": total_pages,
+            "current_page": page,
             "active_count": active_count,
             "pending_count": pending_count,
             "draft_count": draft_count,
-            "current_page": page,
-            "total_pages": total_pages,
-            "per_page": per_page,
-            "search": search,
-            "status": status,
-            "property_type": property_type
+            "search": search or "",
+            "status": status or "",
+            "property_type": property_type or ""
         })
         
     except Exception as e:
         print(f"DEBUG: Ошибка в списке объявлений компании: {e}")
-        return RedirectResponse(url="/companies/dashboard", status_code=302)
+        import traceback
+        print(f"DEBUG: Traceback: {traceback.format_exc()}")
+        return RedirectResponse(url="/companies/login", status_code=302)
 
 @app.get("/companies/analytics", response_class=HTMLResponse)
 async def companies_analytics(

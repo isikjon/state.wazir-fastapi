@@ -2432,7 +2432,13 @@ async def superadmin_companies(
     if isinstance(user, RedirectResponse):
         return user
     
-    # Базовый запрос для юридических лиц
+    from sqlalchemy.orm import joinedload
+    from sqlalchemy import or_
+    
+    items_per_page = 20
+    offset = (page - 1) * items_per_page
+    
+    # Базовый запрос для компаний (пользователи с ролью COMPANY)
     query = db.query(models.User).filter(models.User.role == models.UserRole.COMPANY)
     
     # Применяем фильтры
@@ -2440,12 +2446,12 @@ async def superadmin_companies(
         search_term = f"%{search}%"
         query = query.filter(
             or_(
-                models.User.company_name.ilike(search_term),
-                models.User.company_number.ilike(search_term),
-                models.User.company_owner.ilike(search_term),
                 models.User.full_name.ilike(search_term),
                 models.User.email.ilike(search_term),
-                models.User.phone.ilike(search_term)
+                models.User.phone.ilike(search_term),
+                models.User.company_name.ilike(search_term),
+                models.User.company_number.ilike(search_term),
+                models.User.company_owner.ilike(search_term)
             )
         )
     
@@ -2455,18 +2461,14 @@ async def superadmin_companies(
         elif status == "blocked":
             query = query.filter(models.User.is_active == False)
     
-    # Пагинация
+    # Подсчет общего количества для пагинации
     total_items = query.count()
-    items_per_page = 20
-    total_pages = (total_items + items_per_page - 1) // items_per_page if total_items > 0 else 1
+    total_pages = (total_items + items_per_page - 1) // items_per_page
     
-    if page > total_pages and total_pages > 0:
-        page = total_pages
+    # Получаем компании с пагинацией
+    companies_results = query.offset(offset).limit(items_per_page).all()
     
-    start_idx = (page - 1) * items_per_page
-    companies_results = query.order_by(desc(models.User.created_at)).offset(start_idx).limit(items_per_page).all()
-    
-    # Подготавливаем данные для отображения
+    # Формируем данные для шаблона
     enhanced_companies = []
     total_company_properties = 0
     
@@ -2507,6 +2509,129 @@ async def superadmin_companies(
             "total_company_properties": total_company_properties,
             "search": search or "",
             "status": status or "",
+            "current_page": page,
+            "total_pages": total_pages,
+        }
+    )
+
+@app.get("/superadmin/properties", response_class=HTMLResponse)
+async def superadmin_properties(
+    request: Request, 
+    search: str = Query(None),
+    status: str = Query(None),
+    property_type: str = Query(None),
+    page: int = Query(1, ge=1),
+    db: Session = Depends(deps.get_db)
+):
+    # Проверяем доступ суперадмина
+    user = await check_superadmin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    from sqlalchemy.orm import joinedload
+    from sqlalchemy import or_, desc
+    
+    items_per_page = 20
+    offset = (page - 1) * items_per_page
+    
+    # Базовый запрос для объявлений
+    query = db.query(models.Property).options(joinedload(models.Property.owner))
+    
+    # Применяем фильтры
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                models.Property.title.ilike(search_term),
+                models.Property.address.ilike(search_term),
+                models.Property.description.ilike(search_term)
+            )
+        )
+    
+    if status:
+        if status == "active":
+            query = query.filter(models.Property.status == 'ACTIVE')
+        elif status == "pending":
+            query = query.filter(models.Property.status == 'PENDING')
+        elif status == "rejected":
+            query = query.filter(models.Property.status == 'REJECTED')
+        elif status == "draft":
+            query = query.filter(models.Property.status == 'DRAFT')
+    
+    if property_type:
+        # Фильтр по типу недвижимости - здесь можно добавить логику фильтрации
+        pass
+    
+    # Сортировка по дате создания (новые сначала)
+    query = query.order_by(desc(models.Property.created_at))
+    
+    # Подсчет общего количества для пагинации
+    total_items = query.count()
+    total_pages = (total_items + items_per_page - 1) // items_per_page
+    
+    # Получаем объявления с пагинацией
+    properties_results = query.offset(offset).limit(items_per_page).all()
+    
+    # Формируем данные для шаблона
+    enhanced_properties = []
+    
+    for prop in properties_results:
+        # Форматирование цены
+        price_formatted = f"{int(prop.price):,} сом".replace(",", " ") if prop.price else "Не указана"
+        
+        # Получаем имя владельца
+        owner_name = "Неизвестен"
+        if prop.owner:
+            if prop.owner.role == models.UserRole.COMPANY:
+                owner_name = prop.owner.company_name or prop.owner.full_name or prop.owner.email
+            else:
+                owner_name = prop.owner.full_name or prop.owner.email
+        
+        # URL изображения (если есть)
+        image_url = "/static/img/property-placeholder.jpg"  # Дефолтное изображение
+        if hasattr(prop, 'images') and prop.images:
+            image_url = prop.images[0] if isinstance(prop.images, list) else prop.images
+        
+        enhanced_properties.append({
+            "id": prop.id,
+            "title": prop.title or f"Объект #{prop.id}",
+            "address": prop.address or "Адрес не указан",
+            "price": prop.price or 0,
+            "price_formatted": price_formatted,
+            "rooms": prop.rooms,
+            "area": prop.area,
+            "status": prop.status.value if prop.status else "draft",
+            "status_display": {
+                "ACTIVE": "Активно",
+                "PENDING": "На модерации", 
+                "REJECTED": "Отклонено",
+                "DRAFT": "Черновик"
+            }.get(prop.status.value if prop.status else "draft", "Неизвестно"),
+            "owner_id": prop.owner_id,
+            "owner_name": owner_name,
+            "image_url": image_url,
+            "created_at": prop.created_at.strftime("%d.%m.%Y") if prop.created_at else "Неизвестно"
+        })
+    
+    # Статистика
+    total_properties = db.query(models.Property).count()
+    active_count = db.query(models.Property).filter(models.Property.status == 'ACTIVE').count()
+    pending_count = db.query(models.Property).filter(models.Property.status == 'PENDING').count()
+    rejected_count = db.query(models.Property).filter(models.Property.status == 'REJECTED').count()
+    
+    return templates.TemplateResponse(
+        "superadmin/properties.html",
+        {
+            "request": request,
+            "current_user": user,
+            "properties": enhanced_properties,
+            "total_properties": total_properties,
+            "active_count": active_count,
+            "pending_count": pending_count,
+            "rejected_count": rejected_count,
+            "search": search or "",
+            "status": status or "",
+            "property_type": property_type or "",
             "current_page": page,
             "total_pages": total_pages,
         }

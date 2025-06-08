@@ -7,6 +7,7 @@ services:
       - ./static:/app/static
       - ./media:/app/media
       - ./logs:/app/logs
+      - ./uploads:/app/uploads
     environment:
       - DATABASE_URL=mysql+pymysql://wazir:c:ICx9Pr{48y>6BmBc3r@127.0.0.1/wazir
       - SECRET_KEY=CdKxf8AKid3xI9QIPgJUGzgJFsDRXaBW1AcmZUvcP8llHN6Bmr5jWP

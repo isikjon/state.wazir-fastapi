@@ -77,6 +77,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             '/api/v1/chat/',  # Chat API general path
             '/admin/login',   # Admin login page
             '/superadmin/login',  # SuperAdmin login page
+            '/companies/login',   # Company login page
         ]
         
         # Для статических файлов, API разрешаем доступ
@@ -152,6 +153,8 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                 return RedirectResponse('/admin/login', status_code=303)
             elif request.url.path.startswith('/superadmin/'):
                 return RedirectResponse('/superadmin/login', status_code=303)
+            elif request.url.path.startswith('/companies/'):
+                return RedirectResponse('/companies/login', status_code=303)
             # Для остальных маршрутов перенаправляем на страницу авторизации
             return RedirectResponse('/mobile/auth', status_code=303)
             
@@ -165,6 +168,8 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                     return RedirectResponse('/admin/login', status_code=303)
                 elif request.url.path.startswith('/superadmin/'):
                     return RedirectResponse('/superadmin/login', status_code=303)
+                elif request.url.path.startswith('/companies/'):
+                    return RedirectResponse('/companies/login', status_code=303)
                 return RedirectResponse('/mobile/auth', status_code=303)
                 
             # Для суперадмин-маршрутов проверяем, что пользователь является суперадминистратором
@@ -177,12 +182,19 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                 print("DEBUG: Non-admin user trying to access admin area")
                 return RedirectResponse('/admin/login', status_code=303)
                 
+            # Для маршрутов компаний проверяем, что пользователь является компанией
+            if request.url.path.startswith('/companies/') and not payload.get("is_company"):
+                print("DEBUG: Non-company user trying to access company area")
+                return RedirectResponse('/companies/login', status_code=303)
+                
         except Exception as e:
             print(f"DEBUG: Token validation error (cookie): {str(e)}")
             if request.url.path.startswith('/admin/'):
                 return RedirectResponse('/admin/login', status_code=303)
             elif request.url.path.startswith('/superadmin/'):
                 return RedirectResponse('/superadmin/login', status_code=303)
+            elif request.url.path.startswith('/companies/'):
+                return RedirectResponse('/companies/login', status_code=303)
             return RedirectResponse('/mobile/auth', status_code=303)
             
         # Если токен валиден, пропускаем запрос дальше

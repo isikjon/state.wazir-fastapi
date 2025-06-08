@@ -758,12 +758,18 @@ async def mobile_create_listing(request: Request, db: Session = Depends(deps.get
             if user_id:
                 # Получаем данные пользователя из БД
                 user = db.query(models.User).filter(models.User.id == user_id).first()
+                print(f"DEBUG: Загружен пользователь для создания объявления: {user.email}, роль: {user.role}")
+                
+                # Дополняем данные пользователя для корпоративных аккаунтов
+                if user and user.role == models.UserRole.COMPANY:
+                    print(f"DEBUG: Корпоративный пользователь - {user.company_name}, владелец: {user.company_owner}")
+                
         except Exception as e:
             print(f"DEBUG: Ошибка при проверке токена: {e}")
     
     # Проверяем, авторизован ли пользователь
     if not user:
-        return RedirectResponse(url="/mobile/login")
+        return RedirectResponse(url="/mobile/auth")
     
     return templates.TemplateResponse(
         "layout/create-listing.html",

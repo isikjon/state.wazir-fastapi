@@ -561,22 +561,38 @@
                             </div>
 
                             <div class="mb-4">
-                                <label for="contact-name"
-                                    class="form-label">ФИО</label>
-                                <input type="text" id="contact-name"
-                                    class="form-input"
-                                    value="{{ user.full_name if user.full_name else '' }}"
+                                <label for="contact-name" class="form-label">
+                                    {% if user.role == 'COMPANY' %}Контактное лицо{% else %}ФИО{% endif %}
+                                </label>
+                                <input type="text" id="contact-name" class="form-input"
+                                    value="{% if user.role == 'COMPANY' %}{{ user.full_name or user.company_owner or '' }}{% else %}{{ user.full_name or '' }}{% endif %}"
                                     readonly>
                             </div>
+                            
+                            {% if user.role == 'COMPANY' %}
+                            <div class="mb-4">
+                                <label for="company-name" class="form-label">Компания</label>
+                                <input type="text" id="company-name" class="form-input"
+                                    value="{{ user.company_name or '' }}"
+                                    readonly>
+                            </div>
+                            {% endif %}
 
                             <div class="mb-4">
-                                <label for="contact-phone"
-                                    class="form-label">Телефон</label>
-                                <input type="text" id="contact-phone"
-                                    class="form-input"
-                                    value="{{ user.phone if user.phone else '' }}"
+                                <label for="contact-phone" class="form-label">Телефон</label>
+                                <input type="text" id="contact-phone" class="form-input"
+                                    value="{{ user.phone or '' }}"
                                     readonly>
                             </div>
+                            
+                            {% if user.role == 'COMPANY' and user.company_address %}
+                            <div class="mb-4">
+                                <label for="company-address" class="form-label">Адрес компании</label>
+                                <input type="text" id="company-address" class="form-input"
+                                    value="{{ user.company_address }}"
+                                    readonly>
+                            </div>
+                            {% endif %}
                         </div>
 
                         <!-- Кнопка отправки -->

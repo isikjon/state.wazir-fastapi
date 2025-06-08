@@ -421,94 +421,168 @@
 
 <!-- Модальное окно редактирования объявления -->
 <div id="edit-property-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
-        <div class="flex items-center justify-between border-b pb-3">
+    <div class="relative top-10 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b pb-3 mb-4">
             <h3 class="text-lg font-semibold text-gray-900">Редактирование объявления</h3>
             <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
         
-        <div class="mt-4">
+        <div class="space-y-6">
             <input type="hidden" id="edit-property-id" value="">
-            <div class="grid grid-cols-1 gap-6">
-                <div>
-                    <label for="edit-title" class="block text-sm font-medium text-gray-700 mb-2">Название</label>
-                    <input type="text" id="edit-title" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+            
+            <!-- Основная информация -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="text-md font-medium text-gray-900 mb-3">Основная информация</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="edit-title" class="block text-sm font-medium text-gray-700 mb-1">Название *</label>
+                        <input type="text" id="edit-title" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm">
+                    </div>
+                    <div>
+                        <label for="edit-price" class="block text-sm font-medium text-gray-700 mb-1">Цена (сом) *</label>
+                        <input type="number" id="edit-price" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm">
+                    </div>
+                    <div>
+                        <label for="edit-category" class="block text-sm font-medium text-gray-700 mb-1">Категория</label>
+                        <select id="edit-category" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm">
+                            <option value="">Выберите категорию</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="edit-type" class="block text-sm font-medium text-gray-700 mb-1">Тип недвижимости</label>
+                        <select id="edit-type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm">
+                            <option value="apartment">Квартира</option>
+                            <option value="house">Дом</option>
+                            <option value="commercial">Коммерческая</option>
+                            <option value="land">Участок</option>
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <label for="edit-description" class="block text-sm font-medium text-gray-700 mb-2">Описание</label>
-                    <textarea id="edit-description" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm" rows="3"></textarea>
+                <div class="mt-4">
+                    <label for="edit-description" class="block text-sm font-medium text-gray-700 mb-1">Описание *</label>
+                    <textarea id="edit-description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm"></textarea>
                 </div>
-                <div>
-                    <label for="edit-price" class="block text-sm font-medium text-gray-700 mb-2">Цена</label>
-                    <input type="text" id="edit-price" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <label for="edit-address" class="block text-sm font-medium text-gray-700 mb-1">Адрес *</label>
+                        <input type="text" id="edit-address" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm">
+                    </div>
+                    <div>
+                        <label for="edit-city" class="block text-sm font-medium text-gray-700 mb-1">Город</label>
+                        <input type="text" id="edit-city" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm">
+                    </div>
                 </div>
-                <div>
-                    <label for="edit-address" class="block text-sm font-medium text-gray-700 mb-2">Адрес</label>
-                    <input type="text" id="edit-address" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+
+            <!-- Характеристики -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="text-md font-medium text-gray-900 mb-3">Характеристики</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="edit-area" class="block text-sm font-medium text-gray-700 mb-1">Площадь (м²)</label>
+                        <input type="number" id="edit-area" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm">
+                    </div>
+                    <div>
+                        <label for="edit-rooms" class="block text-sm font-medium text-gray-700 mb-1">Комнаты</label>
+                        <select id="edit-rooms" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm">
+                            <option value="">Выберите</option>
+                            <option value="1">1 комната</option>
+                            <option value="2">2 комнаты</option>
+                            <option value="3">3 комнаты</option>
+                            <option value="4">4 комнаты</option>
+                            <option value="5">5+ комнат</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="edit-floor" class="block text-sm font-medium text-gray-700 mb-1">Этаж</label>
+                        <input type="number" id="edit-floor" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm">
+                    </div>
                 </div>
-                <div>
-                    <label for="edit-city" class="block text-sm font-medium text-gray-700 mb-2">Город</label>
-                    <input type="text" id="edit-city" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <label for="edit-building-floors" class="block text-sm font-medium text-gray-700 mb-1">Этажность здания</label>
+                        <input type="number" id="edit-building-floors" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm">
+                    </div>
+                    <div>
+                        <label for="edit-bathroom-type" class="block text-sm font-medium text-gray-700 mb-1">Санузел</label>
+                        <select id="edit-bathroom-type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm">
+                            <option value="">Выберите</option>
+                            <option value="separate">Раздельный</option>
+                            <option value="combined">Совмещенный</option>
+                            <option value="multiple">Несколько</option>
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <label for="edit-category" class="block text-sm font-medium text-gray-700 mb-2">Категория</label>
-                    <select id="edit-category" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
-                        <option value="">Выберите категорию</option>
-                        {% for category in categories %}
-                        <option value="{{ category.id }}">{{ category.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <label for="edit-area" class="block text-sm font-medium text-gray-700 mb-2">Площадь</label>
-                    <input type="text" id="edit-area" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
-                </div>
-                <div>
-                    <label for="edit-rooms" class="block text-sm font-medium text-gray-700 mb-2">Комнаты</label>
-                    <input type="text" id="edit-rooms" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
-                </div>
-                <div>
-                    <label for="edit-floor" class="block text-sm font-medium text-gray-700 mb-2">Этаж</label>
-                    <input type="text" id="edit-floor" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
-                </div>
-                <div>
-                    <label for="edit-building-floors" class="block text-sm font-medium text-gray-700 mb-2">Этажей</label>
-                    <input type="text" id="edit-building-floors" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
-                </div>
-                <div>
-                    <label for="edit-type" class="block text-sm font-medium text-gray-700 mb-2">Тип</label>
-                    <select id="edit-type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
-                        <option value="">Выберите тип</option>
-                        <option value="apartment">Квартира</option>
-                        <option value="house">Дом</option>
-                        <option value="commercial">Коммерческая</option>
-                        <option value="land">Участок</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="edit-has-balcony" class="block text-sm font-medium text-gray-700 mb-2">Балкон</label>
-                    <input type="checkbox" id="edit-has-balcony" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
-                </div>
-                <div>
-                    <label for="edit-has-furniture" class="block text-sm font-medium text-gray-700 mb-2">Мебель</label>
-                    <input type="checkbox" id="edit-has-furniture" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
-                </div>
-                <div>
-                    <label for="edit-has-renovation" class="block text-sm font-medium text-gray-700 mb-2">Ремонт</label>
-                    <input type="checkbox" id="edit-has-renovation" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
-                </div>
-                <div>
-                    <label for="edit-has-parking" class="block text-sm font-medium text-gray-700 mb-2">Парковка</label>
-                    <input type="checkbox" id="edit-has-parking" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm">
+            </div>
+
+            <!-- Удобства -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="text-md font-medium text-gray-900 mb-3">Дополнительные удобства</h4>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="edit-has-balcony" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">Балкон</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="edit-has-furniture" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">Мебель</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="edit-has-renovation" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">Ремонт</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="edit-has-parking" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">Парковка</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="edit-has-elevator" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">Лифт</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="edit-has-security" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">Охрана</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="edit-has-internet" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">Интернет</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="edit-has-air-conditioning" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">Кондиционер</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="edit-has-heating" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">Отопление</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="edit-has-yard" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">Двор/сад</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="edit-has-pool" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">Бассейн</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="edit-has-gym" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">Спортзал</span>
+                    </label>
                 </div>
             </div>
         </div>
         
-        <div class="flex justify-end mt-6 pt-3 border-t">
-            <button id="save-edit-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg mr-2">Сохранить</button>
-            <button onclick="closeEditModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg">Отмена</button>
+        <div class="flex justify-end space-x-3 mt-6 pt-4 border-t">
+            <button onclick="closeEditModal()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:outline-none transition-colors">
+                Отмена
+            </button>
+            <button id="save-edit-btn" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark focus:outline-none transition-colors font-medium">
+                Сохранить изменения
+            </button>
         </div>
     </div>
 </div>
@@ -812,24 +886,35 @@
         fetch(`/api/v1/companies/properties/${propertyId}`)
             .then(response => response.json())
             .then(data => {
-                // Заполняем форму
+                // Заполняем основную информацию
                 document.getElementById('edit-title').value = data.title || '';
-                document.getElementById('edit-description').value = data.description || '';
                 document.getElementById('edit-price').value = data.price || '';
+                document.getElementById('edit-category').value = data.category_id || '';
+                document.getElementById('edit-type').value = data.type || 'apartment';
+                document.getElementById('edit-description').value = data.description || '';
                 document.getElementById('edit-address').value = data.address || '';
                 document.getElementById('edit-city').value = data.city || 'Бишкек';
-                document.getElementById('edit-category').value = data.category_id || '';
+                
+                // Заполняем характеристики
                 document.getElementById('edit-area').value = data.area || '';
                 document.getElementById('edit-rooms').value = data.rooms || '';
                 document.getElementById('edit-floor').value = data.floor || '';
                 document.getElementById('edit-building-floors').value = data.building_floors || '';
-                document.getElementById('edit-type').value = data.type || 'apartment';
+                document.getElementById('edit-bathroom-type').value = data.bathroom_type || '';
                 
-                // Чекбоксы
+                // Заполняем чекбоксы удобств
                 document.getElementById('edit-has-balcony').checked = data.has_balcony || false;
                 document.getElementById('edit-has-furniture').checked = data.has_furniture || false;
                 document.getElementById('edit-has-renovation').checked = data.has_renovation || false;
                 document.getElementById('edit-has-parking').checked = data.has_parking || false;
+                document.getElementById('edit-has-elevator').checked = data.has_elevator || false;
+                document.getElementById('edit-has-security').checked = data.has_security || false;
+                document.getElementById('edit-has-internet').checked = data.has_internet || false;
+                document.getElementById('edit-has-air-conditioning').checked = data.has_air_conditioning || false;
+                document.getElementById('edit-has-heating').checked = data.has_heating || false;
+                document.getElementById('edit-has-yard').checked = data.has_yard || false;
+                document.getElementById('edit-has-pool').checked = data.has_pool || false;
+                document.getElementById('edit-has-gym').checked = data.has_gym || false;
             })
             .catch(error => {
                 console.error('Ошибка загрузки данных объявления:', error);
@@ -847,24 +932,35 @@
         const propertyId = document.getElementById('edit-property-id').value;
         const formData = new FormData();
         
-        // Собираем данные формы
+        // Собираем основную информацию
         formData.append('title', document.getElementById('edit-title').value);
         formData.append('description', document.getElementById('edit-description').value);
         formData.append('price', document.getElementById('edit-price').value);
         formData.append('address', document.getElementById('edit-address').value);
         formData.append('city', document.getElementById('edit-city').value);
         formData.append('category_id', document.getElementById('edit-category').value);
+        formData.append('type', document.getElementById('edit-type').value);
+        
+        // Собираем характеристики
         formData.append('area', document.getElementById('edit-area').value);
         formData.append('rooms', document.getElementById('edit-rooms').value);
         formData.append('floor', document.getElementById('edit-floor').value);
         formData.append('building_floors', document.getElementById('edit-building-floors').value);
-        formData.append('type', document.getElementById('edit-type').value);
+        formData.append('bathroom_type', document.getElementById('edit-bathroom-type').value);
         
-        // Чекбоксы
+        // Собираем все удобства (чекбоксы)
         formData.append('has_balcony', document.getElementById('edit-has-balcony').checked);
         formData.append('has_furniture', document.getElementById('edit-has-furniture').checked);
         formData.append('has_renovation', document.getElementById('edit-has-renovation').checked);
         formData.append('has_parking', document.getElementById('edit-has-parking').checked);
+        formData.append('has_elevator', document.getElementById('edit-has-elevator').checked);
+        formData.append('has_security', document.getElementById('edit-has-security').checked);
+        formData.append('has_internet', document.getElementById('edit-has-internet').checked);
+        formData.append('has_air_conditioning', document.getElementById('edit-has-air-conditioning').checked);
+        formData.append('has_heating', document.getElementById('edit-has-heating').checked);
+        formData.append('has_yard', document.getElementById('edit-has-yard').checked);
+        formData.append('has_pool', document.getElementById('edit-has-pool').checked);
+        formData.append('has_gym', document.getElementById('edit-has-gym').checked);
         
         // Отправляем на сервер
         fetch(`/api/v1/companies/properties/${propertyId}`, {

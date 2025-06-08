@@ -763,26 +763,13 @@
                             id="panorama-scene"
                             vr-mode-ui="enabled: false" 
                             embedded 
-                            style="width: 100%; height: 100%;"
-                            cursor="rayOrigin: mouse"
-                            raycaster="objects: .clickable">
+                            style="width: 100%; height: 100%;">
                             <a-sky 
                                 id="panorama-sky"
                                 src="{{ property.tour_360_optimized_url }}" 
                                 rotation="0 -130 0">
                             </a-sky>
-                            <a-camera 
-                                look-controls="enabled: true; pointerLockEnabled: false"
-                                wasd-controls="enabled: false"
-                                position="0 1.6 0">
-                                <a-cursor
-                                    animation__click="property: scale; startEvents: click; easing: easeInCubic; dur: 150; from: 0.1 0.1 0.1; to: 1 1 1"
-                                    animation__fusing="property: scale; startEvents: fusing; easing: easeInCubic; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1"
-                                    animation__mouseleave="property: scale; startEvents: mouseleave; easing: easeInCubic; dur: 500; to: 1 1 1"
-                                    geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
-                                    material="color: white; shader: flat">
-                                </a-cursor>
-                            </a-camera>
+                            <a-camera look-controls position="0 1.6 0"></a-camera>
                         </a-scene>
                     </div>
                     {% else %}
@@ -1097,23 +1084,22 @@
                         $('#modal-360').removeClass('hidden');
                         $('body').addClass('overflow-hidden'); // Запретить прокрутку страницы
                         
-                        // Инициализируем A-Frame сцену после открытия модального окна
+                        // Даём A-Frame время на инициализацию сцены
                         setTimeout(function() {
                             var scene = document.querySelector('#panorama-scene');
-                            var sky = document.querySelector('#panorama-sky');
-                            
-                            if (scene && sky) {
-                                // Принудительно обновляем сцену
-                                scene.systems.renderer.render(scene.object3D, scene.camera);
-                                
-                                // Устанавливаем начальную позицию камеры
-                                var camera = scene.querySelector('a-camera');
-                                if (camera) {
-                                    camera.setAttribute('rotation', '0 0 0');
-                                    camera.setAttribute('position', '0 1.6 0');
+                            if (scene) {
+                                // Просто перезагружаем A-Frame сцену для корректного отображения
+                                var sky = scene.querySelector('#panorama-sky');
+                                if (sky) {
+                                    // Обновляем src панорамы для принудительной перезагрузки
+                                    var currentSrc = sky.getAttribute('src');
+                                    sky.setAttribute('src', '');
+                                    setTimeout(function() {
+                                        sky.setAttribute('src', currentSrc);
+                                    }, 50);
                                 }
                             }
-                        }, 100);
+                        }, 200);
                     });
                 }
                 

@@ -4361,7 +4361,7 @@ async def companies_listings(
                 "property_type": prop.type,  # Добавляем алиас для совместимости с шаблоном
                 "category_name": category_name,
                 "owner_name": owner_name,  # Добавляем имя владельца
-                "created_at": prop.created_at,
+                "created_at": prop.created_at.isoformat() if prop.created_at else None,  # Конвертируем datetime в строку
                 "views": getattr(prop, 'views', 0),
                 "image_url": main_image.url if main_image else None,
                 "all_images": [img.url for img in all_images],  # Все изображения для слайдера
@@ -4455,7 +4455,13 @@ async def companies_analytics(
                 'total_views': 695,
                 'total_calls': 28,
                 'total_messages': 15,
-                'conversion_rate': 4.0
+                'conversion_rate': 4.0,
+                'views_change': 12.5,  # Добавляем недостающие поля
+                'unique_visitors': 465,
+                'visitors_change': 8.3,
+                'contacts': 43,
+                'contacts_change': 15.7,
+                'conversion_change': 2.1
             }
         }
         

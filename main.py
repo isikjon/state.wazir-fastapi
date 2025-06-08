@@ -4296,8 +4296,8 @@ async def companies_listings(
         
         # Фильтры
         if search:
-            query = query.filter(models.Property.title.ilike(f"%{search}%"))
-        if status:
+            query = query.filter(models.Property.address.ilike(f"%{search}%"))  # Поиск только по адресу
+        if status and status != "all":  # Добавляем проверку на "all"
             query = query.filter(models.Property.status == status)
         if property_type:
             query = query.filter(models.Property.type == property_type)

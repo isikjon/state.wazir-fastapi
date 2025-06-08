@@ -22,110 +22,58 @@
 {% block content %}
 <!-- Основные метрики -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <!-- Общие просмотры -->
+    <!-- Всего объявлений -->
     <div class="card bg-white rounded-lg p-6 border border-gray-200">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm font-medium text-gray-600">Общие просмотры</p>
-                <p class="text-3xl font-bold text-gray-900">{{ stats.total_views or 0 }}</p>
-                <p class="text-sm mt-2">
-                    {% if stats.views_change >= 0 %}
-                    <span class="text-green-600">
-                        <i class="fas fa-arrow-up"></i>
-                        +{{ stats.views_change or 0 }}%
-                    </span>
-                    {% else %}
-                    <span class="text-red-600">
-                        <i class="fas fa-arrow-down"></i>
-                        {{ stats.views_change or 0 }}%
-                    </span>
-                    {% endif %}
-                    <span class="text-gray-500 ml-1">за период</span>
-                </p>
+                <p class="text-sm font-medium text-gray-600">Всего объявлений</p>
+                <p class="text-3xl font-bold text-gray-900">{{ stats.total_properties or 0 }}</p>
+                <p class="text-sm mt-2 text-gray-500">Общее количество</p>
             </div>
             <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <i class="fas fa-eye text-blue-600 text-xl"></i>
+                <i class="fas fa-list text-blue-600 text-xl"></i>
             </div>
         </div>
     </div>
 
-    <!-- Уникальные посетители -->
+    <!-- Активные объявления -->
     <div class="card bg-white rounded-lg p-6 border border-gray-200">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm font-medium text-gray-600">Уникальные посетители</p>
-                <p class="text-3xl font-bold text-gray-900">{{ stats.unique_visitors or 0 }}</p>
-                <p class="text-sm mt-2">
-                    {% if stats.visitors_change >= 0 %}
-                    <span class="text-green-600">
-                        <i class="fas fa-arrow-up"></i>
-                        +{{ stats.visitors_change or 0 }}%
-                    </span>
-                    {% else %}
-                    <span class="text-red-600">
-                        <i class="fas fa-arrow-down"></i>
-                        {{ stats.visitors_change or 0 }}%
-                    </span>
-                    {% endif %}
-                    <span class="text-gray-500 ml-1">за период</span>
-                </p>
+                <p class="text-sm font-medium text-gray-600">Активные</p>
+                <p class="text-3xl font-bold text-gray-900">{{ stats.active_properties or 0 }}</p>
+                <p class="text-sm mt-2 text-gray-500">Опубликованные</p>
             </div>
             <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <i class="fas fa-users text-green-600 text-xl"></i>
+                <i class="fas fa-check-circle text-green-600 text-xl"></i>
             </div>
         </div>
     </div>
 
-    <!-- Контакты -->
+    <!-- На модерации -->
     <div class="card bg-white rounded-lg p-6 border border-gray-200">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm font-medium text-gray-600">Контакты</p>
-                <p class="text-3xl font-bold text-gray-900">{{ stats.contacts or 0 }}</p>
-                <p class="text-sm mt-2">
-                    {% if stats.contacts_change >= 0 %}
-                    <span class="text-green-600">
-                        <i class="fas fa-arrow-up"></i>
-                        +{{ stats.contacts_change or 0 }}%
-                    </span>
-                    {% else %}
-                    <span class="text-red-600">
-                        <i class="fas fa-arrow-down"></i>
-                        {{ stats.contacts_change or 0 }}%
-                    </span>
-                    {% endif %}
-                    <span class="text-gray-500 ml-1">за период</span>
-                </p>
+                <p class="text-sm font-medium text-gray-600">На модерации</p>
+                <p class="text-3xl font-bold text-gray-900">{{ stats.pending_properties or 0 }}</p>
+                <p class="text-sm mt-2 text-gray-500">Ожидают проверки</p>
             </div>
-            <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                <i class="fas fa-phone text-primary text-xl"></i>
+            <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-clock text-yellow-600 text-xl"></i>
             </div>
         </div>
     </div>
 
-    <!-- Конверсия -->
+    <!-- Черновики -->
     <div class="card bg-white rounded-lg p-6 border border-gray-200">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm font-medium text-gray-600">Конверсия</p>
-                <p class="text-3xl font-bold text-gray-900">{{ stats.conversion_rate or 0 }}%</p>
-                <p class="text-sm mt-2">
-                    {% if stats.conversion_change >= 0 %}
-                    <span class="text-green-600">
-                        <i class="fas fa-arrow-up"></i>
-                        +{{ stats.conversion_change or 0 }}%
-                    </span>
-                    {% else %}
-                    <span class="text-red-600">
-                        <i class="fas fa-arrow-down"></i>
-                        {{ stats.conversion_change or 0 }}%
-                    </span>
-                    {% endif %}
-                    <span class="text-gray-500 ml-1">за период</span>
-                </p>
+                <p class="text-sm font-medium text-gray-600">Черновики</p>
+                <p class="text-3xl font-bold text-gray-900">{{ stats.draft_properties or 0 }}</p>
+                <p class="text-sm mt-2 text-gray-500">Не опубликованы</p>
             </div>
-            <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <i class="fas fa-chart-line text-orange-600 text-xl"></i>
+            <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-edit text-gray-600 text-xl"></i>
             </div>
         </div>
     </div>
@@ -133,46 +81,63 @@
 
 <!-- Графики -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-    <!-- График просмотров -->
+    <!-- График статусов объявлений -->
     <div class="card bg-white rounded-lg p-6 border border-gray-200">
         <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-semibold text-gray-900">Динамика просмотров</h3>
-            <div class="flex items-center space-x-2">
-                <span class="text-sm text-gray-500">Период:</span>
-                <select id="viewsChartPeriod" class="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white">
-                    <option value="daily">По дням</option>
-                    <option value="weekly">По неделям</option>
-                    <option value="monthly">По месяцам</option>
-                </select>
-            </div>
+            <h3 class="text-lg font-semibold text-gray-900">Распределение по статусам</h3>
         </div>
         <div class="h-64">
-            <canvas id="viewsChart" class="w-full h-full"></canvas>
+            <canvas id="statusChart" class="w-full h-full"></canvas>
         </div>
     </div>
 
-    <!-- График конверсии -->
+    <!-- Быстрые действия -->
     <div class="card bg-white rounded-lg p-6 border border-gray-200">
         <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-semibold text-gray-900">Конверсия в контакты</h3>
-            <div class="text-sm text-gray-500">
-                {{ ((stats.contacts or 0) / (stats.total_views or 1) * 100)|round(2) }}% общая конверсия
-            </div>
+            <h3 class="text-lg font-semibold text-gray-900">Быстрые действия</h3>
         </div>
-        <div class="h-64">
-            <canvas id="conversionChart" class="w-full h-full"></canvas>
+        <div class="space-y-4">
+            <a href="/companies/create-listing" class="flex items-center p-4 bg-primary/5 rounded-lg hover:bg-primary/10 transition-colors">
+                <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-plus text-white"></i>
+                </div>
+                <div>
+                    <p class="font-medium text-gray-900">Создать объявление</p>
+                    <p class="text-sm text-gray-500">Добавить новое объявление</p>
+                </div>
+            </a>
+            
+            <a href="/companies/listings" class="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-list text-white"></i>
+                </div>
+                <div>
+                    <p class="font-medium text-gray-900">Управление объявлениями</p>
+                    <p class="text-sm text-gray-500">Редактировать существующие</p>
+                </div>
+            </a>
+            
+            <a href="/companies/settings" class="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <div class="w-10 h-10 bg-gray-500 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-cog text-white"></i>
+                </div>
+                <div>
+                    <p class="font-medium text-gray-900">Настройки профиля</p>
+                    <p class="text-sm text-gray-500">Управление компанией</p>
+                </div>
+            </a>
         </div>
     </div>
 </div>
 
 <!-- Статистика по объявлениям -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-    <!-- Топ объявления -->
+<div class="grid grid-cols-1 gap-6 mb-8">
+    <!-- Последние объявления -->
     <div class="card bg-white rounded-lg border border-gray-200">
         <div class="px-6 py-4 border-b border-gray-200">
             <div class="flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-gray-900">Топ объявления</h3>
-                <span class="text-sm text-gray-500">по просмотрам</span>
+                <h3 class="text-lg font-semibold text-gray-900">Последние объявления</h3>
+                <a href="/companies/listings" class="text-primary hover:text-primary/80 text-sm font-medium">Посмотреть все</a>
             </div>
         </div>
         <div class="p-6">
@@ -193,155 +158,30 @@
                         <p class="text-xs text-gray-500">{{ property.address }}</p>
                     </div>
                     <div class="text-right">
-                        <p class="text-sm font-medium text-primary">{{ property.views or 0 }}</p>
-                        <p class="text-xs text-gray-500">просмотров</p>
+                        <p class="text-sm font-medium text-primary">
+                            {% if property.status == 'active' %}
+                                <span class="text-green-600">Активное</span>
+                            {% elif property.status == 'pending' %}
+                                <span class="text-yellow-600">На модерации</span>
+                            {% else %}
+                                <span class="text-gray-600">Черновик</span>
+                            {% endif %}
+                        </p>
+                        <p class="text-xs text-gray-500">{{ property.created_at.strftime('%d.%m.%Y') if property.created_at else '-' }}</p>
                     </div>
                 </div>
                 {% endfor %}
                 
                 {% if not top_properties %}
                 <div class="text-center py-8">
-                    <i class="fas fa-chart-bar text-4xl text-gray-300 mb-2"></i>
-                    <p class="text-gray-500">Нет данных для отображения</p>
+                    <i class="fas fa-list text-4xl text-gray-300 mb-2"></i>
+                    <p class="text-gray-500 mb-4">У вас пока нет объявлений</p>
+                    <a href="/companies/create-listing" class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>
+                        Создать первое объявление
+                    </a>
                 </div>
                 {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <!-- География просмотров -->
-    <div class="card bg-white rounded-lg border border-gray-200">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">География просмотров</h3>
-        </div>
-        <div class="p-6">
-            <div class="space-y-4">
-                {% for location in top_locations %}
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-map-marker-alt text-gray-500 text-sm"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">{{ location.city }}</p>
-                            <p class="text-xs text-gray-500">{{ location.country }}</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-sm font-medium text-gray-900">{{ location.views }}</p>
-                        <div class="w-20 bg-gray-200 rounded-full h-2 mt-1">
-                            <div class="bg-primary h-2 rounded-full" style="width: {{ (location.views / (top_locations[0].views if top_locations else 1) * 100)|round(1) }}%"></div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-                
-                {% if not top_locations %}
-                <div class="text-center py-8">
-                    <i class="fas fa-globe text-4xl text-gray-300 mb-2"></i>
-                    <p class="text-gray-500">Нет данных для отображения</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Источники трафика -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Источники -->
-    <div class="card bg-white rounded-lg border border-gray-200">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">Источники трафика</h3>
-        </div>
-        <div class="p-6">
-            <div class="space-y-4">
-                {% for source in traffic_sources %}
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                            {% if source.name == 'Прямые заходы' %}
-                            <i class="fas fa-link text-gray-500 text-sm"></i>
-                            {% elif source.name == 'Поисковые системы' %}
-                            <i class="fas fa-search text-gray-500 text-sm"></i>
-                            {% elif source.name == 'Социальные сети' %}
-                            <i class="fas fa-share-alt text-gray-500 text-sm"></i>
-                            {% else %}
-                            <i class="fas fa-external-link-alt text-gray-500 text-sm"></i>
-                            {% endif %}
-                        </div>
-                        <p class="text-sm font-medium text-gray-900">{{ source.name }}</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-sm font-medium text-gray-900">{{ source.views }}</p>
-                        <p class="text-xs text-gray-500">{{ source.percentage }}%</p>
-                    </div>
-                </div>
-                {% endfor %}
-                
-                {% if not traffic_sources %}
-                <div class="text-center py-8">
-                    <i class="fas fa-chart-pie text-4xl text-gray-300 mb-2"></i>
-                    <p class="text-gray-500">Нет данных для отображения</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <!-- Время на сайте -->
-    <div class="card bg-white rounded-lg border border-gray-200">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">Поведение пользователей</h3>
-        </div>
-        <div class="p-6">
-            <div class="space-y-6">
-                <div class="text-center">
-                    <p class="text-3xl font-bold text-primary">{{ stats.avg_session_duration or '0:00' }}</p>
-                    <p class="text-sm text-gray-500 mt-1">Среднее время на сайте</p>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4 text-center">
-                    <div>
-                        <p class="text-xl font-semibold text-gray-900">{{ stats.bounce_rate or 0 }}%</p>
-                        <p class="text-xs text-gray-500">Показатель отказов</p>
-                    </div>
-                    <div>
-                        <p class="text-xl font-semibold text-gray-900">{{ stats.pages_per_session or 0 }}</p>
-                        <p class="text-xs text-gray-500">Страниц за сессию</p>
-                    </div>
-                </div>
-                
-                <div>
-                    <p class="text-sm font-medium text-gray-700 mb-2">Активность по часам</p>
-                    <div class="h-16">
-                        <canvas id="hourlyChart" class="w-full h-full"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Устройства -->
-    <div class="card bg-white rounded-lg border border-gray-200">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">Устройства</h3>
-        </div>
-        <div class="p-6">
-            <div class="h-48 mb-4">
-                <canvas id="devicesChart" class="w-full h-full"></canvas>
-            </div>
-            
-            <div class="space-y-3">
-                {% for device in device_stats %}
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-2">
-                        <div class="w-3 h-3 rounded-full" style="background-color: {{ device.color }}"></div>
-                        <span class="text-sm text-gray-900">{{ device.name }}</span>
-                    </div>
-                    <span class="text-sm font-medium text-gray-900">{{ device.percentage }}%</span>
-                </div>
-                {% endfor %}
             </div>
         </div>
     </div>
@@ -357,140 +197,22 @@
         primaryLight: 'rgba(20, 75, 68, 0.1)',
         blue: '#3b82f6',
         green: '#10b981',
+        yellow: '#f59e0b',
         orange: '#f59e0b',
         red: '#ef4444',
-        purple: '#8b5cf6'
+        purple: '#8b5cf6',
+        gray: '#6b7280'
     };
 
-    // График просмотров
-    const viewsCtx = document.getElementById('viewsChart').getContext('2d');
-    const viewsChart = new Chart(viewsCtx, {
-        type: 'line',
-        data: {
-            labels: {{ views_chart_labels|tojson if views_chart_labels else '[]'|safe }},
-            datasets: [{
-                label: 'Просмотры',
-                data: {{ views_chart_data|tojson if views_chart_data else '[]'|safe }},
-                borderColor: colors.primary,
-                backgroundColor: colors.primaryLight,
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
-            }
-        }
-    });
-
-    // График конверсии
-    const conversionCtx = document.getElementById('conversionChart').getContext('2d');
-    const conversionChart = new Chart(conversionCtx, {
-        type: 'bar',
-        data: {
-            labels: {{ conversion_chart_labels|tojson if conversion_chart_labels else '[]'|safe }},
-            datasets: [{
-                label: 'Просмотры',
-                data: {{ conversion_views_data|tojson if conversion_views_data else '[]'|safe }},
-                backgroundColor: colors.blue,
-                borderRadius: 4,
-                barThickness: 20
-            }, {
-                label: 'Контакты',
-                data: {{ conversion_contacts_data|tojson if conversion_contacts_data else '[]'|safe }},
-                backgroundColor: colors.green,
-                borderRadius: 4,
-                barThickness: 20
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
-            }
-        }
-    });
-
-    // График активности по часам
-    const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
-    const hourlyChart = new Chart(hourlyCtx, {
-        type: 'line',
-        data: {
-            labels: ['0', '4', '8', '12', '16', '20', '24'],
-            datasets: [{
-                data: {{ hourly_data|tojson if hourly_data else '[0,0,0,0,0,0,0]'|safe }},
-                borderColor: colors.primary,
-                backgroundColor: colors.primaryLight,
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    display: false,
-                    beginAtZero: true
-                },
-                x: {
-                    display: false
-                }
-            }
-        }
-    });
-
-    // График устройств
-    const devicesCtx = document.getElementById('devicesChart').getContext('2d');
-    const devicesChart = new Chart(devicesCtx, {
+    // График статусов объявлений
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    const statusChart = new Chart(statusCtx, {
         type: 'doughnut',
         data: {
-            labels: {{ device_labels|tojson if device_labels else '["Desktop", "Mobile", "Tablet"]'|safe }},
+            labels: ['Активные', 'На модерации', 'Черновики'],
             datasets: [{
-                data: {{ device_data|tojson if device_data else '[60, 35, 5]'|safe }},
-                backgroundColor: [colors.primary, colors.blue, colors.green],
+                data: [{{ stats.active_properties or 0 }}, {{ stats.pending_properties or 0 }}, {{ stats.draft_properties or 0 }}],
+                backgroundColor: [colors.green, colors.yellow, colors.gray],
                 borderWidth: 0
             }]
         },

@@ -1385,7 +1385,7 @@ async def admin_dashboard(request: Request, db: Session = Depends(deps.get_db)):
             "status_display": status,
             "property_type": property_type,
             "property_type_display": property_type_display,
-            "created_at": prop.created_at
+            "created_at": prop.created_at.isoformat() if prop.created_at else None,  # Конвертируем datetime в строку
         })
     
     # Рассчитываем динамические проценты изменений на основе имеющихся данных
@@ -1601,7 +1601,7 @@ async def admin_properties(
             "owner_id": prop.owner_id,
             "owner_name": prop.owner.full_name if prop.owner else "Нет данных",
             "image_url": image_url,
-            "created_at": prop.created_at.strftime("%Y-%m-%d %H:%M:%S") if prop.created_at else "Нет данных",
+            "created_at": prop.created_at.isoformat() if prop.created_at else None,  # Конвертируем datetime в строку
             "views": views,
             "has_tour": has_tour,
             "rooms": prop.rooms,
@@ -1853,7 +1853,7 @@ async def admin_requests(request: Request, tab: str = Query('listings'), status:
             requests_data.append({
                 'id': prop.id,
                 'status': display_status,
-                'created_at': prop.created_at.strftime("%d.%m.%Y %H:%M") if prop.created_at else "",
+                'created_at': prop.created_at.isoformat() if prop.created_at else None,  # Конвертируем datetime в строку
                 'scheduled_date': prop.notes,  # Берем дату съемки из поля notes
                 'property': {
                     'id': prop.id,
@@ -2373,7 +2373,7 @@ async def superadmin_admins(request: Request, db: Session = Depends(deps.get_db)
             "phone": admin.phone,
             "is_active": admin.is_active,
             "avatar_url": getattr(admin, 'avatar_url', None),
-            "created_at": admin.created_at.strftime("%d.%m.%Y") if hasattr(admin, 'created_at') and admin.created_at else "Нет данных"
+            "created_at": admin.created_at.isoformat() if admin.created_at else None,  # Конвертируем datetime в строку
         })
     
     # Добавляем переменные пагинации (даже если пагинация не нужна)
@@ -2462,7 +2462,7 @@ async def superadmin_users(
             "email": u.email or "Нет данных",
             "is_active": u.is_active,
             "properties_count": properties_count,
-            "registered_at": u.created_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(u, 'created_at') and u.created_at else "Нет данных",
+            "registered_at": u.created_at.isoformat() if u.created_at else None,  # Конвертируем datetime в строку
         })
     
     # Параметры запроса для пагинации
@@ -2568,7 +2568,7 @@ async def superadmin_companies(
             "phone": company.phone,
             "is_active": company.is_active,
             "properties_count": properties_count,
-            "created_at": company.created_at.strftime("%d.%m.%Y") if hasattr(company, 'created_at') and company.created_at else "Нет данных"
+            "created_at": company.created_at.isoformat() if company.created_at else None,  # Конвертируем datetime в строку
         })
     
     # Статистика
@@ -2692,7 +2692,7 @@ async def superadmin_properties(
             "owner_id": prop.owner_id,
             "owner_name": owner_name,
             "image_url": image_url,
-            "created_at": prop.created_at.strftime("%d.%m.%Y") if prop.created_at else "Неизвестно"
+            "created_at": prop.created_at.isoformat() if prop.created_at else None,  # Конвертируем datetime в строку
         })
     
     # Статистика
@@ -3123,7 +3123,7 @@ async def get_superadmin_user(
             "phone": target_user.phone,
             "is_active": target_user.is_active,
             "properties_count": len(properties_data),
-            "registered_at": target_user.created_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(target_user, 'created_at') and target_user.created_at else "Неизвестно",
+            "registered_at": target_user.created_at.isoformat() if target_user.created_at else None,  # Конвертируем datetime в строку
             "properties": properties_data
         }
     })
@@ -3344,7 +3344,7 @@ async def export_properties(request: Request, db: Session = Depends(deps.get_db)
                 'Владелец': prop.owner.full_name if prop.owner else "Нет данных",
                 'Email владельца': prop.owner.email if prop.owner else "",
                 'Телефон владельца': prop.owner.phone if prop.owner else "",
-                'Дата создания': prop.created_at.strftime("%d.%m.%Y %H:%M") if prop.created_at else ""
+                'Дата создания': prop.created_at.isoformat() if prop.created_at else None
             })
         
         # Создаем Excel файл
@@ -3443,7 +3443,7 @@ async def export_users(
                 'Телефон': user.phone or "Не указан",
                 'Статус': "Активный" if user.is_active else "Заблокирован",
                 'Объявлений': properties_count,
-                'Дата регистрации': user.created_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(user, 'created_at') and user.created_at else "Нет данных"
+                'Дата регистрации': user.created_at.isoformat() if user.created_at else None
             })
         
         if not data:
@@ -3525,7 +3525,7 @@ async def export_all_data(request: Request, db: Session = Depends(deps.get_db)):
             users_sheet.cell(row=row, column=5, value=user_item.role.value if user_item.role else "user")
             users_sheet.cell(row=row, column=6, value="Активный" if user_item.is_active else "Неактивный")
             users_sheet.cell(row=row, column=7, value=properties_count)
-            users_sheet.cell(row=row, column=8, value=user_item.created_at.strftime("%d.%m.%Y %H:%M") if hasattr(user_item, 'created_at') and user_item.created_at else "")
+            users_sheet.cell(row=row, column=8, value=user_item.created_at.isoformat() if user_item.created_at else None)
         
         # Лист объявлений
         properties_sheet = workbook.create_sheet("Объявления")
@@ -3544,7 +3544,7 @@ async def export_all_data(request: Request, db: Session = Depends(deps.get_db)):
             properties_sheet.cell(row=row, column=8, value=prop.owner.full_name if prop.owner else "Нет данных")
             properties_sheet.cell(row=row, column=9, value=prop.owner.email if prop.owner else "")
             properties_sheet.cell(row=row, column=10, value=prop.owner.phone if prop.owner else "")
-            properties_sheet.cell(row=row, column=11, value=prop.created_at.strftime("%d.%m.%Y %H:%M") if prop.created_at else "")
+            properties_sheet.cell(row=row, column=11, value=prop.created_at.isoformat() if prop.created_at else None)
         
         workbook.save(output)
         output.seek(0)
@@ -3597,7 +3597,7 @@ async def export_admins(request: Request, db: Session = Depends(deps.get_db)):
             worksheet.cell(row=row, column=4, value=admin.phone or "Не указано")
             worksheet.cell(row=row, column=5, value=admin.role.value if admin.role else "Не указано")
             worksheet.cell(row=row, column=6, value="Активный" if admin.is_active else "Неактивный")
-            worksheet.cell(row=row, column=7, value=admin.created_at.strftime("%d.%m.%Y %H:%M") if hasattr(admin, 'created_at') and admin.created_at else "Не указано")
+            worksheet.cell(row=row, column=7, value=admin.created_at.isoformat() if admin.created_at else None)
         
         workbook.save(output)
         output.seek(0)
@@ -4074,7 +4074,7 @@ async def export_companies(
                 'Описание': company.company_description or "Нет описания",
                 'Статус': "Активная" if company.is_active else "Заблокирована",
                 'Объявлений': properties_count,
-                'Дата регистрации': company.created_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(company, 'created_at') and company.created_at else "Нет данных"
+                'Дата регистрации': company.created_at.isoformat() if company.created_at else None
             })
         
         if not data:
@@ -4361,7 +4361,7 @@ async def companies_listings(
                 "property_type": prop.type,  # Добавляем алиас для совместимости с шаблоном
                 "category_name": category_name,
                 "owner_name": owner_name,  # Добавляем имя владельца
-                "created_at": prop.created_at.isoformat() if prop.created_at else None,  # Конвертируем datetime в строку
+                "created_at": prop.created_at,  # Оставляем datetime объект для шаблона
                 "views": getattr(prop, 'views', 0),
                 "image_url": main_image.url if main_image else None,
                 "all_images": [img.url for img in all_images],  # Все изображения для слайдера
@@ -4426,52 +4426,43 @@ async def companies_analytics(
         return RedirectResponse(url="/companies/login", status_code=302)
     
     try:
-        # Примерные данные для аналитики
-        analytics_data = {
-            'views_data': {
-                'labels': ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
-                'data': [120, 150, 90, 180, 200, 160, 140]
-            },
-            'conversion_data': {
-                'labels': ['Просмотры', 'Звонки', 'Встречи', 'Сделки'],
-                'data': [1000, 150, 45, 12]
-            },
-            'geography_data': [
-                {'region': 'Бишкек', 'views': 450, 'percentage': 65},
-                {'region': 'Ош', 'views': 120, 'percentage': 17},
-                {'region': 'Каракол', 'views': 80, 'percentage': 12},
-                {'region': 'Другие', 'views': 45, 'percentage': 6}
-            ],
-            'traffic_sources': [
-                {'source': 'Поиск', 'visits': 320, 'percentage': 45},
-                {'source': 'Соц. сети', 'visits': 180, 'percentage': 25},
-                {'source': 'Прямые заходы', 'visits': 140, 'percentage': 20},
-                {'source': 'Реклама', 'visits': 70, 'percentage': 10}
-            ],
-            'popular_properties': db.query(models.Property).filter(
-                models.Property.owner_id == current_user.id
-            ).order_by(models.Property.created_at.desc()).limit(5).all(),
-            'total_stats': {
-                'total_views': 695,
-                'total_calls': 28,
-                'total_messages': 15,
-                'conversion_rate': 4.0,
-                'views_change': 12.5,  # Добавляем недостающие поля
-                'unique_visitors': 465,
-                'visitors_change': 8.3,
-                'contacts': 43,
-                'contacts_change': 15.7,
-                'conversion_change': 2.1
-            }
+        # Получаем реальные данные компании из БД
+        user_properties = db.query(models.Property).filter(
+            models.Property.owner_id == current_user.id
+        ).all()
+        
+        # Базовая статистика
+        total_properties = len(user_properties)
+        active_properties = len([p for p in user_properties if p.status == 'active'])
+        pending_properties = len([p for p in user_properties if p.status == 'pending'])
+        draft_properties = len([p for p in user_properties if p.status == 'draft'])
+        
+        # Топ объявления (реальные данные)
+        top_properties = db.query(models.Property).filter(
+            models.Property.owner_id == current_user.id
+        ).order_by(models.Property.created_at.desc()).limit(5).all()
+        
+        # Простая статистика по реальным данным
+        total_stats = {
+            'total_properties': total_properties,
+            'active_properties': active_properties,
+            'pending_properties': pending_properties,
+            'draft_properties': draft_properties
+        }
+        
+        # Данные для графиков - простые статистики по статусам
+        status_data = {
+            'labels': ['Активные', 'На модерации', 'Черновики'],
+            'data': [active_properties, pending_properties, draft_properties]
         }
         
         return templates.TemplateResponse("companies/analytics.html", {
             "request": request,
             "current_user": current_user,
             "company_name": current_user.company_name,
-            "analytics": analytics_data,
-            "stats": analytics_data['total_stats'],  # Добавляем stats для совместимости с шаблоном
-            "top_properties": analytics_data['popular_properties'],
+            "stats": total_stats,
+            "top_properties": top_properties,
+            "status_data": status_data,
             "days": days
         })
         

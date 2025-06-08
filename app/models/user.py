@@ -42,4 +42,9 @@ class User(Base, TimestampMixin):
     favorites = relationship("Favorite", back_populates="user")
     # Отношения messages_sent и messages_received будут определены через backref в Message
     # support_tickets будет определено через backref в SupportTicket 
-    support_tickets = relationship("SupportTicket", back_populates="user") 
+    support_tickets = relationship("SupportTicket", back_populates="user")
+    
+    def check_password(self, password: str) -> bool:
+        """Проверяет пароль пользователя"""
+        from app.utils.security import verify_password
+        return verify_password(password, self.hashed_password) 

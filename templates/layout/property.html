@@ -17,8 +17,9 @@
             href="{{ url_for('static', path='layout/assets/scss/main.css') }}">
         <link rel="stylesheet"
             href="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.css" />
-        <!-- A-Frame for 360° panorama viewing -->
-        <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+        <!-- Photo Sphere Viewer for 360° panorama viewing -->
+        <script src="https://cdn.jsdelivr.net/npm/photo-sphere-viewer@5/dist/psv.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photo-sphere-viewer@5/dist/psv.min.css" />
         <style>
             .btn favorite-btn {
                 width: 100%;
@@ -759,18 +760,7 @@
                     {% elif property.tour_360_optimized_url %}
                     <!-- Если есть загруженный файл, используем 360° viewer -->
                     <div class="w-full h-full" id="panorama-container">
-                        <a-scene 
-                            id="panorama-scene"
-                            vr-mode-ui="enabled: false" 
-                            embedded 
-                            style="width: 100%; height: 100%;">
-                            <a-sky 
-                                id="panorama-sky"
-                                src="{{ property.tour_360_optimized_url }}" 
-                                rotation="0 -130 0">
-                            </a-sky>
-                            <a-camera look-controls position="0 1.6 0"></a-camera>
-                        </a-scene>
+                        <div id="panorama-sphere" style="width: 100%; height: 100%;"></div>
                     </div>
                     {% else %}
                     <div
@@ -1054,6 +1044,9 @@
                 getWeather();
                 getCurrencyRate();
                 
+                // Переменная для панорамы
+                var panoramaViewer = null;
+                
                 // Инициализация слайдера
                 var mainSwiper = new Swiper('.main-swiper', {
                     loop: true,
@@ -1084,22 +1077,36 @@
                         $('#modal-360').removeClass('hidden');
                         $('body').addClass('overflow-hidden'); // Запретить прокрутку страницы
                         
-                        // Даём A-Frame время на инициализацию сцены
+                        // Инициализируем Photo Sphere Viewer
                         setTimeout(function() {
-                            var scene = document.querySelector('#panorama-scene');
-                            if (scene) {
-                                // Просто перезагружаем A-Frame сцену для корректного отображения
-                                var sky = scene.querySelector('#panorama-sky');
-                                if (sky) {
-                                    // Обновляем src панорамы для принудительной перезагрузки
-                                    var currentSrc = sky.getAttribute('src');
-                                    sky.setAttribute('src', '');
-                                    setTimeout(function() {
-                                        sky.setAttribute('src', currentSrc);
-                                    }, 50);
+                            if (!panoramaViewer) {
+                                try {
+                                    panoramaViewer = new PhotoSphereViewer.Viewer({
+                                        container: document.querySelector('#panorama-sphere'),
+                                        panorama: '{{ property.tour_360_optimized_url }}',
+                                        defaultYaw: '130deg',
+                                        navbar: [
+                                            'zoom',
+                                            'move',
+                                            'fullscreen'
+                                        ],
+                                        loadingImg: null,
+                                        loadingTxt: 'Загрузка панорамы...',
+                                        lang: {
+                                            zoom: 'Приблизить',
+                                            zoomOut: 'Отдалить',
+                                            zoomIn: 'Приблизить',
+                                            move: 'Перемещение',
+                                            fullscreen: 'Полный экран'
+                                        }
+                                    });
+                                } catch (error) {
+                                    console.error('Ошибка инициализации панорамы:', error);
+                                    document.querySelector('#panorama-sphere').innerHTML = 
+                                        '<div class="flex items-center justify-center h-full"><p class="text-gray-500">Ошибка загрузки панорамы</p></div>';
                                 }
                             }
-                        }, 200);
+                        }, 300);
                     });
                 }
                 
@@ -1108,10 +1115,14 @@
                     $('#modal-360').addClass('hidden');
                     $('body').removeClass('overflow-hidden'); // Разрешить прокрутку страницы
                     
-                    // Сброс позиции камеры при закрытии
-                    var camera = document.querySelector('#panorama-scene a-camera');
-                    if (camera) {
-                        camera.setAttribute('rotation', '0 0 0');
+                    // Очищаем viewer при закрытии для освобождения памяти
+                    if (panoramaViewer) {
+                        try {
+                            panoramaViewer.destroy();
+                            panoramaViewer = null;
+                        } catch (error) {
+                            console.log('Ошибка при закрытии панорамы:', error);
+                        }
                     }
                 });
                 

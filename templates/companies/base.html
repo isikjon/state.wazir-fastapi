@@ -118,6 +118,12 @@
                         <i class="fas fa-plus-circle mr-3 text-muted group-hover:text-primary"></i>
                         <span class="font-medium">Создать объявление</span>
                     </a>
+                    
+                    <a href="/companies/bulk-upload" 
+                       class="nav-item flex items-center px-4 py-3 text-gray-700 rounded-lg group {% if 'bulk-upload' in request.url.path %}active{% endif %}">
+                        <i class="fas fa-upload mr-3 text-muted group-hover:text-primary"></i>
+                        <span class="font-medium">Массовая загрузка</span>
+                    </a>
                 </div>
                 
                 <!-- Divider -->

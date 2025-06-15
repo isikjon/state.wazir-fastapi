@@ -44,6 +44,11 @@ async def check_admin_access(request: Request, db: Session):
             logger.error(f"❌ Пользователь с ID {payload['sub']} не найден в БД")
             return RedirectResponse('/admin/login', status_code=303)
         
+        # Дополнительная проверка что пользователь действительно администратор
+        if user.role != models.UserRole.ADMIN:
+            logger.warning(f"❌ Пользователь {user.email} не является администратором (роль: {user.role})")
+            return RedirectResponse('/admin/login', status_code=303)
+        
         logger.info(f"✅ Администратор подтвержден: {user.email} (ID: {user.id})")
         return user
         
@@ -70,14 +75,19 @@ async def check_company_access(request: Request, db: Session):
             logger.warning("❌ Пользователь не является компанией")
             return RedirectResponse('/companies/login', status_code=303)
         
-        # Получаем компанию из базы данных
-        company = db.query(models.Company).filter(models.Company.id == payload["sub"]).first()
-        if not company:
-            logger.error(f"❌ Компания с ID {payload['sub']} не найдена в БД")
+        # Получаем пользователя-компанию из базы данных
+        user = db.query(models.User).filter(models.User.id == payload["sub"]).first()
+        if not user:
+            logger.error(f"❌ Пользователь с ID {payload['sub']} не найден в БД")
             return RedirectResponse('/companies/login', status_code=303)
         
-        logger.info(f"✅ Компания подтверждена: {company.name} (ID: {company.id})")
-        return company
+        # Дополнительная проверка что пользователь действительно компания
+        if user.role != models.UserRole.COMPANY:
+            logger.warning(f"❌ Пользователь {user.email} не является компанией (роль: {user.role})")
+            return RedirectResponse('/companies/login', status_code=303)
+        
+        logger.info(f"✅ Компания подтверждена: {user.email} (ID: {user.id})")
+        return user
         
     except Exception as e:
         logger.error(f"💥 Ошибка проверки доступа компании: {str(e)}")
@@ -347,7 +357,7 @@ async def get_company_panorama_info(
         logger.debug(f"🔍 Поиск объявления с ID: {property_id}")
         property_obj = db.query(models.Property).filter(
             models.Property.id == property_id,
-            models.Property.company_id == company.id
+            models.Property.owner_id == company.id
         ).first()
         
         if not property_obj:
@@ -399,7 +409,7 @@ async def upload_company_panorama(
         logger.debug(f"🔍 Поиск объявления с ID: {property_id}")
         property_obj = db.query(models.Property).filter(
             models.Property.id == property_id,
-            models.Property.company_id == company.id
+            models.Property.owner_id == company.id
         ).first()
         
         if not property_obj:
@@ -529,7 +539,7 @@ async def delete_company_panorama(
         logger.debug(f"🔍 Поиск объявления с ID: {property_id}")
         property_obj = db.query(models.Property).filter(
             models.Property.id == property_id,
-            models.Property.company_id == company.id
+            models.Property.owner_id == company.id
         ).first()
         
         if not property_obj:

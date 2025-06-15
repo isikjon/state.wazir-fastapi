@@ -16,7 +16,7 @@ from fastapi import FastAPI, Request, Depends, Form, status, HTTPException, Quer
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse, StreamingResponse
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -37,6 +37,7 @@ from app.models.user import User
 from app.models.token import TokenPayload
 from app.models.chat import AppChatModel, AppChatMessageModel
 from app.models.chat_message import ChatMessage
+from app.models.property import PropertyImage
 from app.websockets.chat_manager import ConnectionManager as WebSocketManager
 from app.utils.image_helper import get_valid_image_url
 from app.models.property import PropertyCategory
@@ -996,6 +997,33 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
     if not property:
         return templates.TemplateResponse("404.html", {"request": request})
     
+    # Увеличиваем счетчик просмотров
+    try:
+        # Получаем IP адрес пользователя для защиты от накрутки
+        client_ip = request.client.host
+        
+        # Увеличиваем счетчик только если:
+        # 1. Пользователь не является владельцем объявления
+        # 2. Объявление активно
+        should_increment = True
+        
+        if current_user and property.owner_id == current_user.id:
+            should_increment = False  # Владелец не учитывается в просмотрах
+            print(f"DEBUG: Пропускаем увеличение просмотров - владелец объявления")
+        
+        if property.status != models.PropertyStatus.ACTIVE:
+            should_increment = False  # Неактивные объявления не учитываются
+            print(f"DEBUG: Пропускаем увеличение просмотров - объявление неактивно: {property.status}")
+        
+        if should_increment:
+            property.views = (property.views or 0) + 1
+            db.commit()
+            print(f"DEBUG: Увеличен счетчик просмотров для объявления {property_id}: {property.views}")
+        
+    except Exception as e:
+        print(f"DEBUG: Ошибка при увеличении счетчика просмотров: {e}")
+        # Не прерываем выполнение, просто логируем ошибку
+    
     # Проверяем, добавлено ли объявление в избранное
     is_favorite = False
     if current_user:
@@ -1005,8 +1033,8 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
         ).first()
         is_favorite = favorite is not None
     
-    # Проверяем, является ли текущий пользователь владельцем объявления
-    is_owner = current_user and current_user.id == property.owner_id if property.owner else False
+    # Проверяем, является ли текущий пользователь владельцем
+    is_owner = current_user and property.owner_id == current_user.id
     
     # Получаем первую категорию объявления (если есть)
     category = None
@@ -1034,6 +1062,7 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
         "area": property.area,
         "status": property.status.value.lower() if property.status else "draft",
         "is_featured": property.is_featured,
+        "views": property.views or 0,  # Добавляем поле views
         "tour_360_url": property.tour_360_url,
         # Добавляем поля для загруженных 360° панорам
         "tour_360_file_id": property.tour_360_file_id,
@@ -1104,7 +1133,8 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
         "similar_properties": similar_properties_data,
         "weather": weather,
         "currency": currency,
-        "user": current_user
+        "user": current_user,
+        "is_favorite": is_favorite
     })
 
 @app.get("/mobile/chat/{user_id}", response_class=HTMLResponse, name="chat")
@@ -4134,20 +4164,34 @@ async def export_companies(
 async def check_company_access(request: Request, db: Session):
     """Проверка доступа компании"""
     auth_token = request.cookies.get('access_token')
+    print(f"DEBUG: check_company_access - auth_token: {auth_token[:50] if auth_token else None}...")
+    
     if not auth_token:
+        print("DEBUG: check_company_access - нет токена")
         return None
         
     try:
         payload = pyjwt.decode(auth_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id = payload.get("sub")
+        is_company = payload.get("is_company")
+        
+        print(f"DEBUG: check_company_access - user_id: {user_id}, is_company: {is_company}")
         
         if user_id:
             user = db.query(models.User).filter(models.User.id == user_id).first()
+            print(f"DEBUG: check_company_access - найден пользователь: {user.email if user else 'None'}")
+            print(f"DEBUG: check_company_access - роль пользователя: {user.role if user else 'None'}")
+            print(f"DEBUG: check_company_access - активен: {user.is_active if user else 'None'}")
+            
             if user and user.role == models.UserRole.COMPANY and user.is_active:
+                print(f"DEBUG: check_company_access - доступ разрешен для {user.email}")
                 return user
-    except:
-        pass
+            else:
+                print(f"DEBUG: check_company_access - доступ запрещен. Роль: {user.role if user else 'None'}, Активен: {user.is_active if user else 'None'}")
+    except Exception as e:
+        print(f"DEBUG: check_company_access - ошибка токена: {e}")
     
+    print("DEBUG: check_company_access - доступ запрещен")
     return None
 
 @app.get("/companies/login")
@@ -4164,6 +4208,8 @@ async def companies_login_post(
     db: Session = Depends(deps.get_db)
 ):
     """Обработка входа компании"""
+    print(f"DEBUG: companies_login_post - email: {email}, remember: {remember}")
+    
     try:
         # Проверяем учетные данные
         user = db.query(models.User).filter(
@@ -4171,10 +4217,19 @@ async def companies_login_post(
             models.User.role == models.UserRole.COMPANY
         ).first()
         
-        if not user or not user.check_password(password):
+        print(f"DEBUG: companies_login_post - найден пользователь: {user.email if user else 'None'}")
+        print(f"DEBUG: companies_login_post - роль пользователя: {user.role if user else 'None'}")
+        
+        if not user:
+            print(f"DEBUG: companies_login_post - пользователь с email {email} и ролью COMPANY не найден")
+            raise HTTPException(status_code=401, detail="Неверный email или пароль")
+            
+        if not user.check_password(password):
+            print(f"DEBUG: companies_login_post - неверный пароль для {email}")
             raise HTTPException(status_code=401, detail="Неверный email или пароль")
         
         if not user.is_active:
+            print(f"DEBUG: companies_login_post - аккаунт {email} заблокирован")
             raise HTTPException(status_code=403, detail="Аккаунт заблокирован")
         
         # Создаем токен
@@ -4182,6 +4237,8 @@ async def companies_login_post(
             "sub": str(user.id),
             "is_company": True
         })
+        
+        print(f"DEBUG: companies_login_post - создан токен для пользователя {user.id}")
         
         # Создаем ответ
         response = JSONResponse(content={"message": "Успешный вход"})
@@ -4196,12 +4253,15 @@ async def companies_login_post(
             secure=False  # В продакшене должно быть True
         )
         
+        print(f"DEBUG: companies_login_post - успешный вход для {email}")
         return response
         
     except HTTPException:
         raise
     except Exception as e:
         print(f"DEBUG: Ошибка входа компании: {e}")
+        import traceback
+        print(f"DEBUG: Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
 
 @app.get("/companies/logout")
@@ -4383,7 +4443,12 @@ async def companies_listings(
                 "has_pool": getattr(prop, 'has_pool', False),
                 "has_gym": getattr(prop, 'has_gym', False),
                 "bathroom_type": getattr(prop, 'bathroom_type', None),
-                "category_id": prop.category_id
+                "category_id": prop.category_id,
+                # Добавляем поля для 360° панорамы чтобы работала проверка в шаблоне
+                "tour_360_url": getattr(prop, 'tour_360_url', None),
+                "tour_360_file_id": getattr(prop, 'tour_360_file_id', None),
+                "tour_360_uploaded_at": getattr(prop, 'tour_360_uploaded_at', None),
+                "tour_360_date": getattr(prop, 'tour_360_date', None)
             }
             enhanced_properties.append(enhanced_prop)
         
@@ -4403,6 +4468,9 @@ async def companies_listings(
             json_prop = prop.copy()
             if json_prop.get('created_at'):
                 json_prop['created_at'] = json_prop['created_at'].isoformat() if hasattr(json_prop['created_at'], 'isoformat') else str(json_prop['created_at'])
+            # Конвертируем дату загрузки 360° для JSON
+            if json_prop.get('tour_360_uploaded_at'):
+                json_prop['tour_360_uploaded_at'] = json_prop['tour_360_uploaded_at'].isoformat() if hasattr(json_prop['tour_360_uploaded_at'], 'isoformat') else str(json_prop['tour_360_uploaded_at'])
             properties_for_json.append(json_prop)
         
         # Получаем категории для формы редактирования
@@ -4514,7 +4582,360 @@ async def companies_settings(request: Request, db: Session = Depends(deps.get_db
         "company_name": current_user.company_name
     })
 
-# API endpoints for companies
+@app.get("/companies/bulk-upload/template")
+async def download_bulk_upload_template(request: Request, db: Session = Depends(deps.get_db)):
+    """Скачивание шаблона для массовой загрузки объявлений"""
+    current_user = await check_company_access(request, db)
+    if not current_user:
+        return RedirectResponse(url="/companies/login", status_code=302)
+    
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+        
+        # Создаем новую книгу
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Объявления"
+        
+        # Заголовки колонок на русском языке
+        headers = [
+            "Название", "Описание", "Цена", "Адрес", "Город", "Площадь", 
+            "Тип", "Комнаты", "Этаж", "Этажность", "Санузел", "Категория", "Заметки",
+            "Балкон", "Мебель", "Ремонт", "Парковка", "Лифт", "Охрана", 
+            "Интернет", "Кондиционер", "Отопление", "Двор", "Бассейн", "Спортзал"
+        ]
+        
+        # Добавляем заголовки
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col_num, value=header)
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="E6F3FF", end_color="E6F3FF", fill_type="solid")
+            cell.alignment = Alignment(horizontal="center")
+        
+        # Добавляем пример строки
+        example_row = [
+            "Уютная 3-комнатная квартира в центре",
+            "Просторная квартира с евроремонтом, полностью меблированная",
+            3800000,
+            "ул. Токтогула, 129",
+            "Бишкек",
+            85.5,
+            "квартира",
+            3,
+            5,
+            9,
+            "раздельный",
+            1,  # Используем существующую категорию
+            "Рядом с парком",
+            "да",
+            "да",
+            "да",
+            "да",
+            "да",
+            "да",
+            "да",
+            "да",
+            "да",
+            "нет",
+            "нет",
+            "нет"
+        ]
+        
+        for col_num, value in enumerate(example_row, 1):
+            ws.cell(row=2, column=col_num, value=value)
+        
+        # Автоподбор ширины колонок
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 30)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Сохраняем в BytesIO
+        from io import BytesIO
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        
+        # Возвращаем файл
+        from fastapi.responses import StreamingResponse
+        return StreamingResponse(
+            BytesIO(buffer.read()),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": "attachment; filename=shablon_obyavleniy.xlsx"}
+        )
+        
+    except Exception as e:
+        print(f"DEBUG: Ошибка создания шаблона: {e}")
+        raise HTTPException(status_code=500, detail="Ошибка создания шаблона")
+
+@app.post("/companies/bulk-upload/properties")
+async def bulk_upload_properties(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(deps.get_db)
+):
+    """Загрузка объявлений из XLSX файла"""
+    
+    # Проверяем доступ
+    current_user = await check_company_access(request, db)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Необходима авторизация")
+    
+    # Проверяем тип файла
+    if file.content_type != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+        raise HTTPException(status_code=400, detail="Поддерживаются только файлы XLSX")
+    
+    # Создаем базовые категории если их нет
+    categories = [
+        {"id": 1, "name": "Продажа", "description": "Продажа недвижимости"},
+        {"id": 2, "name": "Аренда", "description": "Аренда недвижимости"},
+        {"id": 3, "name": "Новостройки", "description": "Новые жилые комплексы"},
+        {"id": 4, "name": "Коммерческая", "description": "Коммерческая недвижимость"},
+        {"id": 5, "name": "Ипотека", "description": "Недвижимость под ипотеку"},
+    ]
+    
+    for cat in categories:
+        existing = db.query(models.Category).filter(models.Category.id == cat["id"]).first()
+        if not existing:
+            category = models.Category(
+                id=cat["id"],
+                name=cat["name"],
+                description=cat["description"]
+            )
+            db.add(category)
+    
+    db.commit()
+    
+    try:
+        import openpyxl
+        import re
+        from io import BytesIO
+        
+        # Проверяем тип файла
+        if not file.filename.endswith(('.xlsx', '.xls')):
+            return JSONResponse({
+                "success": False,
+                "message": "Поддерживаются только файлы Excel (.xlsx, .xls)"
+            })
+        
+        # Читаем файл
+        contents = await file.read()
+        wb = openpyxl.load_workbook(BytesIO(contents))
+        ws = wb.active
+        
+        def format_price(price_str):
+            """Форматирование цены"""
+            if not price_str:
+                return None
+            cleaned = re.sub(r'[^\d.]', '', str(price_str))
+            try:
+                return float(cleaned) if cleaned else None
+            except:
+                return None
+        
+        def parse_bool(value):
+            """Парсинг булевых значений"""
+            if not value:
+                return False
+            val = str(value).lower().strip()
+            return val in ['да', 'yes', '1', 'true', '+']
+        
+        def safe_int(value):
+            """Безопасное преобразование в int"""
+            try:
+                return int(float(str(value))) if value else None
+            except:
+                return None
+        
+        def safe_float(value):
+            """Безопасное преобразование в float"""
+            try:
+                return float(str(value)) if value else None
+            except:
+                return None
+        
+        # Получаем данные из файла
+        rows = list(ws.iter_rows(min_row=2, values_only=True))
+        
+        if len(rows) > 10:
+            return JSONResponse({
+                "success": False,
+                "message": "Максимум 10 объявлений за раз"
+            })
+        
+        created_properties = []
+        errors = []
+        
+        for row_num, row in enumerate(rows, start=2):
+            try:
+                if not any(row[:3]):  # Пропускаем пустые строки
+                    continue
+                
+                # Парсим данные строки
+                title = str(row[0]).strip() if row[0] else None
+                description = str(row[1]).strip() if row[1] else None
+                price = format_price(row[2])
+                address = str(row[3]).strip() if row[3] else None
+                city = str(row[4]).strip() if row[4] else "Бишкек"
+                area = safe_float(row[5])
+                property_type = str(row[6]).strip() if row[6] else "квартира"
+                rooms = safe_int(row[7])
+                floor = safe_int(row[8])
+                building_floors = safe_int(row[9])
+                bathroom_type = str(row[10]).strip() if row[10] else None
+                category_id = safe_int(row[11]) or 1
+                notes = str(row[12]).strip() if row[12] else None
+                
+                # Удобства
+                has_balcony = parse_bool(row[13])
+                has_furniture = parse_bool(row[14])
+                has_renovation = parse_bool(row[15])
+                has_parking = parse_bool(row[16])
+                has_elevator = parse_bool(row[17])
+                has_security = parse_bool(row[18])
+                has_internet = parse_bool(row[19])
+                has_air_conditioning = parse_bool(row[20])
+                has_heating = parse_bool(row[21])
+                has_yard = parse_bool(row[22])
+                has_pool = parse_bool(row[23])
+                has_gym = parse_bool(row[24])
+                
+                # Валидация обязательных полей
+                if not title or not price or not address:
+                    errors.append(f"Строка {row_num}: отсутствуют обязательные поля")
+                    continue
+                
+                # Валидация категории
+                if category_id:
+                    category_exists = db.query(models.Category).filter(models.Category.id == category_id).first()
+                    if not category_exists:
+                        errors.append(f"Строка {row_num}: категория {category_id} не существует")
+                        category_id = 1  # Устанавливаем дефолтную категорию
+                
+                # Создаем объявление
+                property_obj = models.Property(
+                    title=title,
+                    description=description,
+                    price=price,
+                    address=address,
+                    city=city,
+                    area=area,
+                    type=property_type,
+                    rooms=rooms,
+                    floor=floor,
+                    building_floors=building_floors,
+                    bathroom_type=bathroom_type,
+                    category_id=category_id,
+                    notes=notes,
+                    has_balcony=has_balcony,
+                    has_furniture=has_furniture,
+                    has_renovation=has_renovation,
+                    has_parking=has_parking,
+                    has_elevator=has_elevator,
+                    has_security=has_security,
+                    has_internet=has_internet,
+                    has_air_conditioning=has_air_conditioning,
+                    has_heating=has_heating,
+                    has_yard=has_yard,
+                    has_pool=has_pool,
+                    has_gym=has_gym,
+                    status='DRAFT',
+                    owner_id=current_user.id,
+                    created_at=datetime.utcnow()
+                )
+                
+                db.add(property_obj)
+                db.flush()
+                created_properties.append(property_obj.id)
+                
+            except Exception as e:
+                errors.append(f"Строка {row_num}: {str(e)}")
+                continue  # Продолжаем обработку следующих строк без роллбэка
+        
+        # Сохраняем только если есть валидные объявления
+        if created_properties:
+            try:
+                db.commit()
+            except Exception as e:
+                db.rollback()
+                return JSONResponse({
+                    "success": False,
+                    "message": f"Ошибка сохранения в базу данных: {str(e)}"
+                })
+        
+        return JSONResponse({
+            "success": True,
+            "message": f"Создано {len(created_properties)} объявлений",
+            "created_count": len(created_properties),
+            "errors": errors,
+            "property_ids": created_properties
+        })
+        
+    except Exception as e:
+        db.rollback()
+        print(f"DEBUG: Ошибка загрузки файла: {e}")
+        return JSONResponse({
+            "success": False,
+            "message": f"Ошибка обработки файла: {str(e)}"
+        })
+
+@app.get("/companies/bulk-upload", response_class=HTMLResponse)
+async def bulk_upload_page(request: Request, db: Session = Depends(deps.get_db)):
+    """Страница массовой загрузки"""
+    current_user = await check_company_access(request, db)
+    if not current_user:
+        return RedirectResponse(url="/companies/login", status_code=302)
+    
+    # Получаем черновики компании
+    draft_properties = db.query(models.Property).filter(
+        models.Property.owner_id == current_user.id,
+        models.Property.status == 'DRAFT'
+    ).order_by(models.Property.created_at.desc()).all()
+    
+    return templates.TemplateResponse("companies/bulk_upload.html", {
+        "request": request,
+        "current_user": current_user,
+        "company_name": current_user.company_name,
+        "draft_properties": draft_properties
+    })
+
+@app.post("/api/v1/companies/properties/{property_id}/submit")
+async def submit_property_to_moderation(
+    property_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    """Отправка объявления на модерацию"""
+    current_user = await check_company_access(request, db)
+    if not current_user:
+        return JSONResponse({"success": False, "message": "Не авторизован"})
+    
+    # Проверяем что объявление принадлежит компании
+    property_obj = db.query(models.Property).filter(
+        models.Property.id == property_id,
+        models.Property.owner_id == current_user.id
+    ).first()
+    
+    if not property_obj:
+        return JSONResponse({"success": False, "message": "Объявление не найдено"})
+    
+    if property_obj.status != 'DRAFT':
+        return JSONResponse({"success": False, "message": "Можно отправлять только черновики"})
+    
+    # Отправляем на модерацию
+    property_obj.status = 'PENDING'
+    db.commit()
+    
+    return JSONResponse({"success": True, "message": "Объявление отправлено на модерацию"})
+
 @app.delete("/api/v1/companies/properties/{property_id}")
 async def delete_company_property(
     property_id: int,
@@ -4524,27 +4945,27 @@ async def delete_company_property(
     """Удаление объявления компании"""
     current_user = await check_company_access(request, db)
     if not current_user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        return JSONResponse({"success": False, "message": "Не авторизован"})
     
     try:
         # Получаем объявление
         property_obj = db.query(models.Property).filter(
             models.Property.id == property_id,
-            models.Property.owner_id == current_user.id  # Проверяем, что объявление принадлежит текущей компании
+            models.Property.owner_id == current_user.id
         ).first()
         
         if not property_obj:
-            raise HTTPException(status_code=404, detail="Объявление не найдено")
+            return JSONResponse({"success": False, "message": "Объявление не найдено"})
         
         # Удаляем объявление
         db.delete(property_obj)
         db.commit()
         
-        return {"success": True, "message": "Объявление удалено"}
+        return JSONResponse({"success": True, "message": "Объявление удалено"})
         
     except Exception as e:
         print(f"DEBUG: Ошибка удаления объявления: {e}")
-        raise HTTPException(status_code=500, detail="Ошибка при удалении объявления")
+        return JSONResponse({"success": False, "message": "Ошибка при удалении объявления"})
 
 @app.post("/api/v1/companies/properties")
 async def create_company_property(
@@ -4580,16 +5001,10 @@ async def create_company_property(
     """Создание объявления компании"""
     current_user = await check_company_access(request, db)
     if not current_user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    print(f"DEBUG: Создание объявления компании пользователем {current_user.id}")
-    print(f"DEBUG: Данные объявления: title={title}, price={price}, city={city}")
-    print(f"DEBUG: Удобства: elevator={has_elevator}, security={has_security}, internet={has_internet}")
-    print(f"DEBUG: Количество фотографий: {len(photos)}")
+        return JSONResponse({"success": False, "message": "Не авторизован"})
     
     try:
         # Создаем объявление
-        print("DEBUG: Создание объекта Property в базе данных...")
         property_obj = models.Property(
             title=title,
             description=description,
@@ -4615,23 +5030,19 @@ async def create_company_property(
             has_yard=has_yard,
             has_pool=has_pool,
             has_gym=has_gym,
-            status=models.PropertyStatus.DRAFT if status == "draft" else models.PropertyStatus.PENDING,
+            status='DRAFT' if status == "draft" else 'PENDING',
             owner_id=current_user.id
         )
         
         db.add(property_obj)
         db.commit()
         db.refresh(property_obj)
-        print(f"DEBUG: Объявление создано с ID: {property_obj.id}")
         
         # Обработка загрузки фотографий
         if photos and len([p for p in photos if p.filename]):
-            print(f"DEBUG: Начинаем загрузку {len(photos)} фотографий...")
-            
             # Создаем папку для медиа файлов
             media_dir = os.path.join("media", "properties", str(property_obj.id))
             os.makedirs(media_dir, exist_ok=True)
-            print(f"DEBUG: Создана папка для медиа: {media_dir}")
             
             for i, photo in enumerate(photos):
                 if photo.filename:
@@ -4647,7 +5058,6 @@ async def create_company_property(
                             f.write(content)
                         
                         file_url = f"/media/properties/{property_obj.id}/{unique_filename}"
-                        print(f"DEBUG: Фото {i+1} сохранено: {file_path}, URL: {file_url}, размер: {len(content)} байт")
                         
                         # Создаем запись в БД
                         is_main = (i == 0)  # Первое фото - главное
@@ -4657,34 +5067,20 @@ async def create_company_property(
                             is_main=is_main
                         )
                         db.add(image)
-                        print(f"DEBUG: Изображение добавлено в БД, is_main: {is_main}")
-                        
                     except Exception as e:
                         print(f"ERROR: Ошибка при сохранении фото {i+1}: {e}")
             
             db.commit()
-            print("DEBUG: Все изображения сохранены в БД")
-        else:
-            print("DEBUG: Фотографии не предоставлены")
         
-        return {
+        return JSONResponse({
             "success": True,
             "message": "Объявление создано" if status == "draft" else "Объявление отправлено на модерацию",
             "property_id": property_obj.id
-        }
+        })
         
     except Exception as e:
         print(f"ERROR: Ошибка создания объявления: {e}")
-        print(f"ERROR: Тип ошибки: {type(e).__name__}")
-        import traceback
-        print(f"ERROR: Traceback: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail="Ошибка при создании объявления")
-
-@app.get("/api/v1/categories")
-async def get_categories(db: Session = Depends(deps.get_db)):
-    """Получение списка категорий"""
-    categories = db.query(models.Category).all()
-    return [{"id": cat.id, "name": cat.name} for cat in categories]
+        return JSONResponse({"success": False, "message": "Ошибка при создании объявления"})
 
 @app.get("/api/v1/companies/properties/{property_id}")
 async def get_company_property(
@@ -4692,12 +5088,12 @@ async def get_company_property(
     request: Request,
     db: Session = Depends(deps.get_db)
 ):
-    """Получение данных объявления для редактирования"""
+    """Получение данных объявления компании"""
     current_user = await check_company_access(request, db)
     if not current_user:
-        raise HTTPException(status_code=401, detail="Не авторизован")
+        raise HTTPException(status_code=401, detail="Необходима авторизация")
     
-    # Проверяем что объявление принадлежит компании
+    # Получаем объявление
     property_obj = db.query(models.Property).filter(
         models.Property.id == property_id,
         models.Property.owner_id == current_user.id
@@ -4714,25 +5110,24 @@ async def get_company_property(
         "address": property_obj.address,
         "city": property_obj.city,
         "category_id": property_obj.category_id,
+        "type": property_obj.type,
         "area": property_obj.area,
         "rooms": property_obj.rooms,
         "floor": property_obj.floor,
         "building_floors": property_obj.building_floors,
         "bathroom_type": property_obj.bathroom_type,
-        "type": property_obj.type,
         "has_balcony": property_obj.has_balcony,
         "has_furniture": property_obj.has_furniture,
         "has_renovation": property_obj.has_renovation,
         "has_parking": property_obj.has_parking,
-        "has_elevator": getattr(property_obj, 'has_elevator', False),
-        "has_security": getattr(property_obj, 'has_security', False),
-        "has_internet": getattr(property_obj, 'has_internet', False),
-        "has_air_conditioning": getattr(property_obj, 'has_air_conditioning', False),
-        "has_heating": getattr(property_obj, 'has_heating', False),
-        "has_yard": getattr(property_obj, 'has_yard', False),
-        "has_pool": getattr(property_obj, 'has_pool', False),
-        "has_gym": getattr(property_obj, 'has_gym', False),
-        "tour_360_url": getattr(property_obj, 'tour_360_url', None),
+        "has_elevator": property_obj.has_elevator,
+        "has_security": property_obj.has_security,
+        "has_internet": property_obj.has_internet,
+        "has_air_conditioning": property_obj.has_air_conditioning,
+        "has_heating": property_obj.has_heating,
+        "has_yard": property_obj.has_yard,
+        "has_pool": property_obj.has_pool,
+        "has_gym": property_obj.has_gym,
         "status": property_obj.status
     }
 
@@ -4751,7 +5146,7 @@ async def update_company_property(
     floor: int = Form(None),
     building_floors: int = Form(None),
     bathroom_type: str = Form(None),
-    type: str = Form("apartment"),
+    type: str = Form("квартира"),
     has_balcony: bool = Form(False),
     has_furniture: bool = Form(False),
     has_renovation: bool = Form(False),
@@ -4769,9 +5164,9 @@ async def update_company_property(
     """Обновление объявления компании"""
     current_user = await check_company_access(request, db)
     if not current_user:
-        raise HTTPException(status_code=401, detail="Не авторизован")
+        raise HTTPException(status_code=401, detail="Необходима авторизация")
     
-    # Проверяем что объявление принадлежит компании
+    # Получаем объявление
     property_obj = db.query(models.Property).filter(
         models.Property.id == property_id,
         models.Property.owner_id == current_user.id
@@ -4780,16 +5175,6 @@ async def update_company_property(
     if not property_obj:
         raise HTTPException(status_code=404, detail="Объявление не найдено")
     
-    # Сохраняем старые данные для проверки изменений
-    old_data = {
-        "title": property_obj.title,
-        "description": property_obj.description,
-        "price": property_obj.price,
-        "address": property_obj.address,
-        "area": property_obj.area,
-        "rooms": property_obj.rooms
-    }
-    
     # Обновляем данные
     property_obj.title = title
     property_obj.description = description
@@ -4797,205 +5182,152 @@ async def update_company_property(
     property_obj.address = address
     property_obj.city = city
     property_obj.category_id = category_id
+    property_obj.type = type
     property_obj.area = area
     property_obj.rooms = rooms
     property_obj.floor = floor
     property_obj.building_floors = building_floors
     property_obj.bathroom_type = bathroom_type
-    property_obj.type = type
     property_obj.has_balcony = has_balcony
     property_obj.has_furniture = has_furniture
     property_obj.has_renovation = has_renovation
     property_obj.has_parking = has_parking
+    property_obj.has_elevator = has_elevator
+    property_obj.has_security = has_security
+    property_obj.has_internet = has_internet
+    property_obj.has_air_conditioning = has_air_conditioning
+    property_obj.has_heating = has_heating
+    property_obj.has_yard = has_yard
+    property_obj.has_pool = has_pool
+    property_obj.has_gym = has_gym
+    property_obj.updated_at = datetime.utcnow()
     
-    # Устанавливаем дополнительные поля если они есть в модели
-    if hasattr(property_obj, 'has_elevator'):
-        property_obj.has_elevator = has_elevator
-    if hasattr(property_obj, 'has_security'):
-        property_obj.has_security = has_security
-    if hasattr(property_obj, 'has_internet'):
-        property_obj.has_internet = has_internet
-    if hasattr(property_obj, 'has_air_conditioning'):
-        property_obj.has_air_conditioning = has_air_conditioning
-    if hasattr(property_obj, 'has_heating'):
-        property_obj.has_heating = has_heating
-    if hasattr(property_obj, 'has_yard'):
-        property_obj.has_yard = has_yard
-    if hasattr(property_obj, 'has_pool'):
-        property_obj.has_pool = has_pool
-    if hasattr(property_obj, 'has_gym'):
-        property_obj.has_gym = has_gym
+    try:
+        db.commit()
+        return {"success": True, "message": "Объявление успешно обновлено"}
+    except Exception as e:
+        db.rollback()
+        return {"success": False, "message": f"Ошибка при обновлении: {str(e)}"}
+
+@app.post("/api/v1/companies/properties/{property_id}/photos")
+async def upload_property_photos(
+    property_id: int,
+    request: Request,
+    photos: List[UploadFile] = File(...),
+    db: Session = Depends(deps.get_db)
+):
+    """Загрузка фотографий для объявления"""
+    current_user = await check_company_access(request, db)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Необходима авторизация")
     
-    # Проверяем, были ли изменения
-    new_data = {
-        "title": title,
-        "description": description,
-        "price": price,
-        "address": address,
-        "area": area,
-        "rooms": rooms
-    }
+    # Проверяем объявление
+    property_obj = db.query(models.Property).filter(
+        models.Property.id == property_id,
+        models.Property.owner_id == current_user.id
+    ).first()
     
-    has_changes = old_data != new_data
+    if not property_obj:
+        raise HTTPException(status_code=404, detail="Объявление не найдено")
     
-    # Если были изменения, отправляем на модерацию
-    if has_changes and property_obj.status == 'active':
-        property_obj.status = 'pending'
-        print(f"DEBUG: Объявление {property_id} отправлено на модерацию из-за изменений")
+    # Создаем папку для фотографий
+    photos_dir = f"media/properties/{property_id}"
+    os.makedirs(photos_dir, exist_ok=True)
     
-    db.commit()
+    uploaded_count = 0
+    for photo in photos:
+        if photo.content_type.startswith('image/'):
+            # Генерируем уникальное имя файла
+            file_extension = photo.filename.split('.')[-1]
+            filename = f"{uuid.uuid4()}.{file_extension}"
+            file_path = f"{photos_dir}/{filename}"
+            
+            # Сохраняем файл
+            with open(file_path, "wb") as buffer:
+                content = await photo.read()
+                buffer.write(content)
+            
+            # Создаем запись в базе
+            property_image = models.PropertyImage(
+                property_id=property_id,
+                image_url=f"/{file_path}",
+                is_main=uploaded_count == 0  # Первое фото - главное
+            )
+            db.add(property_image)
+            uploaded_count += 1
     
-    return {
-        "success": True, 
-        "message": "Объявление успешно обновлено" + (" и отправлено на модерацию" if has_changes and property_obj.status == 'pending' else ""),
-        "status": property_obj.status
-    }
+    try:
+        db.commit()
+        return {"success": True, "message": f"Загружено {uploaded_count} фотографий"}
+    except Exception as e:
+        db.rollback()
+        return {"success": False, "message": f"Ошибка при загрузке: {str(e)}"}
 
 @app.post("/api/v1/companies/properties/{property_id}/360")
-async def update_property_360(
+async def save_property_360(
     property_id: int,
     request: Request,
     tour_360_url: str = Form(...),
-    tour_360_date: str = Form(None),
     db: Session = Depends(deps.get_db)
 ):
-    """Обновление 360° тура объявления"""
+    """Сохранение 360° панорамы для объявления"""
     current_user = await check_company_access(request, db)
     if not current_user:
-        raise HTTPException(status_code=401, detail="Не авторизован")
+        raise HTTPException(status_code=401, detail="Необходима авторизация")
     
-    # Проверяем что объявление принадлежит компании
+    # Проверяем объявление
     property_obj = db.query(models.Property).filter(
         models.Property.id == property_id,
-        models.Property.company_id == current_user.id
+        models.Property.owner_id == current_user.id
     ).first()
     
     if not property_obj:
         raise HTTPException(status_code=404, detail="Объявление не найдено")
     
-    # Проверяем были ли изменения в 360° туре
-    old_tour_url = getattr(property_obj, 'tour_360_url', None)
-    has_360_changes = old_tour_url != tour_360_url
-    
-    # Обновляем 360° тур
-    if hasattr(property_obj, 'tour_360_url'):
-        property_obj.tour_360_url = tour_360_url
-    
-    # Если были изменения в 360° и объявление активно, отправляем на модерацию
-    if has_360_changes and property_obj.status == 'active':
-        property_obj.status = 'pending'
-        print(f"DEBUG: Объявление {property_id} отправлено на модерацию из-за изменений в 360° туре")
-    
-    db.commit()
-    
-    return {
-        "success": True, 
-        "message": "360° тур успешно обновлен" + (" и отправлен на модерацию" if has_360_changes and property_obj.status == 'pending' else ""),
-        "status": property_obj.status
-    }
-
-@app.get("/api/v1/companies/properties/{property_id}/360")
-async def get_property_360(
-    property_id: int,
-    request: Request,
-    db: Session = Depends(deps.get_db)
-):
-    """Получение данных 360° тура"""
-    current_user = await check_company_access(request, db)
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Не авторизован")
-    
-    # Проверяем что объявление принадлежит компании
-    property_obj = db.query(models.Property).filter(
-        models.Property.id == property_id,
-        models.Property.company_id == current_user.id
-    ).first()
-    
-    if not property_obj:
-        raise HTTPException(status_code=404, detail="Объявление не найдено")
-    
-    return {
-        "tour_360_url": getattr(property_obj, 'tour_360_url', None),
-        "tour_360_file_id": getattr(property_obj, 'tour_360_file_id', None),
-        "tour_360_uploaded_at": getattr(property_obj, 'tour_360_uploaded_at', None),
-        "tour_360_date": getattr(property_obj, 'tour_360_date', None)
-    }
-
-# API для работы с заявками (Requests)
-
-@app.get("/api/v1/admin/properties/{property_id}/360")
-async def get_admin_property_360(
-    property_id: int,
-    request: Request,
-    db: Session = Depends(deps.get_db)
-):
-    """Получение данных 360° панорамы для админки"""
-    # Проверяем доступ администратора
-    user = await check_admin_access(request, db)
-    if isinstance(user, RedirectResponse):
-        return {"success": False, "message": "Доступ запрещен"}
-    
+    # Сохраняем URL
+    property_obj.tour_360_url = tour_360_url
+    property_obj.tour_360_uploaded_at = datetime.utcnow()
+    property_obj.updated_at = datetime.utcnow()
+        
     try:
-        # Получаем объявление
-        property_obj = db.query(models.Property).filter(
-            models.Property.id == property_id
-        ).first()
-        
-        if not property_obj:
-            return {"success": False, "message": "Объявление не найдено"}
-        
-        return {
-            "success": True,
-            "tour_360_url": property_obj.tour_360_url if hasattr(property_obj, 'tour_360_url') else None,
-            "tour_360_date": property_obj.tour_360_date.isoformat() if hasattr(property_obj, 'tour_360_date') and property_obj.tour_360_date else None
-        }
-        
-    except Exception as e:
-        print(f"Ошибка при получении данных 360°: {e}")
-        return {"success": False, "message": f"Ошибка сервера: {str(e)}"}
-
-@app.post("/api/v1/admin/properties/{property_id}/360")
-async def update_admin_property_360(
-    property_id: int,
-    request: Request,
-    tour_360_url: str = Form(...),
-    tour_360_date: str = Form(None),
-    db: Session = Depends(deps.get_db)
-):
-    """Обновление 360° панорамы объявления в админке"""
-    # Проверяем доступ администратора
-    user = await check_admin_access(request, db)
-    if isinstance(user, RedirectResponse):
-        return {"success": False, "message": "Доступ запрещен"}
-    
-    try:
-        # Получаем объявление
-        property_obj = db.query(models.Property).filter(
-            models.Property.id == property_id
-        ).first()
-        
-        if not property_obj:
-            return {"success": False, "message": "Объявление не найдено"}
-        
-        # Обновляем данные 360°
-        if hasattr(property_obj, 'tour_360_url'):
-            property_obj.tour_360_url = tour_360_url
-        
-        if tour_360_date and hasattr(property_obj, 'tour_360_date'):
-            try:
-                from datetime import datetime
-                property_obj.tour_360_date = datetime.fromisoformat(tour_360_date).date()
-            except ValueError:
-                pass  # Игнорируем неверный формат даты
-        
         db.commit()
+        return {"success": True, "message": "360° панорама успешно сохранена"}
+    except Exception as e:
+        db.rollback()
+        return {"success": False, "message": f"Ошибка при сохранении: {str(e)}"}
+
+# Добавляем после других маршрутов, но перед скриптами
+
+@app.get("/mobile/test-media", response_class=HTMLResponse)
+async def test_media_page(request: Request):
+    """Тестовая страница для медиа-сервера"""
+    return templates.TemplateResponse("mobile/test_media.html", {
+        "request": request,
+        "media_server": "https://wazir.kg/state"
+    })
+
+@app.post("/mobile/test-upload")
+async def test_upload_endpoint(
+    request: Request,
+    photos: List[UploadFile] = File(...),
+    title: str = Form(...),
+    db: Session = Depends(deps.get_db)
+):
+    """Тестовый эндпоинт для загрузки"""
+    from app.utils.media_uploader import media_uploader
+    
+    try:
+        # Загружаем на медиа-сервер
+        result = await media_uploader.upload_property_images(photos)
         
         return {
-            "success": True,
-            "message": "360° панорама успешно обновлена"
+            "status": result["status"],
+            "property_id": result.get("property_id"),
+            "files_count": result.get("count", 0),
+            "files": result.get("files", [])
         }
-        
     except Exception as e:
-        print(f"Ошибка при обновлении 360°: {e}")
-        db.rollback()
-        return {"success": False, "message": f"Ошибка сервера: {str(e)}"}
+        return {
+            "status": "error",
+            "message": str(e)
+        }

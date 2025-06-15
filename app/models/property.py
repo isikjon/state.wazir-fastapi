@@ -73,6 +73,7 @@ class Property(Base, TimestampMixin):
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)  # Категория
     
     notes = Column(String(255), nullable=True)  # Поле для хранения даты съемки
+    views = Column(Integer, default=0)  # Счетчик просмотров объявления
     
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="properties")
@@ -127,6 +128,7 @@ class Property(Base, TimestampMixin):
             "has_360_tour": self.has_360_tour(),
             "tour_360_display_url": self.get_360_tour_url(),
             "notes": self.notes,
+            "views": self.views,
             "type": self.type,
             "rooms": self.rooms,
             "floor": self.floor,

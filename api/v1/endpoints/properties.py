@@ -1,11 +1,12 @@
 from typing import Any, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from app import models, schemas, services
 from app.api import deps
 from app.models.user import UserRole
+from app.utils.media_uploader import media_uploader
 
 router = APIRouter()
 
@@ -262,4 +263,100 @@ def approve_property(
         raise HTTPException(
             status_code=500,
             detail=f"Ошибка при одобрении объявления: {str(e)}"
+        )
+
+@router.post("/with-media", response_model=dict)
+async def create_property_with_media(
+    title: str = Form(...),
+    description: str = Form(...),
+    price: float = Form(...),
+    address: str = Form(...),
+    city: str = Form("Бишкек"),
+    area: Optional[float] = Form(None),
+    photos: List[UploadFile] = File(...),
+    db: Session = Depends(deps.get_db),
+    current_user: models.User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Создание нового объявления с загрузкой фотографий на медиа-сервер
+    """
+    print(f"DEBUG: Создание объявления с медиа от пользователя {current_user.id}")
+    
+    # Проверяем фотографии
+    if not photos or len(photos) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail="Необходимо загрузить минимум 2 фотографии"
+        )
+    
+    # Проверяем типы файлов
+    allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+    for photo in photos:
+        if photo.content_type not in allowed_types:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Неподдерживаемый тип файла: {photo.content_type}"
+            )
+    
+    try:
+        # Загружаем изображения на медиа-сервер
+        print("DEBUG: Загрузка изображений на медиа-сервер...")
+        upload_result = await media_uploader.upload_property_images(photos)
+        
+        if upload_result["status"] != "success":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Ошибка загрузки изображений: {upload_result['message']}"
+            )
+        
+        property_media_id = upload_result["property_id"]
+        images_data = upload_result["files"]
+        
+        print(f"DEBUG: Изображения загружены, media_id: {property_media_id}")
+        
+        # Создаем объект PropertyCreate с медиа данными
+        property_data = schemas.PropertyCreate(
+            title=title,
+            description=description,
+            price=price,
+            address=address,
+            city=city,
+            area=area,
+            media_id=property_media_id,
+            images_data=images_data,
+            photo_urls=[img["urls"]["medium"] for img in images_data],
+            category_ids=[1]  # По умолчанию
+        )
+        
+        # Создаем объявление
+        property = services.property.create_with_owner(
+            db=db, obj_in=property_data, owner_id=current_user.id
+        )
+        
+        print(f"DEBUG: Объявление создано с ID {property.id}")
+        
+        return {
+            "status": "success",
+            "property_id": property.id,
+            "media_id": property_media_id,
+            "images_count": len(images_data),
+            "message": "Объявление успешно создано с изображениями"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR: Ошибка при создании объявления с медиа: {e}")
+        
+        # Пытаемся удалить загруженные изображения при ошибке
+        if 'property_media_id' in locals():
+            try:
+                await media_uploader.delete_property_images(property_media_id)
+                print(f"DEBUG: Загруженные изображения удалены после ошибки")
+            except:
+                print(f"DEBUG: Не удалось удалить изображения после ошибки")
+        
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при создании объявления: {str(e)}"
         )

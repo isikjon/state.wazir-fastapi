@@ -13,8 +13,13 @@ config = context.config
 from database import Base
 import os
 
-# Используем URL из переменной окружения
-config.set_main_option('sqlalchemy.url', os.environ.get('DATABASE_URL'))
+# Используем URL из переменной окружения или значение по умолчанию
+database_url = os.environ.get('DATABASE_URL')
+if not database_url:
+    # Экранируем % символы для ConfigParser
+    database_url = 'mysql+pymysql://wazir:c%%3AICx9Pr%%7B48y%%3E6BmBc3r@91.218.141.27/wazir'
+
+config.set_main_option('sqlalchemy.url', database_url)
 
 # Import all models
 from app.models.user import User, UserRole, UserStatus
@@ -74,9 +79,12 @@ def run_migrations_online() -> None:
     configuration = config.get_section(config.config_ini_section)
     if not configuration:
         configuration = {}
+    
+    # Используем URL из переменной окружения или значение по умолчанию
     url = os.environ.get('DATABASE_URL')
     if not url:
-        raise Exception("DATABASE_URL environment variable is required")
+        # Экранируем % символы для ConfigParser
+        url = 'mysql+pymysql://wazir:c%%3AICx9Pr%%7B48y%%3E6BmBc3r@91.218.141.27/wazir'
     
     configuration["sqlalchemy.url"] = url
     

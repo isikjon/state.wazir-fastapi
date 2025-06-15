@@ -480,10 +480,10 @@
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
                         <div class="flex">
                             <div class="flex-shrink-0">
-                                <i class="fas fa-info-circle text-blue-400"></i>
+                                <i class="fas fa-check-circle text-blue-400"></i>
                             </div>
                             <div class="ml-3">
-                                <h3 class="text-sm font-medium text-blue-800">Текущая панорама</h3>
+                                <h3 class="text-sm font-medium text-blue-800">360° панорама загружена</h3>
                                 <div class="mt-1 text-sm text-blue-700">
                                     <p id="current-panorama-info">Загружена: <span id="current-upload-date">-</span></p>
                                     <p id="current-panorama-type">Тип: <span id="panorama-type">-</span></p>
@@ -846,6 +846,12 @@
         document.getElementById('propertyModal').classList.add('hidden');
     }
     
+    // Edit function
+    function editProperty(propertyId) {
+        // Открываем модальное окно редактирования
+        openEditModal(propertyId);
+    }
+    
     // Delete function
     async function deleteProperty(propertyId) {
         if (!confirm('Вы уверены, что хотите удалить это объявление?')) {
@@ -882,6 +888,110 @@
         }
     });
     
+    // === ФУНКЦИИ ДЛЯ РЕДАКТИРОВАНИЯ ОБЪЯВЛЕНИЙ ===
+    
+    // Открытие модального окна редактирования
+    function openEditModal(propertyId) {
+        // Загружаем данные объявления
+        fetch(`/api/v1/companies/properties/${propertyId}`)
+            .then(response => response.json())
+            .then(property => {
+                // Заполняем форму редактирования
+                document.getElementById('edit-property-id').value = property.id;
+                document.getElementById('edit-title').value = property.title || '';
+                document.getElementById('edit-description').value = property.description || '';
+                document.getElementById('edit-price').value = property.price || '';
+                document.getElementById('edit-address').value = property.address || '';
+                document.getElementById('edit-city').value = property.city || '';
+                document.getElementById('edit-category').value = property.category_id || '';
+                document.getElementById('edit-type').value = property.type || '';
+                document.getElementById('edit-area').value = property.area || '';
+                document.getElementById('edit-rooms').value = property.rooms || '';
+                document.getElementById('edit-floor').value = property.floor || '';
+                document.getElementById('edit-building-floors').value = property.building_floors || '';
+                document.getElementById('edit-bathroom-type').value = property.bathroom_type || '';
+                
+                // Удобства
+                document.getElementById('edit-has-balcony').checked = property.has_balcony || false;
+                document.getElementById('edit-has-furniture').checked = property.has_furniture || false;
+                document.getElementById('edit-has-renovation').checked = property.has_renovation || false;
+                document.getElementById('edit-has-parking').checked = property.has_parking || false;
+                document.getElementById('edit-has-elevator').checked = property.has_elevator || false;
+                document.getElementById('edit-has-security').checked = property.has_security || false;
+                document.getElementById('edit-has-internet').checked = property.has_internet || false;
+                document.getElementById('edit-has-air-conditioning').checked = property.has_air_conditioning || false;
+                document.getElementById('edit-has-heating').checked = property.has_heating || false;
+                document.getElementById('edit-has-yard').checked = property.has_yard || false;
+                document.getElementById('edit-has-pool').checked = property.has_pool || false;
+                document.getElementById('edit-has-gym').checked = property.has_gym || false;
+                
+                // Показываем модальное окно
+                document.getElementById('edit-property-modal').classList.remove('hidden');
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки данных объявления:', error);
+                alert('Ошибка загрузки данных объявления');
+            });
+    }
+    
+    // Закрытие модального окна редактирования
+    function closeEditModal() {
+        document.getElementById('edit-property-modal').classList.add('hidden');
+    }
+    
+    // Сохранение изменений объявления
+    function saveEditChanges() {
+        const propertyId = document.getElementById('edit-property-id').value;
+        const formData = new FormData();
+        
+        // Основные данные
+        formData.append('title', document.getElementById('edit-title').value);
+        formData.append('description', document.getElementById('edit-description').value);
+        formData.append('price', document.getElementById('edit-price').value);
+        formData.append('address', document.getElementById('edit-address').value);
+        formData.append('city', document.getElementById('edit-city').value);
+        formData.append('category_id', document.getElementById('edit-category').value);
+        formData.append('type', document.getElementById('edit-type').value);
+        formData.append('area', document.getElementById('edit-area').value);
+        formData.append('rooms', document.getElementById('edit-rooms').value);
+        formData.append('floor', document.getElementById('edit-floor').value);
+        formData.append('building_floors', document.getElementById('edit-building-floors').value);
+        formData.append('bathroom_type', document.getElementById('edit-bathroom-type').value);
+        
+        // Удобства
+        formData.append('has_balcony', document.getElementById('edit-has-balcony').checked);
+        formData.append('has_furniture', document.getElementById('edit-has-furniture').checked);
+        formData.append('has_renovation', document.getElementById('edit-has-renovation').checked);
+        formData.append('has_parking', document.getElementById('edit-has-parking').checked);
+        formData.append('has_elevator', document.getElementById('edit-has-elevator').checked);
+        formData.append('has_security', document.getElementById('edit-has-security').checked);
+        formData.append('has_internet', document.getElementById('edit-has-internet').checked);
+        formData.append('has_air_conditioning', document.getElementById('edit-has-air-conditioning').checked);
+        formData.append('has_heating', document.getElementById('edit-has-heating').checked);
+        formData.append('has_yard', document.getElementById('edit-has-yard').checked);
+        formData.append('has_pool', document.getElementById('edit-has-pool').checked);
+        formData.append('has_gym', document.getElementById('edit-has-gym').checked);
+        
+        fetch(`/api/v1/companies/properties/${propertyId}`, {
+            method: 'PUT',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Объявление успешно обновлено!');
+                closeEditModal();
+                location.reload();
+            } else {
+                alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка при сохранении:', error);
+            alert('Произошла ошибка при сохранении');
+        });
+    }
+
     // === ФУНКЦИИ ДЛЯ 360° МОДАЛЬКИ ===
     
     let selectedFile = null;
@@ -1109,14 +1219,27 @@
                     document.getElementById('existing-panorama-info').classList.remove('hidden');
                     document.getElementById('delete-360-btn').classList.remove('hidden');
                     
+                    // Заполняем информацию о дате и типе
                     if (data.tour_360_uploaded_at) {
-                        document.getElementById('current-upload-date').textContent = formatDate(data.tour_360_uploaded_at);
+                        const uploadDate = new Date(data.tour_360_uploaded_at);
+                        document.getElementById('current-upload-date').textContent = uploadDate.toLocaleDateString('ru-RU', {
+                            year: 'numeric',
+                            month: 'long', 
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    }
+                    
+                    // Определяем тип панорамы
+                    if (data.tour_360_file_id) {
                         document.getElementById('panorama-type').textContent = 'Загруженный файл';
                     } else if (data.tour_360_url) {
-                        document.getElementById('current-upload-date').textContent = 'Внешняя ссылка';
-                        document.getElementById('panorama-type').textContent = 'URL';
-                        
-                        // Заполняем форму URL
+                        document.getElementById('panorama-type').textContent = 'Внешний URL';
+                    }
+                    
+                    // Если это URL панорама, заполняем форму
+                    if (data.tour_360_url) {
                         document.getElementById('tour-360-url').value = data.tour_360_url;
                         if (data.tour_360_date) {
                             document.getElementById('tour-360-date').value = data.tour_360_date;
@@ -1127,18 +1250,6 @@
             .catch(error => console.error('Ошибка загрузки данных 360°:', error));
     }
     
-    // Форматирование даты
-    function formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('ru-RU', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    }
-
     // Закрытие модального окна 360°
     function close360Modal() {
         document.getElementById('upload-360-modal').classList.add('hidden');
@@ -1155,6 +1266,9 @@
 
     // === ОБРАБОТЧИКИ СОБЫТИЙ ===
     document.addEventListener('DOMContentLoaded', function() {
+        // Кнопка сохранения изменений объявления
+        document.getElementById('save-edit-btn').addEventListener('click', saveEditChanges);
+        
         // Кнопки закрытия модального окна 360°
         document.querySelectorAll('.close-upload-360-modal').forEach(button => {
             button.addEventListener('click', close360Modal);

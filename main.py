@@ -613,6 +613,10 @@ async def mobile_root(request: Request):
 async def mobile_auth(request: Request):
     return templates.TemplateResponse("layout/auth.html", {"request": request})
 
+@app.get("/mobile/services", response_class=HTMLResponse, name="services")
+async def mobile_services(request: Request):
+    return templates.TemplateResponse("layout/services.html", {"request": request})
+
 @app.get("/mobile/profile", response_class=HTMLResponse, name="profile")
 async def mobile_profile(request: Request, tab: str = None, db: Session = Depends(deps.get_db)):
     # Получаем текущего пользователя

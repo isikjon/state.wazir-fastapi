@@ -319,6 +319,58 @@
     .publication-info .grid > div:last-child {
         border-bottom: none;
     }
+    /* Стили для переключателя валют */
+    .currency-toggle {
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.2s ease;
+    }
+    .currency-toggle:hover {
+        color: #4b5563;
+    }
+    .currency-arrow {
+        margin-left: 6px;
+        font-size: 0.8rem;
+        color: #9ca3af;
+        transition: transform 0.2s ease;
+    }
+    .currency-toggle:hover .currency-arrow {
+        color: #4b5563;
+    }
+    /* Стили для выпадающего списка валют */
+    .currency-dropdown {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        z-index: 10;
+        min-width: 80px;
+        display: none;
+    }
+    .currency-dropdown.show {
+        display: block;
+    }
+    .currency-option {
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        color: #4b5563;
+        transition: background-color 0.2s ease;
+    }
+    .currency-option:hover {
+        background-color: #f3f4f6;
+    }
+    .currency-option.active {
+        color: #2563eb;
+        font-weight: 500;
+    }
+    .currency-container-wrapper {
+        position: relative;
+        display: inline-block;
+    }
 </style>
 {% endblock %}
 
@@ -373,8 +425,7 @@
 
             <!-- Кнопки действий -->
             <div
-                class="action-buttons flex justify-between mt-4 mb-6"
-                style="gap: 12px;">
+                class="action-buttons grid grid-cols-2 gap-3 mt-4 mb-6">
                 <button
                     class="btn favorite-btn {% if property.is_favorite %}active{% endif %}"
                     id="favorite-btn"
@@ -397,6 +448,12 @@
                     Недоступно
                 </button>
                 {% endif %}
+                <button class="btn" id="whatsapp-btn">
+                    <i class="fab fa-whatsapp mr-1"></i> WhatsApp
+                </button>
+                <button class="btn" id="share-btn">
+                    <i class="fas fa-share-alt mr-1"></i> Поделиться
+                </button>
             </div>
 
             <!-- Информация об объявлении -->
@@ -405,9 +462,20 @@
                     class="text-2xl font-semibold text-gray-900 mt-1">
                     {{ property.title }}
                 </h1>
-                <div class="property-price mt-2">
-                    {{ '{:,.0f}'.format(property.price) }} <span
-                        class="text-gray-600">KGZ</span>
+                <div class="property-price mt-2 flex items-center justify-between">
+                    <div>
+                        <span id="price-value">{{ '{:,.0f}'.format(property.price) }}</span> 
+                        <div class="currency-container-wrapper">
+                            <span class="text-gray-600 currency-toggle" id="currency-container" style="display: flex; align-items: center;">
+                                <span id="currency-label">KGS</span>
+                                <i class="fas fa-chevron-down currency-arrow"></i>
+                            </span>
+                            <div class="currency-dropdown" id="currency-dropdown">
+                                <div class="currency-option active" data-currency="KGS">KGS</div>
+                                <div class="currency-option" data-currency="USD">USD</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -514,7 +582,7 @@
                         <span class="font-medium">{{ property.created_at.strftime('%d.%m.%Y в %H:%M') if property.created_at else 'Не указана' }}</span>
                     </div>
                 </div>
-            </div>
+            </div> 
 
             <!-- Контакты продавца -->
             <div class="seller-info">
@@ -913,6 +981,10 @@
         // Переменная для панорамы
         var panoramaViewer = null;
         
+        // Переменные для конвертации валют
+        var originalPrice = {{ property.price|int }};
+        var usdRate = 87.5; // Курс доллара по умолчанию
+        
         // Инициализация слайдера
         var mainSwiper = new Swiper('.main-swiper', {
             loop: true,
@@ -936,6 +1008,96 @@
             $('.thumbnail').removeClass('active');
             $('.thumbnail[data-index="' + realIndex + '"]').addClass('active');
         });
+        
+        // Обработчик изменения валюты
+        $('#currency-container').on('click', function(e) {
+            e.stopPropagation();
+            $('#currency-dropdown').toggleClass('show');
+        });
+
+        // Обработчик выбора валюты из выпадающего списка
+        $('.currency-option').on('click', function(e) {
+            e.stopPropagation();
+            var selectedCurrency = $(this).data('currency');
+            var priceValue = $('#price-value');
+            var currencyLabel = $('#currency-label');
+            
+            // Обновляем активную опцию
+            $('.currency-option').removeClass('active');
+            $(this).addClass('active');
+            
+            // Меняем валюту и цену
+            if (selectedCurrency === 'USD') {
+                var usdPrice = Math.round(originalPrice / usdRate);
+                priceValue.text(usdPrice.toLocaleString());
+                currencyLabel.text('USD');
+            } else {
+                priceValue.text(originalPrice.toLocaleString());
+                currencyLabel.text('KGS');
+            }
+            
+            // Скрываем выпадающий список
+            $('#currency-dropdown').removeClass('show');
+        });
+
+        // Закрытие выпадающего списка при клике вне его
+        $(document).on('click', function() {
+            $('#currency-dropdown').removeClass('show');
+        });
+        
+        // Обработчик кнопки WhatsApp
+        $('#whatsapp-btn').on('click', function() {
+            var propertyTitle = {{ property.title|tojson }};
+            var propertyUrl = window.location.href;
+            var phoneNumber = {{ property.owner.phone|tojson }};
+            var message = "Здравствуйте! Меня интересует объявление: " + propertyTitle + "\n" + propertyUrl;
+            
+            // Убираем все символы кроме цифр из номера телефона
+            var cleanPhone = phoneNumber.replace(/\D/g, '');
+            
+            // Формируем ссылку для WhatsApp
+            var whatsappUrl = "https://wa.me/" + cleanPhone + "?text=" + encodeURIComponent(message);
+            
+            // Открываем WhatsApp
+            window.open(whatsappUrl, '_blank');
+        });
+        
+        // Обработчик кнопки "Поделиться"
+        $('#share-btn').on('click', function() {
+            var propertyTitle = {{ property.title|tojson }};
+            var propertyUrl = window.location.href;
+            
+            // Проверяем поддержку Web Share API
+            if (navigator.share) {
+                navigator.share({
+                    title: propertyTitle,
+                    text: 'Посмотрите это объявление на Wazir',
+                    url: propertyUrl
+                }).catch(function(error) {
+                    console.log('Ошибка при попытке поделиться:', error);
+                    fallbackShare(propertyTitle, propertyUrl);
+                });
+            } else {
+                // Fallback для браузеров без поддержки Web Share API
+                fallbackShare(propertyTitle, propertyUrl);
+            }
+        });
+        
+        // Функция для браузеров без поддержки Web Share API
+        function fallbackShare(title, url) {
+            // Копируем ссылку в буфер обмена
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(function() {
+                    alert('Ссылка скопирована в буфер обмена!');
+                }).catch(function() {
+                    // Если не удалось скопировать, показываем ссылку
+                    prompt('Скопируйте эту ссылку:', url);
+                });
+            } else {
+                // Для старых браузеров
+                prompt('Скопируйте эту ссылку:', url);
+            }
+        }
         
         // Обработчик кнопки 360° только если панорама доступна
         if (hasTour360) {

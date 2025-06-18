@@ -401,9 +401,9 @@
                                 <div
                                     class="flex justify-between text-sm text-gray-700 mt-2 font-medium">
                                     <span id="min-price">{{ min_price or 0 }}
-                                        KGZ</span>
+                                        KGS</span>
                                     <span id="max-price">{{ max_price or
-                                        10000000 }} KGZ</span>
+                                        10000000 }} KGS</span>
                                 </div>
                             </div>
 
@@ -589,7 +589,7 @@
                                 <div class="mb-2">
                                     <h3 class="property-price">{{
                                         "{:,.0f}".format(prop.price).replace(',',
-                                        ' ') }} KGZ</h3>
+                                        ' ') }} KGS</h3>
                                 </div>
                                 <div class="property-info mb-1">
                                     <p>{{ prop.rooms or "?" }}-комн.кв • {{
@@ -694,9 +694,9 @@
                 
                 if (minVal > maxVal) {
                     priceMinRange.value = maxVal;
-                    minPriceDisplay.textContent = maxVal + ' KGZ';
+                    minPriceDisplay.textContent = maxVal + ' KGS';
                 } else {
-                    minPriceDisplay.textContent = minVal + ' KGZ';
+                    minPriceDisplay.textContent = minVal + ' KGS';
                 }
                 
                 const leftPercent = (minVal / 10000000) * 100;
@@ -707,7 +707,7 @@
             
             priceMinRange.addEventListener('input', updatePriceRanges);
             priceMaxRange.addEventListener('input', function() {
-                maxPriceDisplay.textContent = this.value + ' KGZ';
+                maxPriceDisplay.textContent = this.value + ' KGS';
                 updatePriceRanges();
             });
 

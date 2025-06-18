@@ -527,11 +527,11 @@
                         <span id="price-value">{{ '{:,.0f}'.format(property.price) }}</span> 
                         <div class="currency-container-wrapper">
                             <span class="text-gray-600 currency-toggle" id="currency-container" style="display: flex; align-items: center;">
-                                <span id="currency-label">KGS</span>
+                                <span id="currency-label">СОМ</span>
                                 <i class="fas fa-chevron-down currency-arrow"></i>
                             </span>
                             <div class="currency-dropdown" id="currency-dropdown">
-                                <div class="currency-option active" data-currency="KGS">KGS</div>
+                                <div class="currency-option active" data-currency="СОМ">СОМ</div>
                                 <div class="currency-option" data-currency="USD">USD</div>
                             </div>
                         </div>
@@ -707,7 +707,7 @@
                             <div class="property-card-body">
                                 <div class="property-card-price">
                                     {{ '{:,.0f}'.format(prop.price) }}
-                                    KGS
+                                    СОМ
                                 </div>
                                 <div class="property-card-title">
                                     {{ prop.title }}
@@ -982,7 +982,7 @@
             url: "https://script.google.com/macros/s/AKfycbzuBnGgEZdYMvWPJmyqO0eLP7dMWyU45OyEUEGHhdJ7LWNwx1IU7F8Wl_uLF9YADjVx/exec",
             data: {
                 from: "USD",
-                to: "KGS"
+                to: "СОМ"
             },
             dataType: "jsonp",
             success: function(data) {
@@ -1093,7 +1093,7 @@
                 currencyLabel.text('USD');
             } else {
                 priceValue.text(originalPrice.toLocaleString());
-                currencyLabel.text('KGS');
+                currencyLabel.text('СОМ');
             }
             
             // Скрываем выпадающий список

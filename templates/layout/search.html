@@ -128,11 +128,18 @@
             .filter-panel {
                 max-height: 0;
                 overflow: hidden;
-                transition: max-height 0.3s ease;
+                transition: max-height 0.5s cubic-bezier(0, 1, 0, 1);
+                padding: 0 16px;
+                border-radius: 8px;
+                margin-bottom: 0;
             }
             .filter-panel.open {
-                max-height: 1000px;
-                display: block;
+                max-height: 2000px;
+                transition: max-height 0.8s ease-in-out;
+                padding: 16px;
+                margin-bottom: 16px;
+                background-color: #fff;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             }
             .filter-panel.closed {
                 display: none;
@@ -258,7 +265,7 @@
                 text-align: left; /* Текст слева */
                 padding-top: 9px;
                 padding-left: 9px;
-                font-size: 14px;
+                font-size: 16px;
                 text-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* Тень для лучшей читаемости */
                 text-decoration: underline;
             }
@@ -274,7 +281,7 @@
                 <!-- Категории недвижимости -->
                 <div class="mx-auto"
                     style="background-color: #fff;">
-                    <div class="grid grid-cols-2 gap-1">
+                    <div class="grid grid-cols-2 gap-1" style="padding: 10px 7px;">
                         <!-- Аренда -->
                         <a href="/mobile/search?q=&category=Аренда">
                             <div
@@ -371,7 +378,7 @@
 
                     <!-- Панель фильтров -->
                     <div id="filter-panel"
-                        class="filter-panel bg-white rounded-lg shadow-sm p-4 mb-4">
+                        class="filter-panel bg-white rounded-lg shadow-sm p-4 mb-4 closed">
                         <form id="filter-form">
                             <!-- Цена -->
                             <div class="mb-5 price-block">
@@ -656,6 +663,134 @@
                 loop: true
             });
             
+            // Переключение видимости панели фильтров при нажатии на кнопку
+            $('#filter-toggle').on('click', function() {
+                const filterPanel = $('#filter-panel');
+                
+                if (filterPanel.hasClass('open')) {
+                    // Если панель открыта, закрываем её
+                    filterPanel.removeClass('open');
+                    
+                    // После завершения анимации max-height добавляем класс closed
+                    setTimeout(function() {
+                        filterPanel.addClass('closed');
+                    }, 500); // Таймаут равен времени transition
+                } else {
+                    // Если панель закрыта, открываем её
+                    filterPanel.removeClass('closed').addClass('open');
+                }
+            });
+
+            // Обработка фильтров цены
+            const priceMinRange = document.querySelector('.min-range');
+            const priceMaxRange = document.querySelector('.max-range');
+            const minPriceDisplay = document.getElementById('min-price');
+            const maxPriceDisplay = document.getElementById('max-price');
+            const priceProgress = document.querySelector('.price-range .price-progress');
+            
+            function updatePriceRanges() {
+                const minVal = parseInt(priceMinRange.value);
+                const maxVal = parseInt(priceMaxRange.value);
+                
+                if (minVal > maxVal) {
+                    priceMinRange.value = maxVal;
+                    minPriceDisplay.textContent = maxVal + ' KGZ';
+                } else {
+                    minPriceDisplay.textContent = minVal + ' KGZ';
+                }
+                
+                const leftPercent = (minVal / 10000000) * 100;
+                const rightPercent = 100 - ((maxVal / 10000000) * 100);
+                priceProgress.style.left = leftPercent + '%';
+                priceProgress.style.right = rightPercent + '%';
+            }
+            
+            priceMinRange.addEventListener('input', updatePriceRanges);
+            priceMaxRange.addEventListener('input', function() {
+                maxPriceDisplay.textContent = this.value + ' KGZ';
+                updatePriceRanges();
+            });
+
+            // Обработка фильтров площади
+            const areaMinRange = document.querySelector('.min-area');
+            const areaMaxRange = document.querySelector('.max-area');
+            const minAreaDisplay = document.getElementById('min-area');
+            const maxAreaDisplay = document.getElementById('max-area');
+            const areaProgress = document.querySelector('.price-range:nth-of-type(2) .price-progress');
+            
+            function updateAreaRanges() {
+                const minVal = parseInt(areaMinRange.value);
+                const maxVal = parseInt(areaMaxRange.value);
+                
+                if (minVal > maxVal) {
+                    areaMinRange.value = maxVal;
+                    minAreaDisplay.textContent = maxVal + ' м²';
+                } else {
+                    minAreaDisplay.textContent = minVal + ' м²';
+                }
+                
+                const leftPercent = (minVal / 500) * 100;
+                const rightPercent = 100 - ((maxVal / 500) * 100);
+                areaProgress.style.left = leftPercent + '%';
+                areaProgress.style.right = rightPercent + '%';
+            }
+            
+            areaMinRange.addEventListener('input', updateAreaRanges);
+            areaMaxRange.addEventListener('input', function() {
+                maxAreaDisplay.textContent = this.value + ' м²';
+                updateAreaRanges();
+            });
+
+            // Обработка кнопок выбора количества комнат
+            $('.room-btn').on('click', function() {
+                $('.room-btn').removeClass('active');
+                $(this).addClass('active');
+                $('#rooms-input').val($(this).data('value'));
+            });
+
+            // Применение фильтров
+            $('#apply-filters').on('click', function() {
+                const searchQuery = $('#search-input').val();
+                const category = $('#category-input').val();
+                const minPrice = priceMinRange.value;
+                const maxPrice = priceMaxRange.value;
+                const minArea = areaMinRange.value;
+                const maxArea = areaMaxRange.value;
+                const rooms = $('#rooms-input').val();
+                const minFloor = $('select[name="min_floor"]').val();
+                const maxFloor = $('select[name="max_floor"]').val();
+                
+                // Дополнительные параметры
+                const balcony = $('input[name="balcony"]').is(':checked') ? 'true' : '';
+                const furniture = $('input[name="furniture"]').is(':checked') ? 'true' : '';
+                const renovation = $('input[name="renovation"]').is(':checked') ? 'true' : '';
+                const parking = $('input[name="parking"]').is(':checked') ? 'true' : '';
+                
+                // Формируем строку запроса
+                let queryParams = new URLSearchParams();
+                if (searchQuery) queryParams.append('q', searchQuery);
+                if (category) queryParams.append('category', category);
+                if (minPrice && minPrice > 0) queryParams.append('price_min', minPrice);
+                if (maxPrice && maxPrice < 10000000) queryParams.append('price_max', maxPrice);
+                if (minArea && minArea > 0) queryParams.append('min_area', minArea);
+                if (maxArea && maxArea < 500) queryParams.append('max_area', maxArea);
+                if (rooms) queryParams.append('rooms', rooms);
+                if (minFloor) queryParams.append('min_floor', minFloor);
+                if (maxFloor) queryParams.append('max_floor', maxFloor);
+                if (balcony) queryParams.append('balcony', balcony);
+                if (furniture) queryParams.append('furniture', furniture);
+                if (renovation) queryParams.append('renovation', renovation);
+                if (parking) queryParams.append('parking', parking);
+                
+                // Переходим на страницу с примененными фильтрами
+                window.location.href = '/mobile/search?' + queryParams.toString();
+            });
+
+            // Сброс всех фильтров
+            $('#reset-filters, #reset-all-filters, #clear-search').on('click', function() {
+                window.location.href = '/mobile/search';
+            });
+            
             // Функция для получения данных о погоде через Visual Crossing Weather
             function getWeather() {
                 // Сначала проверяем, есть ли кэшированные данные
@@ -737,9 +872,11 @@
                     }
                 });
             }
-            
-    // Остальной код JavaScript для фильтров...
-    // [Код фильтров и обработчиков событий сохранен как есть]
+
+            // При загрузке страницы проверяем, есть ли примененные фильтры
+            if ($('#applied-filters').data('has-filters') === 'true') {
+                $('#applied-filters').addClass('visible');
+            }
         });
         </script>
 {% endblock %}

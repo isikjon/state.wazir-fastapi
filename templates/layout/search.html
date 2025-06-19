@@ -240,7 +240,7 @@
             }
             .range-input input {
                 position: absolute;
-                top: -8px;
+                top: -30px;
                 height: 6px;
                 width: 100%;
                 background: none;
@@ -265,6 +265,17 @@
                 transition: all 0.2s ease;
             }
             .room-btn.active {
+                background-color: var(--color-primary);
+                color: white;
+                border-color: var(--color-primary);
+            }
+            .apartment-type-btn, .house-type-btn {
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-size: 1rem;
+                transition: all 0.2s ease;
+            }
+            .apartment-type-btn.active, .house-type-btn.active {
                 background-color: var(--color-primary);
                 color: white;
                 border-color: var(--color-primary);
@@ -426,8 +437,8 @@
 
                     <!-- Индикатор примененных фильтров -->
                     <div id="applied-filters"
-                        data-has-filters="{% if filter.price_min or filter.price_max or filter.min_area or filter.max_area or filter.rooms or filter.min_floor or filter.max_floor or filter.balcony or filter.furniture or filter.renovation or filter.parking %}true{% else %}false{% endif %}"
-                        class="applied-filters {% if min_price or max_price or min_area or max_area or rooms or min_floor or max_floor or balcony or furniture or renovation or parking %}visible{% else %}hidden{% endif %}">
+                        data-has-filters="{% if filter.price_max or filter.max_area or filter.rooms or filter.apartment_type or filter.house_type or filter.min_floor or filter.max_floor or filter.balcony or filter.furniture or filter.renovation or filter.parking or filter.elevator or filter.owner_only %}true{% else %}false{% endif %}"
+                        class="applied-filters {% if max_price or max_area or rooms or apartment_type or house_type or min_floor or max_floor or balcony or furniture or renovation or parking or elevator or owner_only %}visible{% else %}hidden{% endif %}">
                         <span>Применены фильтры</span>
                         <button id="reset-all-filters"
                             class="text-red-500 flex items-center">
@@ -446,23 +457,17 @@
                                     class="block text-base font-medium text-gray-700 mb-2">Цена</label>
                                 <div class="price-range mb-6">
                                     <div class="price-progress"
-                                        style="left: {{ (min_price or 0) / 10000000 * 100 }}%; right: {{ 100 - ((max_price or 10000000) / 10000000 * 100) }}%"></div>
+                                        style="left: 0%; right: {{ 100 - ((max_price or 10000000) / 10000000 * 100) }}%"></div>
                                 </div>
                                 <div class="range-input">
-                                    <input type="range" name="min_price" min="0"
-                                        max="10000000"
-                                        value="{{ min_price or 0 }}"
-                                        class="min-range">
                                     <input type="range" name="max_price" min="0"
                                         max="10000000"
                                         value="{{ max_price or 10000000 }}"
                                         class="max-range">
                                 </div>
                                 <div
-                                    class="flex justify-between text-sm text-gray-700 mt-2 font-medium">
-                                    <span id="min-price">{{ min_price or 0 }}
-                                        СОМ</span>
-                                    <span id="max-price">{{ max_price or
+                                    class="text-left text-sm text-gray-700 mt-2 font-medium">
+                                    <span id="max-price">до {{ max_price or
                                         10000000 }} СОМ</span>
                                 </div>
                             </div>
@@ -474,22 +479,17 @@
                                     (м²)</label>
                                 <div class="price-range mb-6">
                                     <div class="price-progress"
-                                        style="left: {{ (min_area or 0) / 500 * 100 }}%; right: {{ 100 - ((max_area or 500) / 505 * 100) }}%"></div>
+                                        style="left: 0%; right: {{ 100 - ((max_area or 500) / 500 * 100) }}%"></div>
                                 </div>
                                 <div class="range-input">
-                                    <input type="range" name="min_area" min="0"
-                                        max="500" value="{{ min_area or 0 }}"
-                                        class="min-area">
                                     <input type="range" name="max_area" min="0"
                                         max="500"
                                         value="{{ max_area or 500 }}"
                                         class="max-area">
                                 </div>
                                 <div
-                                    class="flex justify-between text-sm text-gray-700 mt-2 font-medium">
-                                    <span id="min-area">{{ min_area or 0 }}
-                                        м²</span>
-                                    <span id="max-area">{{ max_area or 500 }}
+                                    class="text-left text-sm text-gray-700 mt-2 font-medium">
+                                    <span id="max-area">до {{ max_area or 500 }}
                                         м²</span>
                                 </div>
                             </div>
@@ -500,6 +500,8 @@
                                     class="block text-base font-medium text-gray-700 mb-2">Количество
                                     комнат</label>
                                 <div class="flex flex-wrap gap-2">
+                                    <button type="button" data-value="studio"
+                                        class="room-btn border border-gray-300 text-gray-700 {% if rooms == 'studio' %}active{% endif %}">Студия</button>
                                     <button type="button" data-value="1"
                                         class="room-btn border border-gray-300 text-gray-700 {% if rooms == 1 %}active{% endif %}">1</button>
                                     <button type="button" data-value="2"
@@ -513,6 +515,52 @@
                                     <input type="hidden" name="rooms"
                                         id="rooms-input"
                                         value="{{ rooms or '' }}">
+                                </div>
+                            </div>
+
+                            <!-- Только от собственника -->
+                            <div class="mb-5">
+                                <div class="flex items-center">
+                                    <label class="flex items-center checkbox-label">
+                                        <input type="checkbox" name="owner_only"
+                                            value="true" class="mr-2 w-5 h-5" {%
+                                            if owner_only %}checked{% endif %}>
+                                        Только от собственника
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Квартиры -->
+                            <div class="mb-5">
+                                <label
+                                    class="block text-base font-medium text-gray-700 mb-2">Квартиры</label>
+                                <div class="flex flex-wrap gap-2">
+                                    <button type="button" data-value="secondary"
+                                        class="apartment-type-btn border border-gray-300 text-gray-700 {% if apartment_type == 'secondary' %}active{% endif %}">На вторичке</button>
+                                    <button type="button" data-value="new_building"
+                                        class="apartment-type-btn border border-gray-300 text-gray-700 {% if apartment_type == 'new_building' %}active{% endif %}">В новостройке</button>
+                                    <button type="button" data-value="room"
+                                        class="apartment-type-btn border border-gray-300 text-gray-700 {% if apartment_type == 'room' %}active{% endif %}">Комната</button>
+                                    <input type="hidden" name="apartment_type"
+                                        id="apartment-type-input"
+                                        value="{{ apartment_type or '' }}">
+                                </div>
+                            </div>
+
+                            <!-- Дома и участки -->
+                            <div class="mb-5">
+                                <label
+                                    class="block text-base font-medium text-gray-700 mb-2">Дома и участки</label>
+                                <div class="flex flex-wrap gap-2">
+                                    <button type="button" data-value="house"
+                                        class="house-type-btn border border-gray-300 text-gray-700 {% if house_type == 'house' %}active{% endif %}">Дом, дача</button>
+                                    <button type="button" data-value="plot"
+                                        class="house-type-btn border border-gray-300 text-gray-700 {% if house_type == 'plot' %}active{% endif %}">Участок</button>
+                                    <button type="button" data-value="part_house"
+                                        class="house-type-btn border border-gray-300 text-gray-700 {% if house_type == 'part_house' %}active{% endif %}">Часть дома</button>
+                                    <input type="hidden" name="house_type"
+                                        id="house-type-input"
+                                        value="{{ house_type or '' }}">
                                 </div>
                             </div>
 
@@ -583,6 +631,13 @@
                                             if parking %}checked{% endif %}>
                                         Паркинг
                                     </label>
+                                    <label
+                                        class="flex items-center checkbox-label">
+                                        <input type="checkbox" name="elevator"
+                                            value="true" class="mr-2 w-5 h-5" {%
+                                            if elevator %}checked{% endif %}>
+                                        Лифт
+                                    </label>
                                 </div>
                             </div>
 
@@ -643,7 +698,7 @@
 
                 <div class="px-4 pb-4 pt-0">
                     <!-- Заголовок объявления -->
-                    <div class="mb-2">
+                    <div class="mb-2"> 
                         <h2 class="text-lg font-semibold text-gray-900 leading-tight">{{ prop.title or "Продается недвижимость" }}</h2>
                     </div>
                                 <div class="mb-2">
@@ -723,6 +778,11 @@
                 loop: true
             });
             
+            // Функция для форматирования чисел с пробелами
+            function formatNumber(num) {
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+            }
+            
             // Переключение видимости панели фильтров при нажатии на кнопку
             $('#filter-toggle').on('click', function() {
                 const filterPanel = $('#filter-panel');
@@ -742,64 +802,40 @@
             });
 
             // Обработка фильтров цены
-            const priceMinRange = document.querySelector('.min-range');
             const priceMaxRange = document.querySelector('.max-range');
-            const minPriceDisplay = document.getElementById('min-price');
             const maxPriceDisplay = document.getElementById('max-price');
             const priceProgress = document.querySelector('.price-range .price-progress');
             
             function updatePriceRanges() {
-                const minVal = parseInt(priceMinRange.value);
                 const maxVal = parseInt(priceMaxRange.value);
                 
-                if (minVal > maxVal) {
-                    priceMinRange.value = maxVal;
-                    minPriceDisplay.textContent = maxVal + ' СОМ';
-                } else {
-                    minPriceDisplay.textContent = minVal + ' СОМ';
-                }
+                maxPriceDisplay.textContent = 'до ' + formatNumber(maxVal) + ' СОМ';
                 
-                const leftPercent = (minVal / 10000000) * 100;
+                const leftPercent = 0;
                 const rightPercent = 100 - ((maxVal / 10000000) * 100);
                 priceProgress.style.left = leftPercent + '%';
                 priceProgress.style.right = rightPercent + '%';
             }
             
-            priceMinRange.addEventListener('input', updatePriceRanges);
-            priceMaxRange.addEventListener('input', function() {
-                maxPriceDisplay.textContent = this.value + ' СОМ';
-                updatePriceRanges();
-            });
+            priceMaxRange.addEventListener('input', updatePriceRanges);
 
             // Обработка фильтров площади
-            const areaMinRange = document.querySelector('.min-area');
             const areaMaxRange = document.querySelector('.max-area');
-            const minAreaDisplay = document.getElementById('min-area');
             const maxAreaDisplay = document.getElementById('max-area');
             const areaProgress = document.querySelector('.price-range:nth-of-type(2) .price-progress');
             
             function updateAreaRanges() {
-                const minVal = parseInt(areaMinRange.value);
                 const maxVal = parseInt(areaMaxRange.value);
                 
-                if (minVal > maxVal) {
-                    areaMinRange.value = maxVal;
-                    minAreaDisplay.textContent = maxVal + ' м²';
-                } else {
-                    minAreaDisplay.textContent = minVal + ' м²';
-                }
+                maxAreaDisplay.textContent = 'до ' + formatNumber(maxVal) + ' м²';
                 
-                const leftPercent = (minVal / 500) * 100;
+                const leftPercent = 0;
                 const rightPercent = 100 - ((maxVal / 500) * 100);
                 areaProgress.style.left = leftPercent + '%';
                 areaProgress.style.right = rightPercent + '%';
             }
             
-            areaMinRange.addEventListener('input', updateAreaRanges);
-            areaMaxRange.addEventListener('input', function() {
-                maxAreaDisplay.textContent = this.value + ' м²';
-                updateAreaRanges();
-            });
+            areaMaxRange.addEventListener('input', updateAreaRanges);
 
             // Обработка кнопок выбора количества комнат
             $('.room-btn').on('click', function() {
@@ -808,15 +844,29 @@
                 $('#rooms-input').val($(this).data('value'));
             });
 
+            // Обработка кнопок выбора типа квартир
+            $('.apartment-type-btn').on('click', function() {
+                $('.apartment-type-btn').removeClass('active');
+                $(this).addClass('active');
+                $('#apartment-type-input').val($(this).data('value'));
+            });
+
+            // Обработка кнопок выбора типа домов и участков
+            $('.house-type-btn').on('click', function() {
+                $('.house-type-btn').removeClass('active');
+                $(this).addClass('active');
+                $('#house-type-input').val($(this).data('value'));
+            });
+
             // Применение фильтров
             $('#apply-filters').on('click', function() {
                 const searchQuery = $('#search-input').val();
                 const category = $('#category-input').val();
-                const minPrice = priceMinRange.value;
                 const maxPrice = priceMaxRange.value;
-                const minArea = areaMinRange.value;
                 const maxArea = areaMaxRange.value;
                 const rooms = $('#rooms-input').val();
+                const apartmentType = $('#apartment-type-input').val();
+                const houseType = $('#house-type-input').val();
                 const minFloor = $('select[name="min_floor"]').val();
                 const maxFloor = $('select[name="max_floor"]').val();
                 
@@ -825,22 +875,26 @@
                 const furniture = $('input[name="furniture"]').is(':checked') ? 'true' : '';
                 const renovation = $('input[name="renovation"]').is(':checked') ? 'true' : '';
                 const parking = $('input[name="parking"]').is(':checked') ? 'true' : '';
+                const elevator = $('input[name="elevator"]').is(':checked') ? 'true' : '';
+                const ownerOnly = $('input[name="owner_only"]').is(':checked') ? 'true' : '';
                 
                 // Формируем строку запроса
                 let queryParams = new URLSearchParams();
                 if (searchQuery) queryParams.append('q', searchQuery);
                 if (category) queryParams.append('category', category);
-                if (minPrice && minPrice > 0) queryParams.append('price_min', minPrice);
                 if (maxPrice && maxPrice < 10000000) queryParams.append('price_max', maxPrice);
-                if (minArea && minArea > 0) queryParams.append('min_area', minArea);
                 if (maxArea && maxArea < 500) queryParams.append('max_area', maxArea);
                 if (rooms) queryParams.append('rooms', rooms);
+                if (apartmentType) queryParams.append('apartment_type', apartmentType);
+                if (houseType) queryParams.append('house_type', houseType);
                 if (minFloor) queryParams.append('min_floor', minFloor);
                 if (maxFloor) queryParams.append('max_floor', maxFloor);
                 if (balcony) queryParams.append('balcony', balcony);
                 if (furniture) queryParams.append('furniture', furniture);
                 if (renovation) queryParams.append('renovation', renovation);
                 if (parking) queryParams.append('parking', parking);
+                if (elevator) queryParams.append('elevator', elevator);
+                if (ownerOnly) queryParams.append('owner_only', ownerOnly);
                 
                 // Переходим на страницу с примененными фильтрами
                 window.location.href = '/mobile/search?' + queryParams.toString();

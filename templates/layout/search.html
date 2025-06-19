@@ -473,7 +473,7 @@
                             </div>
 
                             <!-- Площадь -->
-                            <div class="mb-5">
+                            <div class="mb-5" id="area-block">
                                 <label
                                     class="block text-base font-medium text-gray-700 mb-2">Площадь
                                     (м²)</label>
@@ -804,17 +804,19 @@
             // Обработка фильтров цены
             const priceMaxRange = document.querySelector('.max-range');
             const maxPriceDisplay = document.getElementById('max-price');
-            const priceProgress = document.querySelector('.price-range .price-progress');
+            const priceProgress = document.querySelector('.price-block .price-progress');
             
             function updatePriceRanges() {
                 const maxVal = parseInt(priceMaxRange.value);
                 
                 maxPriceDisplay.textContent = 'до ' + formatNumber(maxVal) + ' СОМ';
                 
-                const leftPercent = 0;
-                const rightPercent = 100 - ((maxVal / 10000000) * 100);
-                priceProgress.style.left = leftPercent + '%';
-                priceProgress.style.right = rightPercent + '%';
+                if (priceProgress) {
+                    const leftPercent = 0;
+                    const rightPercent = 100 - ((maxVal / 10000000) * 100);
+                    priceProgress.style.left = leftPercent + '%';
+                    priceProgress.style.right = rightPercent + '%';
+                }
             }
             
             priceMaxRange.addEventListener('input', updatePriceRanges);
@@ -822,20 +824,26 @@
             // Обработка фильтров площади
             const areaMaxRange = document.querySelector('.max-area');
             const maxAreaDisplay = document.getElementById('max-area');
-            const areaProgress = document.querySelector('.price-range:nth-of-type(2) .price-progress');
+            const areaProgress = document.querySelector('#area-block .price-progress');
             
             function updateAreaRanges() {
                 const maxVal = parseInt(areaMaxRange.value);
                 
                 maxAreaDisplay.textContent = 'до ' + formatNumber(maxVal) + ' м²';
                 
-                const leftPercent = 0;
-                const rightPercent = 100 - ((maxVal / 500) * 100);
-                areaProgress.style.left = leftPercent + '%';
-                areaProgress.style.right = rightPercent + '%';
+                if (areaProgress) {
+                    const leftPercent = 0;
+                    const rightPercent = 100 - ((maxVal / 500) * 100);
+                    areaProgress.style.left = leftPercent + '%';
+                    areaProgress.style.right = rightPercent + '%';
+                }
             }
             
             areaMaxRange.addEventListener('input', updateAreaRanges);
+
+            // Инициализация progress bar при загрузке страницы
+            updatePriceRanges();
+            updateAreaRanges();
 
             // Обработка кнопок выбора количества комнат
             $('.room-btn').on('click', function() {
@@ -864,7 +872,13 @@
                 const category = $('#category-input').val();
                 const maxPrice = priceMaxRange.value;
                 const maxArea = areaMaxRange.value;
-                const rooms = $('#rooms-input').val();
+                let rooms = $('#rooms-input').val();
+                
+                // Обработка значения "studio" - конвертируем в 0 для backend
+                if (rooms === 'studio') {
+                    rooms = '0';
+                }
+                
                 const apartmentType = $('#apartment-type-input').val();
                 const houseType = $('#house-type-input').val();
                 const minFloor = $('select[name="min_floor"]').val();

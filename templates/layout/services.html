@@ -16,6 +16,8 @@
         display: flex;
         justify-content: flex-start;
         align-items: flex-start;
+        cursor: pointer;
+        text-decoration: none;
     }
     .category-card:hover {
         transform: translateY(-2px);
@@ -39,6 +41,7 @@
         font-size: 14px;
         text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         text-decoration: underline;
+        color: white;
     }
     .ad-banner {
         border-radius: 12px;
@@ -67,101 +70,98 @@
         padding-top: 5px;
         padding-bottom: 5px;">
         <div class="grid grid-cols-2 gap-1">
-            <!-- Поеси -->
-            <div class="category-card rounded-lg"
-                style="background-image: url('https://wazir.kg/static/categories_bg.png');">
-                <h3 class="category-title text-white font-medium font-montserrat">Поеси</h3>
-            </div>
+            {% if categories %}
+                {% for category in categories %}
+                    {% if category.is_active %}
+                        <a href="{{ url_for('service_category', category_slug=category.slug) }}" 
+                           class="category-card rounded-lg"
+                           style="background-image: url('https://wazir.kg/static/categories_bg.png');">
+                            <h3 class="category-title font-medium font-montserrat">{{ category.title }}</h3>
+                        </a>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <!-- Fallback если нет категорий в БД -->
+                <div class="category-card rounded-lg"
+                    style="background-image: url('https://wazir.kg/static/categories_bg.png');">
+                    <h3 class="category-title text-white font-medium font-montserrat">Поеси</h3>
+                </div>
 
-            <!-- Медицина -->
-            <div class="category-card rounded-lg"
-                style="background-image: url('https://wazir.kg/static/categories_bg.png');">
-                <h3 class="category-title text-white font-medium font-montserrat">Медицина</h3>
-            </div>
+                <div class="category-card rounded-lg"
+                    style="background-image: url('https://wazir.kg/static/categories_bg.png');">
+                    <h3 class="category-title text-white font-medium font-montserrat">Медицина</h3>
+                </div>
 
-            <!-- Магазины одежд -->
-            <div class="category-card rounded-lg"
-                style="background-image: url('https://wazir.kg/static/categories_bg.png');">
-                <h3 class="category-title text-white font-medium font-montserrat">Магазины одежд</h3>
-            </div>
+                <div class="category-card rounded-lg"
+                    style="background-image: url('https://wazir.kg/static/categories_bg.png');">
+                    <h3 class="category-title text-white font-medium font-montserrat">Магазины одежд</h3>
+                </div>
 
-            <!-- Образования -->
-            <div class="category-card rounded-lg"
-                style="background-image: url('https://wazir.kg/static/categories_bg.png');">
-                <h3 class="category-title text-white font-medium font-montserrat">Образования</h3>
-            </div>
+                <div class="category-card rounded-lg"
+                    style="background-image: url('https://wazir.kg/static/categories_bg.png');">
+                    <h3 class="category-title text-white font-medium font-montserrat">Образования</h3>
+                </div>
 
-            <!-- Развлечения -->
-            <div class="category-card rounded-lg"
-                style="background-image: url('https://wazir.kg/static/categories_bg.png');">
-                <h3 class="category-title text-white font-medium font-montserrat">Развлечения</h3>
-            </div>
+                <div class="category-card rounded-lg"
+                    style="background-image: url('https://wazir.kg/static/categories_bg.png');">
+                    <h3 class="category-title text-white font-medium font-montserrat">Развлечения</h3>
+                </div>
 
-            <!-- Услуги -->
-            <div class="category-card rounded-lg"
-                style="background-image: url('https://wazir.kg/static/categories_bg.png');">
-                <h3 class="category-title text-white font-medium font-montserrat">Услуги</h3>
-            </div>
+                <div class="category-card rounded-lg"
+                    style="background-image: url('https://wazir.kg/static/categories_bg.png');">
+                    <h3 class="category-title text-white font-medium font-montserrat">Услуги</h3>
+                </div>
 
-            <!-- Спец.магазины -->
-            <div class="category-card rounded-lg"
-                style="background-image: url('https://wazir.kg/static/categories_bg.png');">
-                <h3 class="category-title text-white font-medium font-montserrat">Спец.магазины</h3>
-            </div>
+                <div class="category-card rounded-lg"
+                    style="background-image: url('https://wazir.kg/static/categories_bg.png');">
+                    <h3 class="category-title text-white font-medium font-montserrat">Спец.магазины</h3>
+                </div>
 
-            <!-- Салон красоты -->
-            <div class="category-card rounded-lg"
-                style="background-image: url('https://wazir.kg/static/categories_bg.png');">
-                <h3 class="category-title text-white font-medium font-montserrat">Салон красоты</h3>
-            </div>
+                <div class="category-card rounded-lg"
+                    style="background-image: url('https://wazir.kg/static/categories_bg.png');">
+                    <h3 class="category-title text-white font-medium font-montserrat">Салон красоты</h3>
+                </div>
 
-            <!-- Гостиницы -->
-            <div class="category-card rounded-lg"
-                style="background-image: url('https://wazir.kg/static/categories_bg.png');">
-                <h3 class="category-title text-white font-medium font-montserrat">Гостиницы</h3>
-            </div>
+                <div class="category-card rounded-lg"
+                    style="background-image: url('https://wazir.kg/static/categories_bg.png');">
+                    <h3 class="category-title text-white font-medium font-montserrat">Гостиницы</h3>
+                </div>
 
-            <!-- Комплекс услуг -->
-            <div class="category-card rounded-lg"
-                style="background-image: url('https://wazir.kg/static/categories_bg.png');">
-                <h3 class="category-title text-white font-medium font-montserrat">Комплекс услуг</h3>
-            </div>
+                <div class="category-card rounded-lg"
+                    style="background-image: url('https://wazir.kg/static/categories_bg.png');">
+                    <h3 class="category-title text-white font-medium font-montserrat">Комплекс услуг</h3>
+                </div>
 
-            <!-- Религия -->
-            <div class="category-card rounded-lg"
-                style="background-image: url('https://wazir.kg/static/categories_bg.png');">
-                <h3 class="category-title text-white font-medium font-montserrat">Религия</h3>
-            </div>
+                <div class="category-card rounded-lg"
+                    style="background-image: url('https://wazir.kg/static/categories_bg.png');">
+                    <h3 class="category-title text-white font-medium font-montserrat">Религия</h3>
+                </div>
 
-            <!-- Спорт -->
-            <div class="category-card rounded-lg"
-                style="background-image: url('https://wazir.kg/static/categories_bg.png');">
-                <h3 class="category-title text-white font-medium font-montserrat">Спорт</h3>
-            </div>
+                <div class="category-card rounded-lg"
+                    style="background-image: url('https://wazir.kg/static/categories_bg.png');">
+                    <h3 class="category-title text-white font-medium font-montserrat">Спорт</h3>
+                </div>
 
-            <!-- Студии -->
-            <div class="category-card rounded-lg"
-                style="background-image: url('https://wazir.kg/static/categories_bg.png');">
-                <h3 class="category-title text-white font-medium font-montserrat">Студии</h3>
-            </div>
+                <div class="category-card rounded-lg"
+                    style="background-image: url('https://wazir.kg/static/categories_bg.png');">
+                    <h3 class="category-title text-white font-medium font-montserrat">Студии</h3>
+                </div>
 
-            <!-- Ремонт -->
-            <div class="category-card rounded-lg"
-                style="background-image: url('https://wazir.kg/static/categories_bg.png');">
-                <h3 class="category-title text-white font-medium font-montserrat">Ремонт</h3>
-            </div>
+                <div class="category-card rounded-lg"
+                    style="background-image: url('https://wazir.kg/static/categories_bg.png');">
+                    <h3 class="category-title text-white font-medium font-montserrat">Ремонт</h3>
+                </div>
 
-            <!-- Безопасность -->
-            <div class="category-card rounded-lg"
-                style="background-image: url('https://wazir.kg/static/categories_bg.png');">
-                <h3 class="category-title text-white font-medium font-montserrat">Безопасность</h3>
-            </div>
+                <div class="category-card rounded-lg"
+                    style="background-image: url('https://wazir.kg/static/categories_bg.png');">
+                    <h3 class="category-title text-white font-medium font-montserrat">Безопасность</h3>
+                </div>
 
-            <!-- Проч. товары -->
-            <div class="category-card rounded-lg"
-                style="background-image: url('https://wazir.kg/static/categories_bg.png');">
-                <h3 class="category-title text-white font-medium font-montserrat">Проч. товары</h3>
-            </div>
+                <div class="category-card rounded-lg"
+                    style="background-image: url('https://wazir.kg/static/categories_bg.png');">
+                    <h3 class="category-title text-white font-medium font-montserrat">Проч. товары</h3>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>

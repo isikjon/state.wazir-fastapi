@@ -273,6 +273,11 @@
                                 class="fas fa-clipboard-list w-5 text-center"></i>
                             <span>Заявки</span>
                         </a>
+                        <a href="/admin/services"
+                            class="sidebar-link {% if request.path == '/admin/services' or request.path.startswith('/admin/services/') %}active{% endif %} flex items-center space-x-3 px-5 py-3">
+                            <i class="fas fa-store w-5 text-center"></i>
+                            <span>Сервисы</span>
+                        </a>
                         <a href="/admin/settings"
                             class="sidebar-link {% if request.path == '/admin/settings' %}active{% endif %} flex items-center space-x-3 px-5 py-3">
                             <i class="fas fa-cog w-5 text-center"></i>

@@ -191,6 +191,30 @@
     .room-btn:hover {
         border-color: var(--color-primary);
     }
+    .property-type-selector {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+    }
+    .property-type-btn {
+        padding: 8px 16px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        background-color: white;
+        color: #374151;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+    }
+    .property-type-btn.active {
+        background-color: var(--color-primary);
+        color: white;
+        border-color: var(--color-primary);
+    }
+    .property-type-btn:hover {
+        border-color: var(--color-primary);
+    }
     .form-help {
         font-size: 0.85rem;
         color: #6b7280;
@@ -198,22 +222,6 @@
     }
     .required {
                 color: #ef4444;
-            }
-    .tour-360-info {
-        background-color: #f0f9ff;
-        border: 1px solid #0ea5e9;
-        border-radius: 6px;
-                padding: 12px;
-        margin-top: 12px;
-    }
-    .tour-360-info .info-title {
-        font-weight: 500;
-        color: #0369a1;
-        margin-bottom: 4px;
-    }
-    .tour-360-info .info-text {
-        font-size: 0.9rem;
-        color: #0c4a6e;
             }
         </style>
 {% endblock %}
@@ -266,7 +274,7 @@
                 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Цена (KGS) <span class="required">*</span>
+                        Цена (СОМ) <span class="required">*</span>
                     </label>
                     <input type="number" name="price" class="form-input" 
                            placeholder="0" min="0" required>
@@ -277,6 +285,7 @@
                         Количество комнат
                     </label>
                     <div class="room-selector">
+                        <button type="button" class="room-btn" data-rooms="studio">Студия</button>
                         <button type="button" class="room-btn" data-rooms="1">1</button>
                         <button type="button" class="room-btn" data-rooms="2">2</button>
                         <button type="button" class="room-btn" data-rooms="3">3</button>
@@ -284,6 +293,32 @@
                         <button type="button" class="room-btn" data-rooms="5">5+</button>
                     </div>
                     <input type="hidden" name="rooms" id="rooms-input">
+                </div>
+
+                <!-- Тип квартиры -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Тип квартиры
+                    </label>
+                    <div class="property-type-selector">
+                        <button type="button" class="property-type-btn apartment-type-btn" data-type="secondary">На вторичке</button>
+                        <button type="button" class="property-type-btn apartment-type-btn" data-type="new_building">В новостройке</button>
+                        <button type="button" class="property-type-btn apartment-type-btn" data-type="room">Комната</button>
+                    </div>
+                    <input type="hidden" name="apartment_type" id="apartment-type-input">
+                </div>
+
+                <!-- Тип дома -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Дома и участки
+                    </label>
+                    <div class="property-type-selector">
+                        <button type="button" class="property-type-btn house-type-btn" data-type="house">Дом, дача</button>
+                        <button type="button" class="property-type-btn house-type-btn" data-type="plot">Участок</button>
+                        <button type="button" class="property-type-btn house-type-btn" data-type="part_house">Часть дома</button>
+                    </div>
+                    <input type="hidden" name="house_type" id="house-type-input">
                 </div>
                 
                 <div class="input-group mb-4">
@@ -348,6 +383,9 @@
             <div class="form-section">
                 <div class="form-title">Дополнительные опции</div>
                 
+                <!-- Скрытое поле - автоматически от собственника для мобильных пользователей -->
+                <input type="hidden" name="owner_only" value="true">
+                
                 <div class="checkbox-item">
                     <input type="checkbox" name="has_balcony" id="has_balcony">
                     <label for="has_balcony">Балкон</label>
@@ -367,6 +405,11 @@
                     <input type="checkbox" name="has_parking" id="has_parking">
                     <label for="has_parking">Парковка</label>
                                     </div>
+
+                <div class="checkbox-item">
+                    <input type="checkbox" name="has_elevator" id="has_elevator">
+                    <label for="has_elevator">Лифт</label>
+                </div>
                                 </div>
 
             <!-- Фотографии -->
@@ -398,39 +441,6 @@
                     Заказ профессиональной съемки на 360° является дополнительной платной услугой. 
                     Наш специалист свяжется с вами для уточнения деталей и стоимости.
                 </div>
-                
-                <div id="tour-options" class="mt-4">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Ссылка на 360° тур
-                        </label>
-                        <input type="url" name="tour_360_url" class="form-input" 
-                               placeholder="https://kuula.co/post/...">
-                        <div class="form-help">Поддерживаются ссылки с Kuula, Matterport и других платформ</div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Или загрузите панораму
-                        </label>
-                        <input type="file" name="tour_360_file" class="form-input" 
-                               accept="image/*">
-                        <div class="form-help">Загрузите сферическую панораму (360° фото)</div>
-                    </div>
-                </div>
-                
-                <div class="tour-360-info">
-                    <div class="info-title">
-                        <i class="fas fa-info-circle mr-1"></i>
-                        Информация о 360° турах
-                    </div>
-                    <div class="info-text">
-                        360° туры значительно повышают интерес к объявлению. 
-                        Вы можете добавить ссылку на готовый тур, загрузить панораму или 
-                        заказать профессиональную съемку на 360°. Наш специалист свяжется с вами 
-                        для согласования деталей.
-                    </div>
-                </div>
             </div>
 
             <!-- Контактная информация -->
@@ -439,10 +449,19 @@
                 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">
+                        ФИО
+                    </label>
+                    <input type="text" name="full_name" id="user-fullname" class="form-input bg-gray-100" 
+                           value="{% if user.role.value == 'COMPANY' %}{{ user.company_name or 'Компания' }}{% else %}{{ user.full_name or 'Не указано' }}{% endif %}" readonly>
+                    <div class="form-help">Используется ФИО из вашего профиля</div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
                         Телефон
                     </label>
                     <input type="tel" name="phone" id="user-phone" class="form-input bg-gray-100" 
-                           readonly>
+                           value="{{ user.phone or 'Не указан' }}" readonly>
                     <div class="form-help">Используется номер телефона из вашего профиля</div>
                 </div>
 
@@ -451,17 +470,10 @@
                         Email
                     </label>
                     <input type="email" name="email" id="user-email" class="form-input bg-gray-100" 
-                           readonly>
+                           value="{{ user.email or 'Не указан' }}" readonly>
                     <div class="form-help">Используется email из вашего профиля</div>
                 </div>
 
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Дополнительные заметки
-                    </label>
-                    <textarea name="notes" class="form-textarea" 
-                              placeholder="Дополнительная информация для потенциальных покупателей..."></textarea>
-                </div>
             </div>
 
             <!-- Кнопка отправки -->
@@ -494,78 +506,85 @@
 <script>
     let selectedPhotos = [];
     let selectedRooms = null;
+    let selectedApartmentType = null;
+    let selectedHouseType = null;
     
     $(document).ready(function() {
         // Инициализация обработчиков
         initPhotoUpload();
         initRoomSelector();
+        initPropertyTypeSelectors();
         initFormSubmit();
         init360TourOptions();
-        loadUserContactInfo();
         
         // Загружаем данные о погоде и валюте
         getWeather();
         getCurrencyRate();
     });
     
-    // Загрузка контактной информации пользователя
-    function loadUserContactInfo() {
-        fetch('/api/v1/users/me', {
-            method: 'GET',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Не удалось загрузить данные пользователя');
-            }
-            return response.json();
-        })
-        .then(userData => {
-            // Заполняем поля контактной информации
-            if (userData.phone) {
-                $('#user-phone').val(userData.phone);
-            } else {
-                $('#user-phone').val('Не указан').addClass('text-gray-500');
-            }
-            
-            if (userData.email) {
-                $('#user-email').val(userData.email);
-            } else {
-                $('#user-email').val('Не указан').addClass('text-gray-500');
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка при загрузке данных пользователя:', error);
-            $('#user-phone').val('Не удалось загрузить').addClass('text-red-500');
-            $('#user-email').val('Не удалось загрузить').addClass('text-red-500');
+    // Инициализация селекторов типов недвижимости
+    function initPropertyTypeSelectors() {
+        // Селектор типа квартиры
+        document.querySelectorAll('.apartment-type-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // Убираем активный класс со всех кнопок типа квартиры
+                document.querySelectorAll('.apartment-type-btn').forEach(b => b.classList.remove('active'));
+                
+                // Добавляем активный класс к выбранной кнопке
+                btn.classList.add('active');
+                
+                // Сохраняем значение
+                selectedApartmentType = btn.dataset.type;
+                document.getElementById('apartment-type-input').value = selectedApartmentType;
+                
+                // Сбрасываем тип дома
+                document.querySelectorAll('.house-type-btn').forEach(b => b.classList.remove('active'));
+                selectedHouseType = null;
+                document.getElementById('house-type-input').value = '';
+            });
+        });
+        
+        // Селектор типа дома
+        document.querySelectorAll('.house-type-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // Убираем активный класс со всех кнопок типа дома
+                document.querySelectorAll('.house-type-btn').forEach(b => b.classList.remove('active'));
+                
+                // Добавляем активный класс к выбранной кнопке
+                btn.classList.add('active');
+                
+                // Сохраняем значение
+                selectedHouseType = btn.dataset.type;
+                document.getElementById('house-type-input').value = selectedHouseType;
+                
+                // Сбрасываем тип квартиры
+                document.querySelectorAll('.apartment-type-btn').forEach(b => b.classList.remove('active'));
+                selectedApartmentType = null;
+                document.getElementById('apartment-type-input').value = '';
+            });
         });
     }
     
-    // Инициализация опций 360° тура
+    // Инициализация опций 360° тура (упрощенная версия)
     function init360TourOptions() {
         const requestTourCheckbox = $('#request_360_tour');
-        const tourOptions = $('#tour-options');
         const requestTourInfo = $('#request-tour-info');
         
         // При изменении состояния чекбокса
         requestTourCheckbox.on('change', function() {
             if (this.checked) {
-                // Если выбран заказ съемки, скрываем опции загрузки тура и показываем информацию
-                tourOptions.slideUp();
                 requestTourInfo.slideDown();
             } else {
-                // Если не выбран заказ съемки, показываем опции загрузки тура и скрываем информацию
-                tourOptions.slideDown();
                 requestTourInfo.slideUp();
             }
         });
         
         // Инициализация начального состояния
         if (requestTourCheckbox.is(':checked')) {
-            tourOptions.hide();
             requestTourInfo.show();
         } else {
             requestTourInfo.hide();

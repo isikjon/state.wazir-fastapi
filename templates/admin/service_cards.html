@@ -1,0 +1,1373 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ category.title }} - Карточки заведений - Wazir Недвижимость{% endblock %}
+
+{% block page_title %}Карточки заведений: {{ category.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Таблица карточек */
+.cards-container {
+    padding: 1.5rem;
+} 
+
+.cards-card {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+
+.cards-header {
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(135deg, var(--color-secondary) 0%, #1e293b 100%);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cards-title {
+    font-weight: 600;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+}
+
+.cards-title i {
+    margin-right: 0.75rem;
+    font-size: 1.1rem;
+    background-color: rgba(255, 255, 255, 0.2);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+
+.cards-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.search-bar {
+    position: relative;
+    width: 240px;
+}
+
+.search-bar input {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: white;
+    transition: all 0.2s ease;
+}
+
+.search-bar input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.search-bar input:focus {
+    outline: none;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.search-bar i {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.action-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    text-decoration: none;
+}
+
+.action-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    text-decoration: none;
+}
+
+.action-button i {
+    margin-right: 0.5rem;
+    font-size: 1rem;
+}
+
+.back-button {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    text-decoration: none;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.back-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    text-decoration: none;
+}
+
+.back-button i {
+    margin-right: 0.5rem;
+}
+
+.cards-table-container {
+    overflow-x: auto;
+}
+
+.cards-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.cards-table th,
+.cards-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.cards-table th {
+    font-weight: 600;
+    color: #4b5563;
+    background-color: #f9fafb;
+    font-size: 0.875rem;
+}
+
+.cards-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.cards-table tbody tr:hover {
+    background-color: #f9fafb;
+}
+
+.cards-table td {
+    color: #4b5563;
+    font-size: 0.875rem;
+}
+
+.card-info {
+    display: flex;
+    align-items: center;
+}
+
+.card-image {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background-color: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    margin-right: 0.75rem;
+    overflow: hidden;
+}
+
+.card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.card-name {
+    font-weight: 500;
+    color: #1f2937;
+    margin-bottom: 0.125rem;
+}
+
+.card-address {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.card-status {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.status-active {
+    background-color: #ecfdf5;
+    color: #047857;
+}
+
+.status-inactive {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+.card-date {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.card-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.card-action {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background-color: #f3f4f6;
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.card-action:hover {
+    background-color: #e5e7eb;
+    text-decoration: none;
+    color: #4b5563;
+}
+
+.card-action.edit:hover {
+    background-color: #fef3c7;
+    color: #d97706;
+}
+
+.card-action.delete:hover {
+    background-color: #fee2e2;
+    color: #ef4444;
+}
+
+.card-action.view {
+    background-color: #4f46e5;
+    color: white;
+}
+
+.card-action.view:hover {
+    background-color: #4338ca;
+}
+
+.card-action.view-360 {
+    background-color: #7c3aed;
+    color: white;
+}
+
+.card-action.view-360:hover {
+    background-color: #6d28d9;
+}
+
+.card-action.edit {
+    background-color: #f59e0b;
+    color: white;
+}
+
+.cards-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.pagination-info {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.pagination-pages {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.page-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.page-item:hover {
+    background-color: #f3f4f6;
+    text-decoration: none;
+    color: #4b5563;
+}
+
+.page-item.active {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+.page-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.page-item.disabled:hover {
+    background-color: transparent;
+}
+
+/* Модальные окна */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.3s ease;
+}
+
+.modal.show {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-backdrop {
+    display: none !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-backdrop.show {
+    display: flex !important;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow: auto;
+}
+
+.modal-header {
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: #6b7280;
+}
+
+.modal-body {
+    padding: 1rem;
+}
+
+.modal-footer {
+    padding: 1rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6b7280;
+    color: white;
+}
+
+.upload-area {
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.upload-area:hover {
+    border-color: #3b82f6;
+}
+
+.upload-area i {
+    font-size: 2rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+}
+
+.upload-hint {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0.5rem 0 0;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+}
+
+.form-hint {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0.25rem 0 0;
+}
+
+.photos-preview {
+    margin-top: 1rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cards-container">
+    <div class="cards-card">
+        <div class="cards-header">
+            <div class="cards-title">
+                <i class="fas fa-store"></i>
+                Карточки заведений: {{ category.title }}
+            </div>
+            <div class="cards-actions">
+                <a href="{{ url_for('admin_services') }}" class="back-button">
+                    <i class="fas fa-arrow-left"></i>
+                    Назад к категориям
+                </a>
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="card-search-input" placeholder="Поиск заведений...">
+                </div>
+                <button class="action-button" id="add-card-btn">
+                    <i class="fas fa-plus"></i>
+                    Добавить заведение
+                </button>
+            </div>
+        </div>
+
+        <div class="cards-table-container">
+            <table class="cards-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Заведение</th>
+                        <th>Контакты</th>
+                        <th>Статус</th>
+                        <th>Дата создания</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for card in service_cards %}
+                    <tr>
+                        <td>{{ card.id }}</td>
+                        <td>
+                            <div class="card-info">
+                                <div class="card-image">
+                                    {% if card.image_url %}
+                                    <img src="{{ card.image_url }}" alt="{{ card.title }}">
+                                    {% else %}
+                                    <i class="fas fa-store"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="card-details">
+                                    <div class="card-name">{{ card.title }}</div>
+                                    {% if card.address %}
+                                    <div class="card-address">{{ card.address }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if card.phone %}
+                            <div>📞 {{ card.phone }}</div>
+                            {% endif %}
+                            {% if card.email %}
+                            <div>📧 {{ card.email }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="card-status status-{% if card.is_active %}active{% else %}inactive{% endif %}">
+                                {% if card.is_active %}Активно{% else %}Неактивно{% endif %}
+                            </span>
+                        </td>
+                        <td class="card-date">{{ card.created_at.strftime('%d.%m.%Y %H:%M') if card.created_at else '' }}</td>
+                        <td>
+                            <div class="card-actions">
+                                <button class="card-action view" onclick="viewCardImages({{ card.id }})" title="Фотографии ({{ card.images|length if card.images else 0 }})">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                                <button class="card-action view-360" onclick="manage360Tour({{ card.id }})" title="360° панорама{% if card.has_360_tour %} (загружена){% endif %}">
+                                    <i class="fas fa-vr-cardboard"></i>
+                                </button>
+                                <button class="card-action edit" onclick="editCardFromData(this)" title="Редактировать"
+                                        data-id="{{ card.id }}"
+                                        data-title="{{ card.title }}"
+                                        data-description="{{ card.description or '' }}"
+                                        data-address="{{ card.address or '' }}"
+                                        data-phone="{{ card.phone or '' }}"
+                                        data-email="{{ card.email or '' }}"
+                                        data-website="{{ card.website or '' }}"
+                                        data-image="{{ card.image_url or '' }}"
+                                        data-active="{{ card.is_active|lower }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="card-action delete" onclick="deleteCard({{ card.id }}, '{{ card.title }}')" title="Удалить">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="cards-pagination">
+            <div class="pagination-info">
+                Показано 1-{{ service_cards|length }} из {{ service_cards|length }} заведений
+            </div>
+            <div class="pagination-pages">
+                <a href="#" class="page-item disabled">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="#" class="page-item disabled">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+                <a href="#" class="page-item active">1</a>
+                <a href="#" class="page-item disabled">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+                <a href="#" class="page-item disabled">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для добавления карточки -->
+<div id="addCardModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Добавить заведение</h3>
+            <button class="modal-close" onclick="closeModal('addCardModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="addCardForm">
+                <div class="form-group">
+                    <label class="form-label">Название заведения</label>
+                    <input type="text" class="form-input" id="addCardTitle" placeholder="Введите название..." required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Описание</label>
+                    <textarea class="form-textarea" id="addCardDescription" placeholder="Описание заведения..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Адрес</label>
+                    <input type="text" class="form-input" id="addCardAddress" placeholder="Адрес заведения...">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Телефон</label>
+                        <input type="tel" class="form-input" id="addCardPhone" placeholder="+996...">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="addCardEmail" placeholder="email@example.com">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Веб-сайт</label>
+                    <input type="url" class="form-input" id="addCardWebsite" placeholder="https://...">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Изображение (URL)</label>
+                    <input type="url" class="form-input" id="addCardImage" placeholder="https://...">
+                </div>
+                
+                <div class="form-group">
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="addCardActive" checked>
+                        <label>Активно</label>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('addCardModal')">Отмена</button>
+            <button class="btn btn-primary" onclick="submitAddCard()">Добавить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для редактирования карточки -->
+<div id="editCardModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Редактировать заведение</h3>
+            <button class="modal-close" onclick="closeModal('editCardModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="editCardForm">
+                <input type="hidden" id="editCardId">
+                
+                <div class="form-group">
+                    <label class="form-label">Название заведения</label>
+                    <input type="text" class="form-input" id="editCardTitle" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Описание</label>
+                    <textarea class="form-textarea" id="editCardDescription" rows="4" style="width: 100%; min-height: 100px; resize: vertical; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-family: inherit; font-size: 0.875rem;"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Адрес</label>
+                    <input type="text" class="form-input" id="editCardAddress">
+                </div>
+                
+                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Телефон</label>
+                        <input type="tel" class="form-input" id="editCardPhone">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="editCardEmail">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Веб-сайт</label>
+                    <input type="url" class="form-input" id="editCardWebsite">
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('editCardModal')">Отмена</button>
+            <button class="btn btn-primary" onclick="submitEditCard()">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для загрузки фотографий -->
+<div id="photosModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Загрузка фотографий</h3>
+            <button onclick="closeModal('photosModal')" class="modal-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="photos-card-id" value="">
+            <div class="upload-area" onclick="document.getElementById('photos-input').click()">
+                <i class="fas fa-camera"></i>
+                <p>Нажмите для выбора фотографий</p>
+                <p class="upload-hint">Минимум 2 фотографии, максимум 10</p>
+            </div>
+            <input type="file" id="photos-input" multiple accept="image/*" style="display: none;">
+            <div id="photos-preview" class="photos-preview"></div>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeModal('photosModal')" class="btn btn-secondary">Отмена</button>
+            <button onclick="uploadCardPhotos()" class="btn btn-primary">Загрузить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для 360° панорамы -->
+<div id="tour360Modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>360° панорама</h3>
+            <button onclick="closeModal('tour360Modal')" class="modal-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="tour360-card-id" value="">
+            
+            <!-- Информация о текущей панораме -->
+            <div id="current-360-info" class="form-group" style="display: none;">
+                <div style="background: #f3f4f6; padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+                    <h4 style="margin: 0 0 0.5rem 0; color: #374151;">Текущая панорама</h4>
+                    <div id="current-360-type" style="font-weight: 500; color: #059669; margin-bottom: 0.25rem;"></div>
+                    <div id="current-360-date" style="font-size: 0.875rem; color: #6b7280;"></div>
+                    <button type="button" onclick="delete360Tour()" style="margin-top: 0.5rem; padding: 0.25rem 0.5rem; background: #ef4444; color: white; border: none; border-radius: 4px; font-size: 0.75rem; cursor: pointer;">
+                        <i class="fas fa-trash"></i> Удалить панораму
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Выбор типа загрузки -->
+            <div class="form-group">
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <button type="button" id="upload-file-tab" onclick="switchTo360Mode('file')" 
+                            style="flex: 1; padding: 0.5rem; border: 1px solid #d1d5db; background: #f9fafb; border-radius: 6px; cursor: pointer;">
+                        <i class="fas fa-upload"></i> Загрузить файл
+                    </button>
+                    <button type="button" id="upload-url-tab" onclick="switchTo360Mode('url')" 
+                            style="flex: 1; padding: 0.5rem; border: 1px solid #d1d5db; background: white; border-radius: 6px; cursor: pointer;">
+                        <i class="fas fa-link"></i> Указать URL
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Форма загрузки файла -->
+            <div id="file-upload-360" class="upload-mode">
+                <div class="upload-area" style="border: 2px dashed #d1d5db; border-radius: 8px; padding: 2rem; text-align: center; cursor: pointer; transition: border-color 0.2s;" onclick="document.getElementById('panorama-360-input').click()">
+                    <i class="fas fa-vr-cardboard" style="font-size: 2rem; color: #6b7280; margin-bottom: 1rem; display: block;"></i>
+                    <p style="margin: 0.5rem 0;">Нажмите для выбора 360° изображения</p>
+                    <p style="font-size: 0.875rem; color: #6b7280; margin: 0;">PNG, JPG, JPEG до 100MB. Соотношение сторон примерно 2:1</p>
+                </div>
+                <input type="file" id="panorama-360-input" accept="image/*" style="display: none;">
+                
+                <!-- Прогресс загрузки -->
+                <div id="upload-360-progress" style="margin-top: 1rem; display: none;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span>Загрузка и обработка...</span>
+                        <span id="upload-360-percent">0%</span>
+                    </div>
+                    <div style="width: 100%; background: #e5e7eb; border-radius: 4px; height: 8px;">
+                        <div id="upload-360-bar" style="background: #3b82f6; height: 100%; border-radius: 4px; width: 0%; transition: width 0.3s;"></div>
+                    </div>
+                </div>
+                
+                <!-- Превью выбранного файла -->
+                <div id="file-360-preview" style="margin-top: 1rem; display: none;">
+                    <h4 style="margin: 0 0 0.5rem 0;">Выбранный файл:</h4>
+                    <div id="file-360-info" style="background: #f3f4f6; padding: 0.75rem; border-radius: 6px;"></div>
+                </div>
+            </div>
+            
+            <!-- Форма URL -->
+            <div id="url-upload-360" class="upload-mode" style="display: none;">
+                <div class="form-group">
+                    <label for="tour-360-url">URL 360° панорамы</label>
+                    <input type="url" id="tour-360-url" placeholder="https://kuula.co/share/xxxxxxx" 
+                           style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px;">
+                    <p style="font-size: 0.875rem; color: #6b7280; margin: 0.5rem 0 0;">Поддерживаются ссылки с Kuula, Matterport и других платформ</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeModal('tour360Modal')" class="btn btn-secondary">Отмена</button>
+            <button onclick="save360Tour()" class="btn btn-primary" id="save-360-btn">Сохранить</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Глобальная переменная для ID категории
+const categoryId = {{ category.id }};
+
+// Переменные для 360° панорам
+let current360Mode = 'file';
+let selected360File = null;
+
+// Поиск карточек
+document.getElementById('card-search-input').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('.cards-table tbody tr');
+    
+    rows.forEach(row => {
+        const cardName = row.querySelector('.card-name').textContent.toLowerCase();
+        const cardAddress = row.querySelector('.card-address');
+        const cardAddressText = cardAddress ? cardAddress.textContent.toLowerCase() : '';
+        
+        if (cardName.includes(searchTerm) || cardAddressText.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// Модальные окна
+function openModal(modalId) {
+    document.getElementById(modalId).classList.add('show');
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+    
+    // Очистка полей
+    if (modalId === 'photosModal') {
+        document.getElementById('photos-input').value = '';
+        document.getElementById('photos-preview').innerHTML = '';
+    } else if (modalId === 'tour360Modal') {
+        document.getElementById('tour-360-url').value = '';
+        document.getElementById('panorama-360-input').value = '';
+        selected360File = null;
+        document.getElementById('file-360-preview').style.display = 'none';
+        document.getElementById('upload-360-progress').style.display = 'none';
+        document.getElementById('current-360-info').style.display = 'none';
+    }
+}
+
+// Переключение режима загрузки 360°
+function switchTo360Mode(mode) {
+    current360Mode = mode;
+    
+    const fileTab = document.getElementById('upload-file-tab');
+    const urlTab = document.getElementById('upload-url-tab');
+    const fileForm = document.getElementById('file-upload-360');
+    const urlForm = document.getElementById('url-upload-360');
+    
+    if (mode === 'file') {
+        fileTab.style.background = '#f9fafb';
+        urlTab.style.background = 'white';
+        fileForm.style.display = 'block';
+        urlForm.style.display = 'none';
+    } else {
+        fileTab.style.background = 'white';
+        urlTab.style.background = '#f9fafb';
+        fileForm.style.display = 'none';
+        urlForm.style.display = 'block';
+    }
+}
+
+// Добавление карточки
+document.getElementById('add-card-btn').addEventListener('click', function() {
+    openModal('addCardModal');
+});
+
+function submitAddCard() {
+    const formData = {
+        title: document.getElementById('addCardTitle').value,
+        description: document.getElementById('addCardDescription').value,
+        address: document.getElementById('addCardAddress').value,
+        phone: document.getElementById('addCardPhone').value,
+        email: document.getElementById('addCardEmail').value,
+        website: document.getElementById('addCardWebsite').value,
+        image_url: document.getElementById('addCardImage').value,
+        is_active: document.getElementById('addCardActive').checked,
+        category_id: categoryId
+    };
+    
+    if (!formData.title) {
+        alert('Введите название заведения');
+        return;
+    }
+    
+    fetch('/api/v1/admin/service-cards', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success || data.id) {
+            alert('Заведение успешно добавлено!');
+            location.reload();
+        } else {
+            alert(data.error || 'Ошибка при добавлении заведения');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при добавлении заведения');
+    });
+}
+
+// Редактирование карточки с data-атрибутов
+function editCardFromData(button) {
+    const data = button.dataset;
+    editCard(
+        data.id,
+        data.title,
+        data.description,
+        data.address,
+        data.phone,
+        data.email,
+        data.website,
+        data.image,
+        data.active === 'true'
+    );
+}
+
+// Редактирование карточки
+function editCard(id, title, description, address, phone, email, website, image_url, is_active) {
+    document.getElementById('editCardId').value = id;
+    document.getElementById('editCardTitle').value = title || '';
+    document.getElementById('editCardDescription').value = description || '';
+    document.getElementById('editCardAddress').value = address || '';
+    document.getElementById('editCardPhone').value = phone || '';
+    document.getElementById('editCardEmail').value = email || '';
+    document.getElementById('editCardWebsite').value = website || '';
+    
+    openModal('editCardModal');
+}
+
+function submitEditCard() {
+    const id = document.getElementById('editCardId').value;
+    const formData = {
+        title: document.getElementById('editCardTitle').value,
+        description: document.getElementById('editCardDescription').value,
+        address: document.getElementById('editCardAddress').value,
+        phone: document.getElementById('editCardPhone').value,
+        email: document.getElementById('editCardEmail').value,
+        website: document.getElementById('editCardWebsite').value,
+        is_active: true // По умолчанию активно
+    };
+    
+    if (!formData.title) {
+        alert('Введите название заведения');
+        return;
+    }
+    
+    fetch(`/api/v1/admin/service-cards/${id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Заведение успешно обновлено!');
+            location.reload();
+        } else {
+            alert(data.error || 'Ошибка при обновлении заведения');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при обновлении заведения');
+    });
+}
+
+// Удаление карточки
+function deleteCard(id, title) {
+    if (confirm(`Вы уверены, что хотите удалить заведение "${title}"?`)) {
+        fetch(`/api/v1/admin/service-cards/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Заведение успешно удалено!');
+                location.reload();
+            } else {
+                alert(data.error || 'Ошибка при удалении заведения');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ошибка при удалении заведения');
+        });
+    }
+}
+
+// Закрытие модальных окон по клику вне области
+window.addEventListener('click', function(event) {
+    // Для обычных модальных окон
+    if (event.target.classList.contains('modal')) {
+        event.target.classList.remove('show');
+        event.target.style.display = 'none';
+    }
+    
+    // Для модальных окон с backdrop
+    if (event.target.classList.contains('modal-backdrop')) {
+        event.target.classList.remove('show');
+        event.target.style.display = 'none';
+        
+        // Очистка полей при закрытии
+        if (event.target.id === 'photosModal') {
+            document.getElementById('photos-input').value = '';
+            document.getElementById('photos-preview').innerHTML = '';
+        } else if (event.target.id === 'tour360Modal') {
+            document.getElementById('tour-360-url').value = '';
+        }
+    }
+});
+
+// Функция для работы с изображениями заведения
+function viewCardImages(cardId) {
+    document.getElementById('photos-card-id').value = cardId;
+    
+    // Загружаем информацию о текущих фотографиях
+    fetch(`/api/v1/admin/service-cards/${cardId}/media`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.photos && data.photos.count > 0) {
+                console.log(`У заведения ${data.photos.count} фотографий. Последняя загрузка: ${data.photos.last_uploaded || 'неизвестно'}`);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки информации о фотографиях:', error);
+        });
+    
+    openModal('photosModal');
+}
+
+// Функция для управления 360° туром с загрузкой информации
+function manage360Tour(cardId) {
+    document.getElementById('tour360-card-id').value = cardId;
+    
+    // Сброс формы
+    current360Mode = 'file';
+    selected360File = null;
+    document.getElementById('panorama-360-input').value = '';
+    document.getElementById('tour-360-url').value = '';
+    document.getElementById('file-360-preview').style.display = 'none';
+    document.getElementById('upload-360-progress').style.display = 'none';
+    
+    // Переключение на режим файла по умолчанию
+    switchTo360Mode('file');
+    
+    // Загружаем информацию о текущей панораме
+    fetch(`/api/v1/admin/service-cards/${cardId}/media`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.tour_360 && data.tour_360.has_tour) {
+                const info = data.tour_360;
+                document.getElementById('current-360-info').style.display = 'block';
+                
+                const typeText = info.type === 'file' ? 'Загруженный файл' : 'Внешняя ссылка';
+                document.getElementById('current-360-type').textContent = typeText;
+                
+                const dateText = info.last_uploaded ? 
+                    `Загружено: ${new Date(info.last_uploaded).toLocaleString('ru-RU')}` : 
+                    'Дата загрузки неизвестна';
+                document.getElementById('current-360-date').textContent = dateText;
+                
+                // Если это URL, переключаемся на режим URL и заполняем поле
+                if (info.type === 'url' && info.url) {
+                    switchTo360Mode('url');
+                    document.getElementById('tour-360-url').value = info.url;
+                }
+            } else {
+                document.getElementById('current-360-info').style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки информации о 360°:', error);
+            document.getElementById('current-360-info').style.display = 'none';
+        });
+    
+    openModal('tour360Modal');
+}
+
+// Загрузка фотографий заведения
+function uploadCardPhotos() {
+    const cardId = document.getElementById('photos-card-id').value;
+    const fileInput = document.getElementById('photos-input');
+    const files = fileInput.files;
+    
+    if (files.length === 0) {
+        alert('Выберите файлы для загрузки');
+        return;
+    }
+    
+    if (files.length < 2) {
+        alert('Необходимо выбрать минимум 2 фотографии');
+        return;
+    }
+    
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+        formData.append('photos', files[i]);
+    }
+    
+    fetch(`/api/v1/admin/service-cards/${cardId}/photos`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            closeModal('photosModal');
+            location.reload();
+        } else {
+            alert('Ошибка: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        alert('Произошла ошибка при загрузке фотографий');
+    });
+}
+
+// Обновленная функция сохранения 360° панорамы
+function save360Tour() {
+    const cardId = document.getElementById('tour360-card-id').value;
+    const saveBtn = document.getElementById('save-360-btn');
+    
+    if (current360Mode === 'file') {
+        if (!selected360File) {
+            alert('Выберите файл для загрузки');
+            return;
+        }
+        
+        // Загрузка файла
+        const formData = new FormData();
+        formData.append('file', selected360File);
+        
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Загрузка...';
+        
+        // Показываем прогресс
+        const progressDiv = document.getElementById('upload-360-progress');
+        const progressBar = document.getElementById('upload-360-bar');
+        const progressPercent = document.getElementById('upload-360-percent');
+        
+        progressDiv.style.display = 'block';
+        
+        const xhr = new XMLHttpRequest();
+        
+        xhr.upload.addEventListener('progress', function(e) {
+            if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                progressBar.style.width = percent + '%';
+                progressPercent.textContent = percent + '%';
+            }
+        });
+        
+        xhr.addEventListener('load', function() {
+            if (xhr.status === 200) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.success) {
+                        alert('360° панорама успешно загружена!');
+                        closeModal('tour360Modal');
+                        location.reload();
+                    } else {
+                        alert('Ошибка: ' + (response.error || 'Неизвестная ошибка'));
+                    }
+                } catch (e) {
+                    alert('Ошибка обработки ответа сервера');
+                }
+            } else {
+                alert('Ошибка загрузки: ' + xhr.status);
+            }
+            
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Сохранить';
+            progressDiv.style.display = 'none';
+        });
+        
+        xhr.addEventListener('error', function() {
+            alert('Произошла ошибка при загрузке файла');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Сохранить';
+            progressDiv.style.display = 'none';
+        });
+        
+        xhr.open('POST', `/api/v1/admin/service-cards/${cardId}/360/upload`);
+        xhr.send(formData);
+        
+    } else {
+        // Сохранение URL
+        const url = document.getElementById('tour-360-url').value.trim();
+        
+        if (!url) {
+            alert('Введите URL 360° панорамы');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('tour_360_url', url);
+        
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Сохранение...';
+        
+        fetch(`/api/v1/admin/service-cards/${cardId}/360`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('360° панорама успешно сохранена!');
+                closeModal('tour360Modal');
+                location.reload();
+            } else {
+                alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            alert('Произошла ошибка при сохранении');
+        })
+        .finally(() => {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Сохранить';
+        });
+    }
+}
+
+// Удаление 360° панорамы
+function delete360Tour() {
+    const cardId = document.getElementById('tour360-card-id').value;
+    
+    if (confirm('Вы уверены, что хотите удалить 360° панораму?')) {
+        const formData = new FormData();
+        formData.append('tour_360_url', '');
+        
+        fetch(`/api/v1/admin/service-cards/${cardId}/360`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('360° панорама удалена');
+                closeModal('tour360Modal');
+                location.reload();
+            } else {
+                alert('Ошибка при удалении');
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            alert('Произошла ошибка при удалении');
+        });
+    }
+}
+
+// Обработчик выбора файлов
+document.addEventListener('DOMContentLoaded', function() {
+    const photosInput = document.getElementById('photos-input');
+    const photosPreview = document.getElementById('photos-preview');
+    
+    if (photosInput) {
+        photosInput.addEventListener('change', function(e) {
+            const files = e.target.files;
+            photosPreview.innerHTML = '';
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.style.width = '100px';
+                        img.style.height = '100px';
+                        img.style.objectFit = 'cover';
+                        img.style.borderRadius = '4px';
+                        photosPreview.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+    }
+    
+    // Обработчик выбора файла 360°
+    const panoramaInput = document.getElementById('panorama-360-input');
+    if (panoramaInput) {
+        panoramaInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                selected360File = file;
+                
+                // Показываем информацию о файле
+                const preview = document.getElementById('file-360-preview');
+                const info = document.getElementById('file-360-info');
+                
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                info.innerHTML = `
+                    <strong>Файл:</strong> ${file.name}<br>
+                    <strong>Размер:</strong> ${sizeMB} MB<br>
+                    <strong>Тип:</strong> ${file.type}
+                `;
+                preview.style.display = 'block';
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

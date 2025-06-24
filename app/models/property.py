@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Boolean, Float, ForeignKey, Text, Enum, Table, DateTime
+from sqlalchemy import Column, String, Integer, Boolean, Float, ForeignKey, Text, Enum, Table, DateTime, JSON
 from sqlalchemy import Column, Integer, String, Float, Boolean, Text, Enum, ForeignKey, Table
 from sqlalchemy.orm import relationship
 from database import Base
@@ -35,6 +35,12 @@ class Property(Base, TimestampMixin):
     price = Column(Float)
     address = Column(String(255))
     city = Column(String(100))
+    
+    # Google Maps координаты
+    latitude = Column(Float, nullable=True)  # Широта
+    longitude = Column(Float, nullable=True)  # Долгота
+    formatted_address = Column(String(500), nullable=True)  # Отформатированный адрес от Google
+    
     area = Column(Float)
     status = Column(Enum(PropertyStatus), default=PropertyStatus.DRAFT)
     is_featured = Column(Boolean, default=False)
@@ -74,6 +80,10 @@ class Property(Base, TimestampMixin):
     
     notes = Column(String(255), nullable=True)  # Поле для хранения даты съемки
     views = Column(Integer, default=0)  # Счетчик просмотров объявления
+    
+    # Поля для медиа-сервера
+    media_id = Column(String(19), nullable=True)  # ID медиа на внешнем сервере
+    images_data = Column(JSON, nullable=True)  # JSON данные об изображениях
     
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="properties")
@@ -116,6 +126,12 @@ class Property(Base, TimestampMixin):
             "address": self.address,
             "city": self.city,
             "area": self.area,
+            
+            # Добавляем координаты в сериализацию
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "formatted_address": self.formatted_address,
+            
             "status": self.status.value if self.status else "draft",
             "is_featured": self.is_featured,
             "tour_360_url": self.tour_360_url,
@@ -130,6 +146,11 @@ class Property(Base, TimestampMixin):
             "notes": self.notes,
             "views": self.views,
             "type": self.type,
+            
+            # Поля медиа-сервера
+            "media_id": self.media_id,
+            "images_data": self.images_data,
+            
             "rooms": self.rooms,
             "floor": self.floor,
             "building_floors": self.building_floors,

@@ -1,5 +1,5 @@
 from typing import Any, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
@@ -13,13 +13,16 @@ router = APIRouter()
 @router.post("/", response_model=schemas.Property)
 def create_property(
     *,
+    request: Request,
     db: Session = Depends(deps.get_db),
     property_in: schemas.PropertyCreate,
-    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Создание нового объявления о недвижимости
     """
+    # Получаем текущего пользователя
+    current_user = deps.get_current_active_user(request, db)
+    
     # Логируем процесс создания объявления
     print(f"DEBUG: Создание нового объявления от пользователя {current_user.id}")
     print(f"DEBUG: Данные объявления: {property_in}")
@@ -89,27 +92,29 @@ def create_property(
 
 @router.get("/", response_model=List[schemas.Property])
 def read_properties(
+    request: Request,
     db: Session = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
-    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Получение списка объявлений
     """
+    current_user = deps.get_current_active_user(request, db)
     properties = services.property.get_multi(db, skip=skip, limit=limit)
     return properties
 
 @router.get("/my", response_model=List[schemas.Property])
 def read_user_properties(
+    request: Request,
     db: Session = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
-    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Получение объявлений текущего пользователя
     """
+    current_user = deps.get_current_active_user(request, db)
     properties = services.property.get_multi_by_owner(
         db=db, owner_id=current_user.id, skip=skip, limit=limit
     )
@@ -123,12 +128,13 @@ class Property360Update(BaseModel):
 @router.get("/{property_id}/360", response_model=Property360Update)
 def get_property_360(
     property_id: int,
+    request: Request,
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Получение данных 360° панорамы для объявления
     """
+    current_user = deps.get_current_active_user(request, db)
     property = services.property.get(db=db, id=property_id)
     
     if not property:
@@ -153,12 +159,14 @@ def get_property_360(
 def update_property_360(
     property_id: int,
     update_data: Property360Update,
+    request: Request,
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Обновление данных 360° панорамы для объявления
     """
+    current_user = deps.get_current_active_user(request, db)
+    
     print(f"DEBUG: Попытка обновления 360° для объявления {property_id}")
     print(f"DEBUG: Данные для обновления: {update_data}")
     print(f"DEBUG: Текущий пользователь: {current_user.id}, имя: {current_user.full_name}, роль: {current_user.role}")
@@ -201,24 +209,25 @@ def update_property_360(
         print(f"DEBUG: Неожиданная ошибка при обновлении 360° панорамы: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Ошибка при обновлении данных 360° панорамы: {str(e)}"
+            detail=f"Ошибка при обновлении 360° панорамы: {str(e)}"
         )
     
     return {
-        "tour_360_url": property.tour_360_url,
-        "notes": property.notes
+        "tour_360_url": property.tour_360_url or "",
+        "notes": property.notes or ""
     }
-
 
 @router.post("/{property_id}/approve", response_model=dict)
 def approve_property(
     property_id: int,
+    request: Request,
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Одобрение объявления администратором
     """
+    current_user = deps.get_current_active_user(request, db)
+    
     print(f"DEBUG: Попытка одобрения объявления {property_id}")
     print(f"DEBUG: Текущий пользователь: {current_user.id}, имя: {current_user.full_name}, роль: {current_user.role}")
     
@@ -267,38 +276,84 @@ def approve_property(
 
 @router.post("/with-media", response_model=dict)
 async def create_property_with_media(
+    request: Request,
     title: str = Form(...),
     description: str = Form(...),
     price: float = Form(...),
     address: str = Form(...),
     city: str = Form("Бишкек"),
+    category: str = Form("Продажа"),
     area: Optional[float] = Form(None),
+    floor: Optional[int] = Form(None),
+    building_floors: Optional[int] = Form(None),
+    rooms: Optional[str] = Form(None),
+    apartment_type: Optional[str] = Form(None),
+    house_type: Optional[str] = Form(None),
+    # Google Maps координаты
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
+    formatted_address: Optional[str] = Form(None),
+    # Дополнительные опции
+    has_balcony: Optional[bool] = Form(False),
+    has_furniture: Optional[bool] = Form(False),
+    has_renovation: Optional[bool] = Form(False),
+    has_parking: Optional[bool] = Form(False),
+    has_elevator: Optional[bool] = Form(False),
+    # 360° тур
+    request_360_tour: Optional[str] = Form(None),
+    # Контактная информация
+    full_name: Optional[str] = Form(None),
+    phone: Optional[str] = Form(None),
+    email: Optional[str] = Form(None),
     photos: List[UploadFile] = File(...),
     db: Session = Depends(deps.get_db),
-    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Создание нового объявления с загрузкой фотографий на медиа-сервер
     """
-    print(f"DEBUG: Создание объявления с медиа от пользователя {current_user.id}")
-    
-    # Проверяем фотографии
-    if not photos or len(photos) < 2:
-        raise HTTPException(
-            status_code=400,
-            detail="Необходимо загрузить минимум 2 фотографии"
-        )
-    
-    # Проверяем типы файлов
-    allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
-    for photo in photos:
-        if photo.content_type not in allowed_types:
+    try:
+        # Получаем текущего пользователя
+        print("DEBUG: Начинаем получение текущего пользователя...")
+        current_user = deps.get_current_active_user(request, db)
+        
+        # ДОПОЛНИТЕЛЬНАЯ ОТЛАДКА - проверяем тип объекта
+        print(f"DEBUG: Тип current_user: {type(current_user)}")
+        print(f"DEBUG: current_user является словарем? {isinstance(current_user, dict)}")
+        print(f"DEBUG: current_user содержание: {current_user}")
+        
+        if isinstance(current_user, dict):
+            print("ERROR: current_user является словарем, но должен быть объектом User!")
+            raise HTTPException(
+                status_code=401,
+                detail="Ошибка аутентификации: получен неправильный тип пользователя"
+            )
+        
+        if not hasattr(current_user, 'id'):
+            print(f"ERROR: current_user не имеет атрибута 'id'. Атрибуты: {dir(current_user)}")
+            raise HTTPException(
+                status_code=401,
+                detail="Ошибка аутентификации: объект пользователя не имеет ID"
+            )
+        
+        print(f"DEBUG: Создание объявления с медиа от пользователя {current_user.id}")
+        print(f"DEBUG: Получены данные - title: {title}, price: {price}, city: {city}")
+        
+        # Проверяем фотографии
+        if not photos or len(photos) < 2:
             raise HTTPException(
                 status_code=400,
-                detail=f"Неподдерживаемый тип файла: {photo.content_type}"
+                detail="Необходимо загрузить минимум 2 фотографии"
             )
-    
-    try:
+        
+        # Проверяем типы файлов
+        allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+        for photo in photos:
+            if photo.content_type not in allowed_types:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Неподдерживаемый тип файла: {photo.content_type}"
+                )
+        
         # Загружаем изображения на медиа-сервер
         print("DEBUG: Загрузка изображений на медиа-сервер...")
         upload_result = await media_uploader.upload_property_images(photos)
@@ -314,18 +369,38 @@ async def create_property_with_media(
         
         print(f"DEBUG: Изображения загружены, media_id: {property_media_id}")
         
-        # Создаем объект PropertyCreate с медиа данными
+        # Определяем количество комнат
+        rooms_count = None
+        if rooms:
+            if rooms == "studio":
+                rooms_count = 0
+            elif rooms.isdigit():
+                rooms_count = int(rooms)
+            elif rooms == "5+":
+                rooms_count = 5
+        
+        # Создаем объект PropertyCreate с медиа данными (БЕЗ media_id и images_data для схемы)
         property_data = schemas.PropertyCreate(
             title=title,
             description=description,
             price=price,
             address=address,
             city=city,
-            area=area,
-            media_id=property_media_id,
-            images_data=images_data,
+            area=area or 0.0,
+            rooms=rooms_count,
+            floor=floor,
+            building_floors=building_floors,
+            has_balcony=has_balcony,
+            has_furniture=has_furniture,
+            has_renovation=has_renovation,
+            has_parking=has_parking,
+            has_elevator=has_elevator,
             photo_urls=[img["urls"]["medium"] for img in images_data],
-            category_ids=[1]  # По умолчанию
+            category_ids=[1],  # По умолчанию - Продажа
+            latitude=latitude,
+            longitude=longitude,
+            formatted_address=formatted_address,
+            type=apartment_type or house_type or "apartment"
         )
         
         # Создаем объявление
@@ -333,7 +408,13 @@ async def create_property_with_media(
             db=db, obj_in=property_data, owner_id=current_user.id
         )
         
-        print(f"DEBUG: Объявление создано с ID {property.id}")
+        # ОТДЕЛЬНО сохраняем медиа-данные
+        property.media_id = property_media_id
+        property.images_data = images_data
+        db.commit()
+        db.refresh(property)
+        
+        print(f"DEBUG: Объявление создано с ID {property.id}, media_id: {property.media_id}")
         
         return {
             "status": "success",
@@ -346,7 +427,9 @@ async def create_property_with_media(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"ERROR: Ошибка при создании объявления с медиа: {e}")
+        print(f"ERROR: Общая ошибка при создании объявления с медиа: {e}")
+        print(f"ERROR: Тип ошибки: {type(e)}")
+        print(f"ERROR: Полная информация об ошибке: {repr(e)}")
         
         # Пытаемся удалить загруженные изображения при ошибке
         if 'property_media_id' in locals():

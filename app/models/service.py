@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Boolean, Text, ForeignKey, DateTime
+from sqlalchemy import Column, String, Integer, Boolean, Text, ForeignKey, DateTime, Float
 from sqlalchemy.orm import relationship
 from database import Base
 from .base import TimestampMixin
@@ -30,6 +30,10 @@ class ServiceCard(Base, TimestampMixin):
     website = Column(String(255), nullable=True)  # Веб-сайт
     image_url = Column(String(255), nullable=True)  # Основное изображение (для совместимости)
     is_active = Column(Boolean, default=True)  # Активна ли карточка
+    
+    # Координаты заведения
+    latitude = Column(Float, nullable=True)  # Широта
+    longitude = Column(Float, nullable=True)  # Долгота
     
     # Поля для 360° панорам (аналогично Property)
     tour_360_url = Column(String(255), nullable=True)  # URL для старой совместимости

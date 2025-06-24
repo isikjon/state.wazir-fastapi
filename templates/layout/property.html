@@ -421,6 +421,73 @@
         height: 100%;
         object-fit: cover;
     }
+    
+    /* Google Maps стили */
+    .property-map-container {
+        width: 100%;
+        height: 300px;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+        margin: 16px 0;
+    }
+    
+    .map-section {
+        background-color: white;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .map-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+    
+    .map-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #111827;
+        display: flex;
+        align-items: center;
+    }
+    
+    .map-title i {
+        margin-right: 8px;
+        color: #4b5563;
+    }
+    
+    .map-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+    }
+    
+    .map-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 12px;
+        background-color: #f3f4f6;
+        color: #4b5563;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+    
+    .map-btn:hover {
+        background-color: #e5e7eb;
+        color: #374151;
+    }
+    
+    .map-btn i {
+        margin-right: 6px;
+    }
 </style>
 {% endblock %}
 
@@ -566,7 +633,7 @@
                     {% if property.type %}
                     <div class="info-item">
                         <i class="fas fa-home"></i>
-                        <span>{{ property.type|capitalize }}</span>
+                        <span>{{ property.type_display or property.type|capitalize }}</span>
                     </div>
                     {% endif %}
                     {% if property.category %}
@@ -639,10 +706,35 @@
                 <div class="grid grid-cols-1 gap-2 text-sm">
                     <div class="flex items-center justify-between">
                         <span class="text-gray-600">Дата публикации:</span>
-                        <span class="font-medium">{{ property.created_at.strftime('%d.%m.%Y в %H:%M') if property.created_at else 'Не указана' }}</span>
+                        <span class="font-medium">{{ property.created_at or 'Не указана' }}</span>
                     </div>
                 </div>
             </div> 
+
+            <!-- Карта местоположения -->
+            {% if property.latitude and property.longitude %}
+            <div class="map-section">
+                <div class="map-header">
+                    <h3 class="map-title">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Местоположение
+                    </h3>
+                </div>
+                <div class="property-map-container" id="property-map"></div>
+                <div class="map-actions">
+                    <a href="https://www.google.com/maps?q={{ property.latitude }},{{ property.longitude }}" 
+                       target="_blank" class="map-btn">
+                        <i class="fas fa-external-link-alt"></i>
+                        Открыть в Google Maps
+                    </a>
+                    <a href="https://www.google.com/maps/dir/?api=1&destination={{ property.latitude }},{{ property.longitude }}"
+                       target="_blank" class="map-btn">
+                        <i class="fas fa-route"></i>
+                        Проложить маршрут
+                    </a>
+                </div>
+            </div>
+            {% endif %}
 
             <!-- Контакты продавца -->
             <div class="seller-info">
@@ -780,496 +872,212 @@
 {% endblock %}
 
 {% block extra_js %}
-<script
-    src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
-<!-- Скрытый элемент для передачи данных из Jinja в JavaScript -->
-<div id="page-data"
-    data-has-tour360="{% if property.has_360 %}true{% else %}false{% endif %}"
-    style="display:none;"></div>
+<script src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCgctqtqKOus6A6cDJaOBqsyo4-3r3zuQA&libraries=places&language=ru&region=KG" async defer></script>
+
+<div id="page-data" 
+     data-has-tour360="{% if property.has_360 %}true{% else %}false{% endif %}"
+     data-property-price="{{ property.price|int }}"
+     data-property-latitude="{% if property.latitude %}{{ property.latitude }}{% else %}42.8746{% endif %}"
+     data-property-longitude="{% if property.longitude %}{{ property.longitude }}{% else %}74.5698{% endif %}"
+     data-property-title="{{ property.title|e }}"
+     data-property-address="{{ property.address|e }}"
+     style="display:none;"></div>
 
 <script>
-    // Получаем данные из скрытого элемента
-    var pageData = document.getElementById('page-data');
-    var hasTour360 = pageData.getAttribute('data-has-tour360') === 'true';
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Инициализация слайдеров...');
     
-    function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-    }
-    
-    // Функция для отображения данных о погоде
-    function displayWeatherData(weatherData) {
-        $('#weather-icon-container').html(weatherData.iconHtml);
-        $('#weather-temp').text(weatherData.temp + '°');
-    }
-    
-    // Функция для отображения данных о курсе валюты
-    function displayCurrencyData(currencyData) {
-        $('#currency-rate').text(currencyData.rate);
-    }
-    
-    // Функция для получения данных о погоде
-    function getWeather() {
-        // Сначала проверяем, есть ли кэшированные данные
-        const cachedWeather = getWeatherFromCache();
-        if (cachedWeather) {
-            // Если есть кэшированные данные, сразу их отображаем
-            displayWeatherData(cachedWeather);
-            return;
-        }
-        
-        // Если кэша нет или он устарел, запрашиваем данные с API
-        const city = "Osh,Kyrgyzstan";
-        const apiKey = "JPWU9UY254WNDKUNM9MH9E8AR"; // Публичный ключ с ограничениями
-        
-        $.ajax({
-            url: `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${city}/today`,
-            data: {
-                unitGroup: "metric",
-                key: apiKey,
-                include: "current"
-            },
-            success: function(data) {
-                try {
-                    if (data && data.currentConditions && data.currentConditions.temp !== undefined) {
-                        // Округляем температуру до целого числа
-                        const temp = Math.round(data.currentConditions.temp);
-                        
-                        // Получаем код состояния погоды
-                        const condition = data.currentConditions.conditions ? 
-                            data.currentConditions.conditions.toLowerCase() : '';
-                        const iconCode = data.currentConditions.icon ? 
-                            data.currentConditions.icon.toLowerCase() : '';
-                        
-                        let iconHtml;
-                        // Определяем иконку на основе кода погоды Visual Crossing
-                        if (iconCode.includes('rain') || condition.includes('дождь') || condition.includes('осадки')) {
-                            // Дождь
-                            iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4c94f2" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><line x1="16" y1="13" x2="16" y2="21"></line><line x1="8" y1="13" x2="8" y2="21"></line><line x1="12" y1="15" x2="12" y2="23"></line><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path></svg>`;
-                        } else if (iconCode === 'clear-day' || iconCode === 'clear-night' || condition.includes('ясно')) {
-                            // Ясно
-                            iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
-                        } else {
-                            // По умолчанию или для других условий
-                            iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c8aa0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`;
-                        }
-                        
-                        // Сохраняем данные в кэш
-                        const weatherData = {
-                            temp: temp,
-                            iconHtml: iconHtml,
-                            condition: condition
-                        };
-                        saveWeatherToCache(weatherData);
-                        
-                        // Отображаем данные
-                        displayWeatherData(weatherData);
-                    } else {
-                        getWeatherAlt();
-                    }
-                } catch (e) {
-                    getWeatherAlt();
-                }
-            },
-            error: function() {
-                // При ошибке используем альтернативный API
-                getWeatherAlt();
-            }
-        });
-    }
-    
-    // Получение данных о погоде через альтернативный API
-    function getWeatherAlt() {
-        const cachedWeather = getWeatherFromCache();
-        if (cachedWeather) {
-            displayWeatherData(cachedWeather);
-            return;
-        }
-        
-        showFallbackWeather();
-    }
-    
-    // Показываем резервные данные о погоде
-    function showFallbackWeather() {
-        // Сезонные температуры для Оша, Кыргызстан
-        const month = new Date().getMonth() + 1;
-        
-        let temp;
-        if (month >= 12 || month <= 2) {
-            // Зима (декабрь-февраль)
-            temp = -2;
-        } else if (month >= 3 && month <= 5) {
-            // Весна (март-май)
-            temp = 15;
-        } else if (month >= 6 && month <= 8) {
-            // Лето (июнь-август)
-            temp = 28;
-        } else {
-            // Осень (сентябрь-ноябрь)
-            temp = 12;
-        }
-        
-        // Базовая иконка облачности
-        const iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c8aa0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="weather-icon"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`;
-        
-        // Создаем резервные данные
-        const fallbackData = {
-            temp: temp,
-            iconHtml: iconHtml,
-            condition: 'cloudy'
-        };
-        
-        // Сохраняем резервные данные в кэш
-        saveWeatherToCache(fallbackData);
-        
-        // Отображаем данные
-        displayWeatherData(fallbackData);
-    }
-    
-    // Функция для получения курса валюты
-    function getCurrencyRate() {
-        // Сначала проверяем, есть ли кэшированные данные
-        const cachedCurrency = getCurrencyFromCache();
-        if (cachedCurrency) {
-            // Если есть кэшированные данные, сразу их отображаем
-            displayCurrencyData(cachedCurrency);
-            return;
-        }
-        
-        // Если кэша нет или он устарел, запрашиваем данные с API
-        $.ajax({
-            url: "https://data.fx.kg/api/v1/central",
-            headers: {
-                "Authorization": "Bearer d2WimsDMvhnYStSsq1VRd7jKLZDSS6DQMbzut6rNa9a33c51"
-            },
-            success: function(data) {
-                if (data && data.usd) {
-                    const rate = parseFloat(data.usd).toFixed(1);
-                    
-                    // Сохраняем данные в кэш
-                    const currencyData = {
-                        rate: rate,
-                        source: 'fx.kg'
-                    };
-                    saveCurrencyToCache(currencyData);
-                    
-                    // Отображаем данные
-                    displayCurrencyData(currencyData);
-                } else {
-                    // Пробуем альтернативный метод
-                    getCurrencyRateGoogle();
-                }
-            },
-            error: function() {
-                // При ошибке используем альтернативный метод
-                getCurrencyRateGoogle();
-            }
-        });
-    }
-      
-    function getCurrencyRateGoogle() {
-        // Проверка кэша перед запросом
-        const cachedCurrency = getCurrencyFromCache();
-        if (cachedCurrency) {
-            displayCurrencyData(cachedCurrency);
-            return;
-        }
-        
-        // Запрос данных через Google Apps Script
-        $.ajax({
-            url: "https://script.google.com/macros/s/AKfycbzuBnGgEZdYMvWPJmyqO0eLP7dMWyU45OyEUEGHhdJ7LWNwx1IU7F8Wl_uLF9YADjVx/exec",
-            data: {
-                from: "USD",
-                to: "СОМ"
-            },
-            dataType: "jsonp",
-            success: function(data) {
-                if (data && data.rate) {
-                    const rate = parseFloat(data.rate).toFixed(1);
-                    
-                    // Сохраняем данные в кэш
-                    const currencyData = {
-                        rate: rate,
-                        source: 'google'
-                    };
-                    saveCurrencyToCache(currencyData);
-                    
-                    // Отображаем данные
-                    displayCurrencyData(currencyData);
-                } else {
-                    getCurrencyRateAlt();
-                }
-            },
-            error: function() {
-                getCurrencyRateAlt();
-            }
-        });
-    }
-    
-    function getCurrencyRateAlt() {
-        // Проверка кэша перед запросом
-        const cachedCurrency = getCurrencyFromCache();
-        if (cachedCurrency) {
-            displayCurrencyData(cachedCurrency);
-            return;
-        }
-        
-        // В данном случае просто используем резервные данные
-        showFallbackCurrency();
-    }
-    
-    function showFallbackCurrency() {
-        const fallbackData = {
-            rate: '87.5',
-            source: 'fallback'
-        };
-        
-        // Сохраняем резервные данные в кэш
-        saveCurrencyToCache(fallbackData);
-        
-        // Отображаем данные
-        displayCurrencyData(fallbackData);
-    }
-    
-    $(document).ready(function() {
-        // Загружаем данные о погоде и курсе валют
-        getWeather();
-        getCurrencyRate();
-        
-        // Переменная для панорамы
-        var panoramaViewer = null;
-        
-        // Переменные для конвертации валют
-        var originalPrice = {{ property.price|int }};
-        var usdRate = 87.5; // Курс доллара по умолчанию
-        
-        // Инициализация слайдера
-        var mainSwiper = new Swiper('.main-swiper', {
-            loop: true,
-            pagination: {
-                el: '.swiper-pagination',
-                clickable: true,
-            },
-        });
-        
-        // Обработка клика по миниатюрам
-        $('.thumbnail').click(function() {
-            var index = $(this).data('index');
-            mainSwiper.slideTo(index + 1);
-            $('.thumbnail').removeClass('active');
-            $(this).addClass('active');
-        });
-        
-        // Обновление активной миниатюры при смене слайда
-        mainSwiper.on('slideChange', function() {
-            var realIndex = mainSwiper.realIndex;
-            $('.thumbnail').removeClass('active');
-            $('.thumbnail[data-index="' + realIndex + '"]').addClass('active');
-        });
-        
-        // Обработчик изменения валюты
-        $('#currency-container').on('click', function(e) {
-            e.stopPropagation();
-            $('#currency-dropdown').toggleClass('show');
-        });
-
-        // Обработчик выбора валюты из выпадающего списка
-        $('.currency-option').on('click', function(e) {
-            e.stopPropagation();
-            var selectedCurrency = $(this).data('currency');
-            var priceValue = $('#price-value');
-            var currencyLabel = $('#currency-label');
-            
-            // Обновляем активную опцию
-            $('.currency-option').removeClass('active');
-            $(this).addClass('active');
-            
-            // Меняем валюту и цену
-            if (selectedCurrency === 'USD') {
-                var usdPrice = Math.round(originalPrice / usdRate);
-                priceValue.text(usdPrice.toLocaleString());
-                currencyLabel.text('USD');
-            } else {
-                priceValue.text(originalPrice.toLocaleString());
-                currencyLabel.text('СОМ');
-            }
-            
-            // Скрываем выпадающий список
-            $('#currency-dropdown').removeClass('show');
-        });
-
-        // Закрытие выпадающего списка при клике вне его
-        $(document).on('click', function() {
-            $('#currency-dropdown').removeClass('show');
-        });
-        
-        // Обработчик кнопки WhatsApp
-        $('#whatsapp-btn').on('click', function() {
-            var propertyTitle = {{ property.title|tojson }};
-            var propertyUrl = window.location.href;
-            var phoneNumber = {{ property.owner.phone|tojson }};
-            var message = "Здравствуйте! Меня интересует объявление: " + propertyTitle + "\n" + propertyUrl;
-            
-            // Убираем все символы кроме цифр из номера телефона
-            var cleanPhone = phoneNumber.replace(/\D/g, '');
-            
-            // Формируем ссылку для WhatsApp
-            var whatsappUrl = "https://wa.me/" + cleanPhone + "?text=" + encodeURIComponent(message);
-            
-            // Открываем WhatsApp
-            window.open(whatsappUrl, '_blank');
-        });
-        
-        // Обработчик кнопки "Поделиться"
-        $('#share-btn').on('click', function() {
-            var propertyTitle = {{ property.title|tojson }};
-            var propertyUrl = window.location.href;
-            
-            // Проверяем поддержку Web Share API
-            if (navigator.share) {
-                navigator.share({
-                    title: propertyTitle,
-                    text: 'Посмотрите это объявление на Wazir',
-                    url: propertyUrl
-                }).catch(function(error) {
-                    console.log('Ошибка при попытке поделиться:', error);
-                    fallbackShare(propertyTitle, propertyUrl);
-                });
-            } else {
-                // Fallback для браузеров без поддержки Web Share API
-                fallbackShare(propertyTitle, propertyUrl);
-            }
-        });
-        
-        // Функция для браузеров без поддержки Web Share API
-        function fallbackShare(title, url) {
-            // Копируем ссылку в буфер обмена
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(url).then(function() {
-                    alert('Ссылка скопирована в буфер обмена!');
-                }).catch(function() {
-                    // Если не удалось скопировать, показываем ссылку
-                    prompt('Скопируйте эту ссылку:', url);
-                });
-            } else {
-                // Для старых браузеров
-                prompt('Скопируйте эту ссылку:', url);
-            }
-        }
-        
-        // Обработчик кнопки 360° только если панорама доступна
-        if (hasTour360) {
-            $('#view-360-btn').on('click', function() {
-                $('#modal-360').removeClass('hidden');
-                $('body').addClass('overflow-hidden'); // Запретить прокрутку страницы
-                
-                // Инициализируем Pannellum
-                setTimeout(function() {
-                    if (!panoramaViewer) {
-                        try {
-                            panoramaViewer = pannellum.viewer('panorama-sphere', {
-                                "type": "equirectangular",
-                                "panorama": "{{ property.tour_360_optimized_url }}",
-                                "autoLoad": true,
-                                "autoRotate": -2,
-                                "autoRotateInactivityDelay": 3000,
-                                "showFullscreenCtrl": true,
-                                "showZoomCtrl": true,
-                                "mouseZoom": true,
-                                "dragToLook": true,
-                                "loadButtonLabel": "Загрузить панораму",
-                                "loadingLabel": "Загрузка...",
-                                "bylineLabel": "360° Панорама",
-                                "nothingLabel": "Панорама не найдена"
-                            });
-                        } catch (error) {
-                            console.error('Ошибка инициализации панорамы:', error);
-                            document.querySelector('#panorama-sphere').innerHTML = 
-                                '<div class="flex items-center justify-center h-full"><p class="text-gray-500">Ошибка загрузки панорамы</p></div>';
-                        }
-                    }
-                }, 200);
+    // Инициализация основного Swiper слайдера
+    var mainSwiper = null;
+    if (document.querySelector('.main-swiper')) {
+        try {
+            mainSwiper = new Swiper('.main-swiper', {
+                loop: true,
+                autoplay: {
+                    delay: 4000,
+                    disableOnInteraction: false
+                },
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true
+                },
+                keyboard: true,
+                grabCursor: true,
+                speed: 300
             });
-        }
-        
-        // Закрытие модального окна
-        $('#close-360-modal').on('click', function() {
-            $('#modal-360').addClass('hidden');
-            $('body').removeClass('overflow-hidden'); // Разрешить прокрутку страницы
             
-            // Очищаем viewer при закрытии для освобождения памяти
-            if (panoramaViewer) {
-                try {
-                    panoramaViewer.destroy();
-                    panoramaViewer = null;
-                } catch (error) {
-                    console.log('Ошибка при закрытии панорамы:', error);
-                    panoramaViewer = null;
-                }
-            }
-        });
-        
-        // Обработка добавления/удаления из избранного
-        $('#favorite-btn').on('click', function() {
-            var propertyId = $(this).data('property-id');
-            var isFavorite = $(this).hasClass('active');
+            console.log('Swiper инициализирован');
             
-            $.ajax({
-                url: '/api/v1/properties/favorites/' + propertyId,
-                type: isFavorite ? 'DELETE' : 'POST',
-                xhrFields: {
-                    withCredentials: true // Позволяет отправлять куки с запросом
-                },
-                beforeSend: function(xhr) {
-                    // Получаем токен из куки
-                    var token = getCookie('access_token');
-                    if (token) {
-                        xhr.setRequestHeader('Authorization', 'Bearer ' + token);
-                    }
-                },
-                success: function(response) {
-                    if (isFavorite) {
-                        $('#favorite-btn').removeClass('active');
-                        $('#favorite-text').text('В избранное');
-                        $('#favorite-btn i').removeClass('fas').addClass('far');
-                    } else {
-                        $('#favorite-btn').addClass('active');
-                        $('#favorite-text').text('В избранном');
-                        $('#favorite-btn i').removeClass('far').addClass('fas');
-                    }
-                },
-                error: function(error) {
-                    console.error('Ошибка при обновлении избранного:', error);
-                    alert('Для добавления в избранное необходимо авторизоваться');
-                    window.location.href = '/mobile/auth';
+            // Синхронизация с миниатюрами
+            mainSwiper.on('slideChange', function() {
+                var index = this.realIndex;
+                var thumbnails = document.querySelectorAll('.thumbnail');
+                thumbnails.forEach(function(thumb) {
+                    thumb.classList.remove('active');
+                });
+                var activeThumbnail = document.querySelector('.thumbnail[data-index="' + index + '"]');
+                if (activeThumbnail) {
+                    activeThumbnail.classList.add('active');
                 }
             });
-        });
-        
-        // Автоматический слайдер для рекламы
-        function initAdsSlider() {
-            const slidesWrapper = document.querySelector('.ads-slides-wrapper');
-            const slides = document.querySelectorAll('.ads-slide');
-            let currentSlide = 0;
             
-            function showSlide(index) {
-                const translateX = -(index * 50); // 50% для каждого слайда
-                slidesWrapper.style.transform = `translateX(${translateX}%)`;
-            }
-            
-            function nextSlide() {
-                currentSlide = (currentSlide + 1) % slides.length;
-                showSlide(currentSlide);
-            }
-            
-            // Переключение каждые 2 секунды
-            setInterval(nextSlide, 2000);
+        } catch (error) {
+            console.error('Ошибка Swiper:', error);
         }
-        
-        // Инициализируем слайдер после загрузки DOM
-        initAdsSlider();
+    }
+    
+    // Обработчик кликов по миниатюрам
+    var thumbnails = document.querySelectorAll('.thumbnail');
+    thumbnails.forEach(function(thumbnail) {
+        thumbnail.addEventListener('click', function() {
+            var index = parseInt(this.getAttribute('data-index'));
+            if (mainSwiper) {
+                mainSwiper.slideTo(index + 1);
+                thumbnails.forEach(function(thumb) {
+                    thumb.classList.remove('active');
+                });
+                this.classList.add('active');
+            }
+        });
     });
+    
+    // Рекламный слайдер
+    var adsWrapper = document.querySelector('.ads-slides-wrapper');
+    var adsSlides = document.querySelectorAll('.ads-slide');
+    
+    if (adsWrapper && adsSlides.length > 0) {
+        var currentAdsSlide = 0;
+        
+        function showAdsSlide(index) {
+            var translateX = -(index * 50);
+            adsWrapper.style.transform = 'translateX(' + translateX + '%)';
+        }
+        
+        function nextAdsSlide() {
+            currentAdsSlide = (currentAdsSlide + 1) % adsSlides.length;
+            showAdsSlide(currentAdsSlide);
+        }
+        
+        setInterval(nextAdsSlide, 3000);
+        console.log('Рекламный слайдер запущен');
+    }
+    
+    // 💰 КОНВЕРТАЦИЯ ВАЛЮТ - НОВЫЙ КОД
+    var pageData = document.getElementById('page-data');
+    var originalPrice = parseInt(pageData.getAttribute('data-property-price')) || 0;  // Исходная цена в сомах
+    var exchangeRate = 83;  // 1 USD = 83 KGS
+    var currentCurrency = 'СОМ';
+    
+    var currencyContainer = document.getElementById('currency-container');
+    var currencyDropdown = document.getElementById('currency-dropdown');
+    var currencyLabel = document.getElementById('currency-label');
+    var priceValue = document.getElementById('price-value');
+    var currencyOptions = document.querySelectorAll('.currency-option');
+    
+    console.log('Инициализация конвертера валют...');
+    console.log('Исходная цена:', originalPrice, 'сом');
+    console.log('Курс обмена: 1 USD =', exchangeRate, 'KGS');
+    
+    // Показать/скрыть dropdown при клике
+    if (currencyContainer) {
+        currencyContainer.addEventListener('click', function(e) {
+            e.stopPropagation();
+            currencyDropdown.classList.toggle('show');
+            console.log('Dropdown переключен');
+        });
+    }
+    
+    // Закрыть dropdown при клике вне его
+    document.addEventListener('click', function() {
+        if (currencyDropdown) {
+            currencyDropdown.classList.remove('show');
+        }
+    });
+    
+    // Обработка выбора валюты
+    currencyOptions.forEach(function(option) {
+        option.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            var selectedCurrency = this.getAttribute('data-currency');
+            console.log('Выбрана валюта:', selectedCurrency);
+            
+            // Убираем active класс у всех опций
+            currencyOptions.forEach(function(opt) {
+                opt.classList.remove('active');
+            });
+            
+            // Добавляем active класс к выбранной опции
+            this.classList.add('active');
+            
+            // Обновляем отображение
+            currencyLabel.textContent = selectedCurrency;
+            currentCurrency = selectedCurrency;
+            
+            // Конвертируем цену
+            var newPrice;
+            if (selectedCurrency === 'USD') {
+                newPrice = Math.round(originalPrice / exchangeRate);
+                console.log('Конвертация в USD:', originalPrice, '/', exchangeRate, '=', newPrice);
+            } else {
+                newPrice = originalPrice;
+                console.log('Показываем исходную цену в сомах:', newPrice);
+            }
+            
+            // Обновляем отображение цены
+            priceValue.textContent = newPrice.toLocaleString();
+            
+            // Закрываем dropdown
+            currencyDropdown.classList.remove('show');
+            
+            console.log('Цена обновлена:', newPrice, selectedCurrency);
+        });
+    });
+    
+    // Google Maps инициализация
+    setTimeout(function() {
+        if (typeof google !== 'undefined' && document.getElementById('property-map')) {
+            var pageData = document.getElementById('page-data');
+            var lat = parseFloat(pageData.getAttribute('data-property-latitude')) || 42.8746;
+            var lng = parseFloat(pageData.getAttribute('data-property-longitude')) || 74.5698;
+            var title = pageData.getAttribute('data-property-title') || 'Объявление';
+            var address = pageData.getAttribute('data-property-address') || 'Адрес не указан';
+            
+            var location = { lat: lat, lng: lng };
+            
+            var map = new google.maps.Map(document.getElementById('property-map'), {
+                zoom: 16,
+                center: location,
+                mapTypeControl: true,
+                streetViewControl: true,
+                fullscreenControl: true
+            });
+            
+            var marker = new google.maps.Marker({
+                position: location,
+                map: map,
+                title: title,
+                icon: {
+                    url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                    scaledSize: new google.maps.Size(32, 32)
+                }
+            });
+            
+            // Информационное окно с адресом
+            var infoWindow = new google.maps.InfoWindow({
+                content: '<div style="padding: 10px;"><h4>' + title + '</h4><p>' + address + '</p></div>'
+            });
+            
+            marker.addListener('click', function() {
+                infoWindow.open(map, marker);
+            });
+            
+            console.log('Google Maps инициализирована с координатами:', location);
+        } else {
+            console.log('Google Maps API не загружен или элемент карты не найден');
+        }
+    }, 2000);
+});
 </script>
 {% endblock %}

@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
+    # Google Maps API
+    GOOGLE_MAPS: str
+    
     # Media
     MEDIA_DIR: str = "media"
     

@@ -7,10 +7,12 @@ import subprocess
 import openpyxl
 import pandas as pd
 import random
+import shutil
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
 from io import BytesIO
 from uuid import uuid4
+from pathlib import Path
 
 from fastapi import FastAPI, Request, Depends, Form, status, HTTPException, Query, WebSocket, WebSocketDisconnect, Response, UploadFile, File, APIRouter
 from fastapi.staticfiles import StaticFiles
@@ -93,11 +95,12 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             '/companies/login',   # Company login page
         ]
         
-        # Для статических файлов, API разрешаем доступ
+        # Для статических файлов разрешаем доступ
         if request.url.path.startswith('/static/'):
             return await call_next(request)
             
-        # Для API запросов проверяем токен в заголовке Authorization
+        # Для API запросов - НЕ ПРОВЕРЯЕМ ТОКЕН В MIDDLEWARE
+        # Пусть каждый API эндпоинт сам проверяет токен через deps.get_current_active_user
         if request.url.path.startswith('/api/'):
             # Разрешаем доступ к эндпоинтам авторизации без токена
             if any(request.url.path.endswith(path) for path in [
@@ -110,41 +113,9 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             ]):
                 return await call_next(request)
                 
-            auth_token = None
-            auth_header = request.headers.get('Authorization')
-            
-            if auth_header and auth_header.startswith('Bearer '):
-                auth_token = auth_header.split(' ')[1]
-            
-            if not auth_token:
-                auth_token = request.cookies.get('access_token')
-                print(f"DEBUG: Используем токен из cookie: {auth_token is not None}")
-            
-            if auth_token:
-                try:
-                    payload = pyjwt.decode(auth_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-                    if datetime.fromtimestamp(payload["exp"]) < datetime.utcnow():
-                        print(f"DEBUG: Token expired: {payload}")
-                        return JSONResponse(
-                            status_code=status.HTTP_401_UNAUTHORIZED,
-                            content={"detail": "Токен истек"}
-                        )
-                    
-                    if not auth_header:
-                        request.headers.__dict__["_list"].append((b"authorization", f"Bearer {auth_token}".encode()))
-                        print("DEBUG: Добавлен заголовок Authorization из cookie")
-                    
-                    return await call_next(request)
-                except Exception as e:
-                    print(f"DEBUG: Token validation error: {str(e)}")
-                    return JSONResponse(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        content={"detail": f"Недействительный токен: {str(e)}"}
-                    )
-            return JSONResponse(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"detail": "Требуется авторизация"}
-            )
+            # ДЛЯ ВСЕХ ОСТАЛЬНЫХ API ЭНДПОИНТОВ - ПРОСТО ПРОПУСКАЕМ
+            # Аутентификация будет происходить через deps.get_current_active_user
+            return await call_next(request)
             
         if any(request.url.path.startswith(path) for path in public_paths) or '/api/v1/chat/' in request.url.path:
             return await call_next(request)
@@ -670,6 +641,9 @@ async def mobile_service_detail(request: Request, card_id: int, db: Session = De
         ServiceCard.is_active == True
     ).limit(6).all()
     
+    # Добавляем has_360_tour к service_card
+    service_card.has_360_tour = service_card.has_360_tour()
+    
     return templates.TemplateResponse("layout/service_detail.html", {
         "request": request,
         "service_card": service_card,
@@ -1000,10 +974,26 @@ async def mobile_search(
     try:
         # Здесь можно добавить вызов API для получения погоды и курса валюты
         # Для простоты используем заглушки
-        weather = {"temperature": "+15°"}
-        currency = {"value": "87.5"}
+        weather = {"temperature": "+20°"}
+        
+        # Попробуем получить курс доллара к сому
+        import requests
+        try:
+            # Используем публичный API для курса валют
+            response = requests.get("https://api.exchangerate-api.com/v4/latest/USD", timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                kgs_rate = data.get("rates", {}).get("KGS", 87.5)
+                currency = {"value": f"{kgs_rate:.1f}"}
+            else:
+                currency = {"value": "87.5"}  # Значение по умолчанию
+        except:
+            currency = {"value": "87.5"}  # Значение по умолчанию при ошибке
+            
     except Exception as e:
         print(f"DEBUG: Ошибка при получении погоды или курса валюты: {e}")
+        weather = {"temperature": "+20°"}
+        currency = {"value": "87.5"}
     
     return templates.TemplateResponse("layout/search.html", {
         "request": request, 
@@ -1110,10 +1100,39 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
         joinedload(models.Property.images)
     ).filter(
         models.Property.id != property.id,
-        models.Property.type == property.type,
         models.Property.city == property.city,
-        models.Property.status == 'ACTIVE'
+        models.Property.status == models.PropertyStatus.ACTIVE  # Используем enum вместо строки
     ).limit(5).all()
+    
+    # Форматируем похожие объявления
+    similar_properties_data = []
+    for prop in similar_properties:
+        # Обработка изображений для похожих объявлений
+        main_image_url = "/static/layout/assets/img/property-placeholder.jpg"
+        
+        # Сначала пробуем медиа-сервер
+        if prop.images_data and isinstance(prop.images_data, list):
+            for img_data in prop.images_data:
+                if isinstance(img_data, dict) and "urls" in img_data:
+                    main_image_url = img_data["urls"].get("medium", img_data["urls"].get("original", ""))
+                    if img_data.get("is_main", False):
+                        break  # Используем главное изображение
+        
+        # Если нет изображений с медиа-сервера, используем локальные
+        elif prop.images:
+            main_image = next((img for img in prop.images if img.is_main), None) or prop.images[0]
+            if main_image:
+                main_image_url = main_image.url
+        
+        similar_properties_data.append({
+            "id": prop.id,
+            "title": prop.title,
+            "price": prop.price,
+            "address": prop.address,
+            "rooms": prop.rooms,
+            "area": prop.area,
+            "image_url": main_image_url
+        })
     
     # Форматируем данные для шаблона
     property_data = {
@@ -1127,6 +1146,7 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
         "status": property.status.value.lower() if property.status else "draft",
         "is_featured": property.is_featured,
         "views": property.views or 0,  # Добавляем поле views
+        "created_at": property.created_at.strftime("%d.%m.%Y") if property.created_at else None,  # Добавляем дату публикации
         "tour_360_url": property.tour_360_url,
         # Добавляем поля для загруженных 360° панорам
         "tour_360_file_id": property.tour_360_file_id,
@@ -1141,12 +1161,19 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
         "floor": property.floor,
         "building_floors": property.building_floors,
         "type": property.type or "apartment",
+        "type_display": {
+            "apartment": "Квартира",
+            "house": "Дом", 
+            "commercial": "Коммерческая",
+            "land": "Участок"
+        }.get(property.type or "apartment", "Квартира"),  # Правильное отображение типа
         "is_owner": is_owner,
         "notes": property.notes,
         "has_balcony": property.has_balcony,
         "has_furniture": property.has_furniture,
         "has_renovation": property.has_renovation,
         "has_parking": property.has_parking,
+        "has_elevator": getattr(property, 'has_elevator', False),
         "owner": {
             "id": property.owner.id,
             "full_name": property.owner.full_name or "Неизвестен",
@@ -1156,29 +1183,52 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
             "company_name": property.owner.company_name,
             "logo_url": property.owner.company_logo_url
         } if property.owner else None,
-        "images": [{"url": img.url, "is_main": img.is_main} for img in property.images] if property.images else [],
         "category": {
             "id": category.id,
             "name": category.name
         } if category else None,
+        # Поддержка медиа-сервера
+        "media_id": property.media_id,
+        "images_data": property.images_data,
+        # Координаты для карты
+        "latitude": property.latitude,
+        "longitude": property.longitude,
+        "formatted_address": property.formatted_address,
     }
     
-    # Форматируем похожие объявления
-    similar_properties_data = []
-    for prop in similar_properties:
-        # Находим главное изображение или берем первое доступное
-        main_image = next((img for img in prop.images if img.is_main), None) or \
-                    (prop.images[0] if prop.images else None)
-        
-        similar_properties_data.append({
-            "id": prop.id,
-            "title": prop.title,
-            "price": prop.price,
-            "address": prop.address,
-            "rooms": prop.rooms,
-            "area": prop.area,
-            "image_url": main_image.url if main_image else "/static/layout/assets/img/property-placeholder.jpg"
-        })
+    # Обработка изображений: сначала пробуем медиа-сервер, потом локальные
+    images_list = []
+    
+    # Если есть данные с медиа-сервера
+    if property.images_data and isinstance(property.images_data, list):
+        for img_data in property.images_data:
+            if isinstance(img_data, dict) and "urls" in img_data:
+                images_list.append({
+                    "url": img_data["urls"].get("medium", img_data["urls"].get("original", "")),
+                    "is_main": img_data.get("is_main", False),
+                    "from_media_server": True
+                })
+    
+    # Если есть media_id, но нет images_data, строим URL по media_id
+    elif property.media_id:
+        # Строим URL для изображений на основе media_id
+        media_base_url = "https://wazir.kg/state"
+        for i in range(1, 11):  # Проверяем до 10 изображений
+            image_url = f"{media_base_url}/properties/{property.media_id}/image_{i}.jpg"
+            images_list.append({
+                "url": image_url,
+                "is_main": i == 1,  # Первое изображение как главное
+                "from_media_server": True
+            })
+            # Ограничиваемся 5 изображениями для отображения
+            if i >= 5:
+                break
+    
+    # Если нет изображений с медиа-сервера, используем локальные
+    if not images_list and property.images:
+        images_list = [{"url": img.url, "is_main": img.is_main, "from_media_server": False} for img in property.images]
+    
+    property_data["images"] = images_list
     
     # Получаем погоду и курс валюты для отображения в шапке
     weather = None
@@ -1187,9 +1237,25 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
         # Здесь можно добавить вызов API для получения погоды и курса валюты
         # Для простоты используем заглушки
         weather = {"temperature": "+20°"}
-        currency = {"value": "69.8"}
+        
+        # Попробуем получить курс доллара к сому
+        import requests
+        try:
+            # Используем публичный API для курса валют
+            response = requests.get("https://api.exchangerate-api.com/v4/latest/USD", timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                kgs_rate = data.get("rates", {}).get("KGS", 87.5)
+                currency = {"value": f"{kgs_rate:.1f}"}
+            else:
+                currency = {"value": "87.5"}  # Значение по умолчанию
+        except:
+            currency = {"value": "87.5"}  # Значение по умолчанию при ошибке
+            
     except Exception as e:
         print(f"DEBUG: Ошибка при получении погоды или курса валюты: {e}")
+        weather = {"temperature": "+20°"}
+        currency = {"value": "87.5"}
     
     return templates.TemplateResponse("layout/property.html", {
         "request": request,
@@ -1230,6 +1296,50 @@ async def test_websocket_page(request: Request):
     """Тестовая страница для проверки WebSocket соединений"""
     return templates.TemplateResponse("test_websocket.html", {"request": request})
 
+@app.get("/mobile/test-media", response_class=HTMLResponse)
+async def test_media_page(request: Request):
+    """Тестовая страница для проверки медиа-сервера"""
+    return templates.TemplateResponse("mobile/test_media.html", {
+        "request": request,
+        "media_server": "https://wazir.kg/state"
+    })
+
+@app.post("/mobile/test-upload")
+async def test_media_upload_mobile(
+    request: Request,
+    title: str = Form(...),
+    photos: List[UploadFile] = File(...)
+):
+    """Тестовая загрузка изображений через мобильный интерфейс"""
+    
+    if not photos:
+        raise HTTPException(status_code=400, detail="No files provided")
+    
+    # Проверяем файлы
+    allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+    for file in photos:
+        if file.content_type not in allowed_types:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"File type {file.content_type} not allowed"
+            )
+    
+    # Используем медиа-загрузчик
+    from app.utils.media_uploader import media_uploader
+    
+    result = await media_uploader.upload_property_images(photos)
+    
+    if result["status"] != "success":
+        raise HTTPException(status_code=400, detail=result["message"])
+    
+    return {
+        "status": "success",
+        "property_id": result.get("property_id"),
+        "files_count": result.get("count", 0),
+        "files": result.get("files", []),
+        "message": f"Успешно загружено {result.get('count', 0)} файлов"
+    }
+
 # Создаем прямой API-роутер для отладки, который не использует аутентификацию
 debug_router = APIRouter(prefix="/debug")
 
@@ -1239,10 +1349,49 @@ app.include_router(debug_router)
 # Добавляем маршруты отладки
 @debug_router.get("/")
 async def get_debug_info():
+    """Получение отладочной информации"""
     return {
-        "status": "ok",
-        "message": "Отладочный API доступен"
+        "status": "debug_active",
+        "timestamp": datetime.now().isoformat(),
+        "routes": [
+            "/debug/",
+            "/debug/db-test"
+        ]
     }
+
+# API для получения курса валют
+@app.get("/api/v1/currency")
+async def get_currency_rate():
+    """Получение актуального курса доллара к сому"""
+    try:
+        import requests
+        response = requests.get("https://api.exchangerate-api.com/v4/latest/USD", timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            kgs_rate = data.get("rates", {}).get("KGS", 87.5)
+            return {
+                "success": True,
+                "currency": "USD/KGS",
+                "rate": round(kgs_rate, 1),
+                "formatted": f"{kgs_rate:.1f}",
+                "updated_at": datetime.now().isoformat()
+            }
+        else:
+            return {
+                "success": False,
+                "currency": "USD/KGS", 
+                "rate": 87.5,
+                "formatted": "87.5",
+                "error": "API недоступен"
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "currency": "USD/KGS",
+            "rate": 87.5, 
+            "formatted": "87.5",
+            "error": str(e)
+        }
 
 # API для чата
 from pydantic import BaseModel
@@ -1329,11 +1478,12 @@ async def get_user(user_id: int, db: Session = Depends(deps.get_db)):
 
 # API для получения сообщений чата
 @app.get("/api/v1/chat/messages/{user_id}")
-async def get_chat_messages(user_id: int, current_user: dict = Depends(deps.get_current_user_optional), db: Session = Depends(deps.get_db)):
+async def get_chat_messages(user_id: int, request: Request, db: Session = Depends(deps.get_db)):
     """Получить сообщения чата с пользователем"""
     try:
-        # Получаем ID текущего пользователя из токена
-        current_user_id = int(current_user.get("sub", 0)) if current_user else 0
+        # Получаем текущего пользователя
+        current_user = deps.get_current_user_optional(request, db)
+        current_user_id = current_user.id if current_user else 0
         if current_user_id == 0:
             print("DEBUG: Не удалось определить текущего пользователя")
             return []
@@ -1602,7 +1752,7 @@ async def admin_users(request: Request, db: Session = Depends(deps.get_db)):
         }
     )
 
-@app.get("/admin/properties", response_class=HTMLResponse)
+@app.get("/admin/properties", response_class=HTMLResponse, name="admin_properties")
 async def admin_properties(
     request: Request, 
     status: str = Query(None), 
@@ -3603,7 +3753,11 @@ async def create_service_card(
     phone: str = Form(""),
     email: str = Form(""),
     website: str = Form(""),
-    image_url: str = Form(""),
+    latitude: float = Form(None),
+    longitude: float = Form(None),
+    tour_360_url: str = Form(""),
+    images: List[UploadFile] = File(default=[]),
+    tour_360_file: UploadFile = File(None),
     db: Session = Depends(deps.get_db)
 ):
     # Проверяем доступ администратора
@@ -3626,13 +3780,97 @@ async def create_service_card(
             phone=phone or None,
             email=email or None,
             website=website or None,
-            image_url=image_url or None,
+            latitude=latitude,
+            longitude=longitude,
+            tour_360_url=tour_360_url or None,
             is_active=True
         )
         
         db.add(service_card)
         db.commit()
         db.refresh(service_card)
+        
+        # Обрабатываем загруженные изображения
+        if images and len(images) > 0 and images[0].filename:
+            try:
+                from app.utils.media_uploader import media_uploader
+                
+                # Генерируем ID для заведения (аналогично объявлениям)
+                service_media_id = f"service-{service_card.id}"
+                
+                # Загружаем изображения на медиа-сервер
+                upload_result = await media_uploader.upload_property_images(images, service_media_id)
+                
+                if upload_result.get("status") == "success" and upload_result.get("count", 0) > 0:
+                    uploaded_count = upload_result["count"]
+                    print(f"DEBUG: Успешно загружено {uploaded_count} изображений на медиа-сервер")
+                    
+                    # Создаем записи в БД для каждого загруженного изображения
+                    for i, file_info in enumerate(upload_result.get("files", [])):
+                        image_url = f"https://wazir.kg/state/uploads/{service_media_id}/{file_info['filename']}"
+                        
+                        service_image = ServiceCardImage(
+                            service_card_id=service_card.id,
+                            url=image_url,
+                            is_main=(i == 0)  # Первое фото главное
+                        )
+                        db.add(service_image)
+                        
+                        # Если это первое изображение, устанавливаем его как основное
+                        if i == 0:
+                            service_card.image_url = image_url
+                    
+                    # Обновляем дату последней загрузки фотографий
+                    service_card.photos_uploaded_at = datetime.now()
+                    db.commit()
+                else:
+                    print(f"ERROR: Ошибка загрузки на медиа-сервер: {upload_result.get('message', 'Неизвестная ошибка')}")
+                    
+            except Exception as e:
+                print(f"DEBUG: Ошибка при загрузке изображений на медиа-сервер: {str(e)}")
+        
+        # Обрабатываем 360° панораму
+        if tour_360_file and tour_360_file.filename:
+            try:
+                from app.utils.panorama_processor import PanoramaProcessor
+                import tempfile
+                from pathlib import Path
+                
+                processor = PanoramaProcessor()
+                
+                # Сохраняем временный файл
+                with tempfile.NamedTemporaryFile(delete=False, suffix=Path(tour_360_file.filename).suffix) as temp_file:
+                    content = await tour_360_file.read()
+                    temp_file.write(content)
+                    temp_file_path = Path(temp_file.name)
+                
+                try:
+                    # Валидация файла
+                    if processor.validate_file(temp_file_path, len(content)):
+                        # Обработка панорамы (используем service_card.id как property_id)
+                        result = processor.process_panorama(temp_file_path, service_card.id)
+                        
+                        # Обновление записи в базе данных
+                        service_card.tour_360_file_id = result['file_id']
+                        service_card.tour_360_original_url = result['original_url']
+                        service_card.tour_360_optimized_url = result['optimized_url']
+                        service_card.tour_360_preview_url = result['preview_url']
+                        service_card.tour_360_thumbnail_url = result['thumbnail_url']
+                        service_card.tour_360_metadata = json.dumps(result['metadata'], ensure_ascii=False)
+                        service_card.tour_360_uploaded_at = result['uploaded_at']
+                        
+                        db.commit()
+                        
+                finally:
+                    # Удаление временного файла
+                    try:
+                        if temp_file_path.exists():
+                            temp_file_path.unlink()
+                    except Exception as e:
+                        print(f"Ошибка удаления временного файла: {str(e)}")
+                        
+            except Exception as e:
+                print(f"DEBUG: Ошибка при загрузке 360° панорамы: {str(e)}")
         
         return {"success": True, "message": "Карточка заведения создана успешно", "service_card": {
             "id": service_card.id,
@@ -3642,6 +3880,8 @@ async def create_service_card(
             "phone": service_card.phone,
             "email": service_card.email,
             "website": service_card.website,
+            "latitude": service_card.latitude,
+            "longitude": service_card.longitude,
             "image_url": service_card.image_url,
             "is_active": service_card.is_active
         }}
@@ -3649,163 +3889,6 @@ async def create_service_card(
     except Exception as e:
         db.rollback()
         print(f"DEBUG: Ошибка при создании карточки: {str(e)}")
-        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
-
-# API для редактирования карточки заведения
-@app.put("/api/v1/admin/service-cards/{card_id}")
-async def update_service_card(
-    card_id: int,
-    request: Request,
-    title: str = Form(...),
-    description: str = Form(""),
-    address: str = Form(""),
-    phone: str = Form(""),
-    email: str = Form(""),
-    website: str = Form(""),
-    image_url: str = Form(""),
-    db: Session = Depends(deps.get_db)
-):
-    # Проверяем доступ администратора
-    user = await check_admin_access(request, db)
-    if isinstance(user, RedirectResponse):
-        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
-    
-    try:
-        # Находим карточку
-        service_card = db.query(ServiceCard).filter(ServiceCard.id == card_id).first()
-        if not service_card:
-            return JSONResponse(status_code=404, content={"success": False, "error": "Карточка не найдена"})
-        
-        service_card.title = title
-        service_card.description = description or None
-        service_card.address = address or None
-        service_card.phone = phone or None
-        service_card.email = email or None
-        service_card.website = website or None
-        service_card.image_url = image_url or None
-        
-        db.commit()
-        
-        return {"success": True, "message": "Карточка заведения обновлена успешно"}
-        
-    except Exception as e:
-        db.rollback()
-        print(f"DEBUG: Ошибка при обновлении карточки: {str(e)}")
-        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
-
-# API для удаления карточки заведения
-@app.delete("/api/v1/admin/service-cards/{card_id}")
-async def delete_service_card(
-    card_id: int,
-    request: Request, 
-    db: Session = Depends(deps.get_db)
-):
-    # Проверяем доступ администратора
-    user = await check_admin_access(request, db)
-    if isinstance(user, RedirectResponse):
-        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
-    
-    try:
-        # Находим карточку
-        service_card = db.query(ServiceCard).filter(ServiceCard.id == card_id).first()
-        if not service_card:
-            return JSONResponse(status_code=404, content={"success": False, "error": "Карточка не найдена"})
-        
-        # Удаляем связанные изображения
-        db.query(ServiceCardImage).filter(ServiceCardImage.service_card_id == card_id).delete()
-        
-        # Удаляем карточку
-        db.delete(service_card)
-        db.commit()
-        
-        return {"success": True, "message": "Карточка заведения удалена успешно"}
-        
-    except Exception as e:
-        db.rollback()
-        print(f"DEBUG: Ошибка при удалении карточки: {str(e)}")
-        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
-
-# API для загрузки фотографий заведения
-@app.post("/api/v1/admin/service-cards/{card_id}/photos")
-async def upload_service_card_photos(
-    card_id: int,
-    request: Request,
-    photos: List[UploadFile] = File(...),
-    db: Session = Depends(deps.get_db)
-):
-    """Загрузка фотографий для заведения на медиа-сервер"""
-    user = await check_admin_access(request, db)
-    if isinstance(user, RedirectResponse):
-        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
-    
-    try:
-        # Проверяем карточку заведения
-        service_card = db.query(ServiceCard).filter(ServiceCard.id == card_id).first()
-        if not service_card:
-            return JSONResponse(status_code=404, content={"success": False, "error": "Заведение не найдено"})
-        
-        if len(photos) < 2:
-            return JSONResponse(status_code=400, content={"success": False, "error": "Необходимо минимум 2 фотографии"})
-        
-        if len(photos) > 10:
-            return JSONResponse(status_code=400, content={"success": False, "error": "Максимум 10 фотографий"})
-        
-        # Инициализируем медиа-загрузчик
-        from app.utils.media_uploader import MediaUploader
-        media_uploader = MediaUploader()
-        
-        # Генерируем ID для папки (используем ID карточки)
-        property_id = f"service-{card_id}"
-        
-        uploaded_count = 0
-        uploaded_urls = []
-        
-        # Удаляем старые изображения из БД
-        db.query(ServiceCardImage).filter(ServiceCardImage.service_card_id == card_id).delete()
-        
-        for i, photo in enumerate(photos):
-            if photo.content_type and photo.content_type.startswith('image/'):
-                try:
-                    # Загружаем на медиа-сервер
-                    result = await media_uploader.upload_file(photo, property_id)
-                    
-                    if result["success"]:
-                        # Добавляем изображение в БД
-                        service_image = ServiceCardImage(
-                            service_card_id=card_id,
-                            url=result["url"],
-                            is_main=(i == 0)  # Первое фото главное
-                        )
-                        db.add(service_image)
-                        uploaded_urls.append(result["url"])
-                        uploaded_count += 1
-                        
-                        # Если это первое изображение, устанавливаем его как основное
-                        if i == 0:
-                            service_card.image_url = result["url"]
-                    
-                except Exception as e:
-                    print(f"ERROR: Ошибка при загрузке фото {i + 1}: {e}")
-                    continue
-        
-        if uploaded_count > 0:
-            # Обновляем дату последней загрузки фотографий
-            from datetime import datetime
-            service_card.photos_uploaded_at = datetime.now()
-            db.commit()
-            
-            return {
-                "success": True, 
-                "message": f"Загружено {uploaded_count} фотографий",
-                "uploaded_count": uploaded_count,
-                "urls": uploaded_urls
-            }
-        else:
-            return JSONResponse(status_code=400, content={"success": False, "error": "Не удалось загрузить ни одной фотографии"})
-        
-    except Exception as e:
-        db.rollback()
-        print(f"ERROR: Ошибка при загрузке фотографий: {str(e)}")
         return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
 
 # API для загрузки 360° панорамы заведения (файл)
@@ -3988,6 +4071,229 @@ async def get_service_card_media_info(
         
     except Exception as e:
         print(f"ERROR: Ошибка при получении медиа-информации: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
+
+# API для загрузки фотографий заведения
+@app.post("/api/v1/admin/service-cards/{card_id}/photos")
+async def upload_service_card_photos(
+    card_id: int,
+    request: Request,
+    photos: List[UploadFile] = File(...),
+    db: Session = Depends(deps.get_db)
+):
+    """Загрузка фотографий для заведения"""
+    user = await check_admin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    
+    try:
+        # Находим карточку заведения
+        service_card = db.query(ServiceCard).filter(ServiceCard.id == card_id).first()
+        if not service_card:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Заведение не найдено"})
+        
+        if len(photos) > 10:
+            return JSONResponse(status_code=400, content={"success": False, "message": "Максимум 10 фотографий"})
+        
+        # Используем медиа-сервер для загрузки
+        from app.utils.media_uploader import media_uploader
+        
+        # Генерируем ID для заведения
+        service_media_id = f"service-{card_id}"
+        
+        # Загружаем изображения на медиа-сервер
+        upload_result = await media_uploader.upload_property_images(photos, service_media_id)
+        
+        if upload_result.get("status") == "success" and upload_result.get("count", 0) > 0:
+            # Удаляем старые изображения из БД
+            db.query(ServiceCardImage).filter(ServiceCardImage.service_card_id == card_id).delete()
+            
+            uploaded_images = []
+            # Создаем записи в БД для каждого загруженного изображения
+            for i, file_info in enumerate(upload_result.get("files", [])):
+                image_url = f"https://wazir.kg/state/uploads/{service_media_id}/{file_info['filename']}"
+                
+                service_image = ServiceCardImage(
+                    service_card_id=card_id,
+                    url=image_url,
+                    is_main=(i == 0)  # Первое изображение - основное
+                )
+                db.add(service_image)
+                uploaded_images.append(image_url)
+                
+                # Если это первое изображение, обновляем основное изображение заведения
+                if i == 0:
+                    service_card.image_url = image_url
+            
+            # Обновляем дату загрузки фотографий
+            service_card.photos_uploaded_at = datetime.now()
+            db.commit()
+            
+            return {
+                "success": True,
+                "message": f"Успешно загружено {upload_result['count']} фотографий на медиа-сервер",
+                "count": upload_result["count"],
+                "images": uploaded_images
+            }
+        else:
+            return JSONResponse(status_code=500, content={
+                "success": False, 
+                "message": f"Ошибка загрузки на медиа-сервер: {upload_result.get('message', 'Неизвестная ошибка')}"
+            })
+        
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR: Ошибка при загрузке фотографий заведения: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка сервера: {str(e)}"})
+
+@app.post("/mobile/test-debug-upload")
+async def test_debug_upload(
+    request: Request,
+    title: str = Form(...),
+    photos: List[UploadFile] = File(...)
+):
+    """Тестовый эндпоинт для отладки загрузки файлов"""
+    try:
+        print(f"DEBUG: Получено {len(photos)} файлов для отладочной загрузки")
+        
+        # Подготавливаем файлы для отправки
+        files_data = []
+        for i, file in enumerate(photos):
+            file_content = await file.read()
+            file_size = len(file_content)
+            print(f"DEBUG: Файл {i+1}: {file.filename}, размер: {file_size} байт, тип: {file.content_type}")
+            
+            files_data.append(
+                ("images", (file.filename, file_content, file.content_type))
+            )
+            # Сбрасываем указатель файла
+            await file.seek(0)
+        
+        # Генерируем test property_id
+        import uuid
+        test_property_id = f"test-{uuid.uuid4().hex[:8]}"
+        
+        # Отправляем на отладочный PHP-скрипт
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            print(f"DEBUG: Отправляем на https://wazir.kg/state/debug_upload.php")
+            response = await client.post(
+                "https://wazir.kg/state/debug_upload.php",
+                files=files_data,
+                data={"property_id": test_property_id}
+            )
+            
+            print(f"DEBUG: Получен ответ со статусом: {response.status_code}")
+            print(f"DEBUG: Тело ответа: {response.text}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                return {
+                    "status": "success",
+                    "debug_result": result,
+                    "files_sent": len(photos),
+                    "test_property_id": test_property_id
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": f"Debug upload failed with status {response.status_code}",
+                    "response": response.text
+                }
+                
+    except Exception as e:
+        print(f"ERROR: Ошибка при отладочной загрузке: {str(e)}")
+        return {
+            "status": "error",
+            "message": f"Debug upload error: {str(e)}"
+        }
+
+@app.get("/mobile/test-debug", response_class=HTMLResponse)
+async def test_debug_page(request: Request):
+    """Страница для отладочного тестирования загрузки файлов"""
+    return templates.TemplateResponse("mobile/test_debug.html", {"request": request})
+
+# API для редактирования карточки заведения
+@app.put("/api/v1/admin/service-cards/{card_id}")
+async def update_service_card(
+    card_id: int,
+    request: Request,
+    title: str = Form(...),
+    description: str = Form(""),
+    address: str = Form(""),
+    phone: str = Form(""),
+    email: str = Form(""),
+    website: str = Form(""),
+    is_active: bool = Form(True),
+    db: Session = Depends(deps.get_db)
+):
+    """Обновление карточки заведения"""
+    user = await check_admin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    
+    try:
+        # Находим карточку заведения
+        service_card = db.query(ServiceCard).filter(ServiceCard.id == card_id).first()
+        if not service_card:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Заведение не найдено"})
+        
+        # Обновляем поля
+        service_card.title = title
+        service_card.description = description or None
+        service_card.address = address or None
+        service_card.phone = phone or None
+        service_card.email = email or None
+        service_card.website = website or None
+        service_card.is_active = is_active
+        
+        db.commit()
+        
+        return {"success": True, "message": "Заведение успешно обновлено"}
+        
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR: Ошибка при обновлении заведения: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
+
+# API для удаления карточки заведения
+@app.delete("/api/v1/admin/service-cards/{card_id}")
+async def delete_service_card(
+    card_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    """Удаление карточки заведения"""
+    user = await check_admin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    
+    try:
+        # Находим карточку заведения
+        service_card = db.query(ServiceCard).filter(ServiceCard.id == card_id).first()
+        if not service_card:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Заведение не найдено"})
+        
+        # Удаляем связанные изображения из БД
+        db.query(ServiceCardImage).filter(ServiceCardImage.service_card_id == card_id).delete()
+        
+        # Удаляем изображения с медиа-сервера
+        try:
+            from app.utils.media_uploader import media_uploader
+            service_media_id = f"service-{card_id}"
+            delete_result = await media_uploader.delete_property_images(service_media_id)
+            print(f"DEBUG: Результат удаления с медиа-сервера: {delete_result}")
+        except Exception as e:
+            print(f"WARNING: Ошибка при удалении изображений с медиа-сервера: {str(e)}")
+        
+        # Удаляем карточку заведения
+        db.delete(service_card)
+        db.commit()
+        
+        return {"success": True, "message": "Заведение успешно удалено"}
+        
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR: Ошибка при удалении заведения: {str(e)}")
         return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
 
  

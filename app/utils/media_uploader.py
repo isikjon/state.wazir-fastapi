@@ -54,31 +54,57 @@ class MediaUploader:
             }
         
         try:
-            # Подготавливаем файлы для отправки
+            print(f"DEBUG: Подготовка к загрузке {len(files)} файлов для property_id: {property_id}")
+            
+            # Подготавливаем файлы для отправки - ИСПРАВЛЕННЫЙ СПОСОБ
+            # Отправляем все файлы с именем "images[]" чтобы PHP правильно их обработал
             files_data = []
-            for file in files:
+            for i, file in enumerate(files):
                 file_content = await file.read()
+                file_size = len(file_content)
+                print(f"DEBUG: Файл {i+1}: {file.filename}, размер: {file_size} байт, тип: {file.content_type}")
+                
+                # Используем "images[]" вместо "images" для множественных файлов
                 files_data.append(
-                    ("images", (file.filename, file_content, file.content_type))
+                    ("images[]", (file.filename, file_content, file.content_type))
                 )
                 # Сбрасываем указатель файла
                 await file.seek(0)
             
+            print(f"DEBUG: Всего подготовлено {len(files_data)} файлов для отправки с именем 'images[]'")
+            
             # Отправляем на медиа-сервер
             async with httpx.AsyncClient(timeout=30.0) as client:
+                print(f"DEBUG: Отправляем POST запрос на {self.base_url}/upload.php")
                 response = await client.post(
                     f"{self.base_url}/upload.php",
                     files=files_data,
                     data={"property_id": property_id}
                 )
                 
+                print(f"DEBUG: Получен ответ со статусом: {response.status_code}")
+                print(f"DEBUG: Тело ответа: {response.text}")
+                
                 if response.status_code == 200:
                     result = response.json()
+                    print(f"DEBUG: Результат парсинга JSON: {result}")
+                    
+                    # Обновляем URL для соответствия структуре сервера
+                    updated_files = []
+                    for file_info in result.get("files", []):
+                        # Меняем путь с properties/ на uploads/
+                        updated_file_info = file_info.copy()
+                        if 'filename' in updated_file_info:
+                            # URL должен быть: https://wazir.kg/state/uploads/{property_id}/{filename}
+                            updated_file_info['url'] = f"https://wazir.kg/state/uploads/{property_id}/{updated_file_info['filename']}"
+                        updated_files.append(updated_file_info)
+                    
                     return {
                         "status": "success",
                         "property_id": property_id,
-                        "files": result.get("files", []),
-                        "count": result.get("count", 0)
+                        "files": updated_files,
+                        "count": result.get("count", 0),
+                        "message": result.get("message", "Upload successful")
                     }
                 else:
                     return {
@@ -88,6 +114,7 @@ class MediaUploader:
                     }
                     
         except Exception as e:
+            print(f"ERROR: Ошибка при загрузке изображений: {str(e)}")
             return {
                 "status": "error",
                 "message": f"Upload error: {str(e)}"
@@ -113,6 +140,47 @@ class MediaUploader:
             return {
                 "status": "error",
                 "message": f"Delete error: {str(e)}"
+            }
+    
+    async def upload_file(self, file: UploadFile, folder: str = "service_cards") -> Dict[str, Any]:
+        """Загружает один файл (для совместимости со старым кодом)"""
+        try:
+            file_content = await file.read()
+            file_id = str(uuid.uuid4())
+            
+            # Определяем расширение файла
+            file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
+            filename = f"{file_id}.{file_extension}"
+            
+            # Отправляем файл
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                files_data = [("file", (filename, file_content, file.content_type))]
+                response = await client.post(
+                    f"{self.base_url}/upload_single.php",
+                    files=files_data,
+                    data={"folder": folder}
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    return {
+                        "status": "success",
+                        "file_id": file_id,
+                        "filename": filename,
+                        "url": result.get("url", f"/media/{folder}/{filename}"),
+                        "message": "File uploaded successfully"
+                    }
+                else:
+                    return {
+                        "status": "error",
+                        "message": f"Upload failed with status {response.status_code}",
+                        "response": response.text
+                    }
+                    
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Upload error: {str(e)}"
             }
 
 # Создаем экземпляр

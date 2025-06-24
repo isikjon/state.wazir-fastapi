@@ -156,6 +156,73 @@
         height: 100%;
         object-fit: cover;
     }
+    
+    /* Google Maps стили */
+    .service-map-container {
+        width: 100%;
+        height: 300px;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+        margin: 16px 0;
+    }
+    
+    .map-section {
+        background-color: white;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .map-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+    
+    .map-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #111827;
+        display: flex;
+        align-items: center;
+    }
+    
+    .map-title i {
+        margin-right: 8px;
+        color: #4b5563;
+    }
+    
+    .map-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+    }
+    
+    .map-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 12px;
+        background-color: #f3f4f6;
+        color: #4b5563;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+    
+    .map-btn:hover {
+        background-color: #e5e7eb;
+        color: #374151;
+    }
+    
+    .map-btn i {
+        margin-right: 6px;
+    }
 </style>
 {% endblock %}
 
@@ -297,6 +364,31 @@
                 </div>
             </div>
 
+            <!-- Карта местоположения -->
+            {% if service_card.latitude and service_card.longitude %}
+            <div class="map-section">
+                <div class="map-header">
+                    <h3 class="map-title">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Местоположение
+                    </h3>
+                </div>
+                <div class="service-map-container" id="service-map"></div>
+                <div class="map-actions">
+                    <a href="https://www.google.com/maps?q={{ service_card.latitude }},{{ service_card.longitude }}" 
+                       target="_blank" class="map-btn">
+                        <i class="fas fa-external-link-alt"></i>
+                        Открыть в Google Maps
+                    </a>
+                    <a href="https://www.google.com/maps/dir/?api=1&destination={{ service_card.latitude }},{{ service_card.longitude }}"
+                       target="_blank" class="map-btn">
+                        <i class="fas fa-route"></i>
+                        Проложить маршрут
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Кнопки действий -->
             <div class="grid grid-cols-1 gap-3 mb-6">
                 <a href="/mobile/services/{{ category.slug }}" class="action-btn primary">
@@ -380,9 +472,15 @@
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCgctqtqKOus6A6cDJaOBqsyo4-3r3zuQA&libraries=places&language=ru&region=KG" async defer></script>
+
 <!-- Скрытый элемент для передачи данных из Jinja в JavaScript -->
 <div id="page-data"
     data-has-tour360="{% if service_card.has_360_tour %}true{% else %}false{% endif %}"
+    data-service-latitude="{% if service_card.latitude %}{{ service_card.latitude }}{% else %}42.8746{% endif %}"
+    data-service-longitude="{% if service_card.longitude %}{{ service_card.longitude }}{% else %}74.5698{% endif %}"
+    data-service-title="{{ service_card.title|e }}"
+    data-service-address="{{ service_card.address|e }}"
     style="display:none;"></div>
 
 <script>
@@ -514,6 +612,50 @@ $(document).ready(function() {
     
     // Инициализируем слайдер после загрузки DOM
     initAdsSlider();
+    
+    // Google Maps инициализация
+    setTimeout(function() {
+        if (typeof google !== 'undefined' && document.getElementById('service-map')) {
+            var pageData = document.getElementById('page-data');
+            var lat = parseFloat(pageData.getAttribute('data-service-latitude')) || 42.8746;
+            var lng = parseFloat(pageData.getAttribute('data-service-longitude')) || 74.5698;
+            var title = pageData.getAttribute('data-service-title') || 'Заведение';
+            var address = pageData.getAttribute('data-service-address') || 'Адрес не указан';
+            
+            var location = { lat: lat, lng: lng };
+            
+            var map = new google.maps.Map(document.getElementById('service-map'), {
+                zoom: 16,
+                center: location,
+                mapTypeControl: true,
+                streetViewControl: true,
+                fullscreenControl: true
+            });
+            
+            var marker = new google.maps.Marker({
+                position: location,
+                map: map,
+                title: title,
+                icon: {
+                    url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                    scaledSize: new google.maps.Size(32, 32)
+                }
+            });
+            
+            // Информационное окно с адресом
+            var infoWindow = new google.maps.InfoWindow({
+                content: '<div style="padding: 10px;"><h4>' + title + '</h4><p>' + address + '</p></div>'
+            });
+            
+            marker.addListener('click', function() {
+                infoWindow.open(map, marker);
+            });
+            
+            console.log('Google Maps для заведения инициализирована с координатами:', location);
+        } else {
+            console.log('Google Maps API не загружен или элемент карты не найден');
+        }
+    }, 2000);
 });
 </script>
 {% endblock %} 

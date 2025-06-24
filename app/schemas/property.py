@@ -69,6 +69,11 @@ class PropertyBase(BaseModel):
     is_featured: Optional[bool] = False
     tour_360_url: Optional[str] = None
     type: Optional[str] = "apartment"
+    
+    # Google Maps координаты
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    formatted_address: Optional[str] = None
 
 
 class PropertyCreate(PropertyBase):
@@ -91,7 +96,6 @@ class PropertyCreate(PropertyBase):
     has_gym: Optional[bool] = False
     bathroom_type: Optional[str] = None
     category_id: Optional[int] = None
-    type: Optional[str] = "apartment"
 
 
 class PropertyUpdate(PropertyBase):

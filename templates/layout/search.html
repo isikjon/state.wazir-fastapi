@@ -161,7 +161,6 @@
             .action-btn.tour-btn {
                 background-color: #f9fafb;
                 color: #4b5563;
-                display: none !important;
             }
             .pagination-dot {
                 width: 6px;
@@ -730,18 +729,16 @@
                                         <i class="fas fa-info-circle"></i> Подробно
                                     </a>
                                     {% if prop.has_tour %}
-                                    <a href="{{ url_for('property', property_id=prop.id) }}"
+                                    <a href="{{ url_for('property', property_id=prop.id) }}?auto360=1"
                                         class="action-btn tour-btn"
                                         onclick="event.stopPropagation();">
-                                        <i class="fas fa-vr-cardboard"></i> 360° -
-                                        Тур
+                                        <i class="fas fa-vr-cardboard"></i> 360°
                                     </a>
                                     {% else %}
                                     <a href="#" class="action-btn tour-btn"
                                         style="opacity: 0.5; pointer-events: none;"
                                         onclick="event.stopPropagation();">
-                                        <i class="fas fa-vr-cardboard"></i> 360° -
-                                        Тур
+                                        <i class="fas fa-vr-cardboard"></i> 360°
                                     </a>
                                     {% endif %}
                                 </div>

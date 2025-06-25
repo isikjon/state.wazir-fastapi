@@ -1156,6 +1156,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // 🔥 АВТОМАТИЧЕСКОЕ ОТКРЫТИЕ 360° при наличии параметра auto360=1
+    var urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('auto360') === '1' && view360Btn) {
+        console.log('🎯 Автоматически открываем 360° просмотр');
+        setTimeout(function() {
+            view360Btn.click();
+        }, 500); // Небольшая задержка для загрузки страницы
+    }
 });
 </script>
 {% endblock %}

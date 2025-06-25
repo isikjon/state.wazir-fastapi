@@ -1078,6 +1078,84 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Google Maps API не загружен или элемент карты не найден');
         }
     }, 2000);
+    
+    // 🎯 ОБРАБОТЧИК 360° ПРОСМОТРА 
+    var view360Btn = document.getElementById('view-360-btn');
+    var modal360 = document.getElementById('modal-360');
+    var close360Modal = document.getElementById('close-360-modal');
+    
+    if (view360Btn) {
+        view360Btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('🎯 Открываем модальное окно 360°');
+            
+            if (modal360) {
+                modal360.classList.remove('hidden');
+                
+                // Если есть загруженный файл панорамы, инициализируем Pannellum
+                var pageData = document.getElementById('page-data');
+                var hasTour360 = pageData.getAttribute('data-has-tour360') === 'true';
+                
+                if (hasTour360) {
+                    console.log('🎯 Инициализируем Pannellum для загруженной панорамы');
+                    // Получаем URL оптимизированной панорамы из данных свойства
+                    var panoramaUrl = '{{ property.tour_360_optimized_url }}';
+                    
+                    if (panoramaUrl && panoramaUrl !== 'None' && panoramaUrl.trim() !== '') {
+                        setTimeout(function() {
+                            try {
+                                pannellum.viewer('panorama-sphere', {
+                                    "type": "equirectangular",
+                                    "panorama": panoramaUrl,
+                                    "autoLoad": true,
+                                    "hotSpotDebug": false,
+                                    "showControls": true,
+                                    "mouseZoom": true,
+                                    "doubleClickZoom": true,
+                                    "draggable": true,
+                                    "keyboardZoom": true,
+                                    "showFullscreenCtrl": true,
+                                    "showZoomCtrl": true,
+                                    "yaw": 0,
+                                    "pitch": 0,
+                                    "hfov": 90
+                                });
+                                console.log('✅ Pannellum успешно инициализирован');
+                            } catch (error) {
+                                console.error('❌ Ошибка инициализации Pannellum:', error);
+                            }
+                        }, 100);
+                    } else {
+                        console.log('⚠️ URL панорамы отсутствует');
+                    }
+                }
+            } else {
+                console.log('❌ Модальное окно 360° не найдено');
+            }
+        });
+    } else {
+        console.log('⚠️ Кнопка 360° не найдена');
+    }
+    
+    // Закрытие модального окна 360°
+    if (close360Modal) {
+        close360Modal.addEventListener('click', function() {
+            console.log('🎯 Закрываем модальное окно 360°');
+            if (modal360) {
+                modal360.classList.add('hidden');
+            }
+        });
+    }
+    
+    // Закрытие по клику вне модального окна
+    if (modal360) {
+        modal360.addEventListener('click', function(e) {
+            if (e.target === modal360) {
+                console.log('🎯 Закрываем модальное окно 360° (клик вне)');
+                modal360.classList.add('hidden');
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

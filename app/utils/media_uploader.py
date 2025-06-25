@@ -64,7 +64,7 @@ class MediaUploader:
                 file_size = len(file_content)
                 print(f"DEBUG: Файл {i+1}: {file.filename}, размер: {file_size} байт, тип: {file.content_type}")
                 
-                # Используем "images[]" вместо "images" для множественных файлов
+                # Используем "images[]" как в вашем PHP коде
                 files_data.append(
                     ("images[]", (file.filename, file_content, file.content_type))
                 )
@@ -89,14 +89,23 @@ class MediaUploader:
                     result = response.json()
                     print(f"DEBUG: Результат парсинга JSON: {result}")
                     
-                    # Обновляем URL для соответствия структуре сервера
+                    # Обновляем структуру в соответствии с новым форматом ответа PHP
                     updated_files = []
                     for file_info in result.get("files", []):
-                        # Меняем путь с properties/ на uploads/
-                        updated_file_info = file_info.copy()
-                        if 'filename' in updated_file_info:
-                            # URL должен быть: https://wazir.kg/state/uploads/{property_id}/{filename}
-                            updated_file_info['url'] = f"https://wazir.kg/state/uploads/{property_id}/{updated_file_info['filename']}"
+                        # PHP возвращает структуру: {'file_id': '...', 'original_name': '...', 'urls': {...}}
+                        file_id = file_info.get('file_id')
+                        original_name = file_info.get('original_name')
+                        urls = file_info.get('urls', {})
+                        
+                        # Формируем единый объект с нужными данными
+                        updated_file_info = {
+                            'file_id': file_id,
+                            'filename': f"{file_id}.jpg",  # Генерируем имя файла
+                            'original_name': original_name,
+                            'urls': urls,
+                            # Для обратной совместимости добавляем основной URL
+                            'url': urls.get('large') or urls.get('medium') or urls.get('original', '')
+                        }
                         updated_files.append(updated_file_info)
                     
                     return {
@@ -104,7 +113,8 @@ class MediaUploader:
                         "property_id": property_id,
                         "files": updated_files,
                         "count": result.get("count", 0),
-                        "message": result.get("message", "Upload successful")
+                        "message": result.get("message", "Upload successful"),
+                        "debug": result.get("debug", {})
                     }
                 else:
                     return {

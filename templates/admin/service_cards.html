@@ -575,22 +575,22 @@
 <div class="cards-container">
     <div class="cards-card">
         <div class="cards-header">
-            <div class="cards-title">
-                <i class="fas fa-store"></i>
+            <h2 class="cards-title">
                 Карточки заведений: {{ category.title }}
-            </div>
+                <small>({{ service_cards|length }} заведений)</small>
+            </h2>
             <div class="cards-actions">
-                <a href="{{ url_for('admin_services') }}" class="back-button">
-                    <i class="fas fa-arrow-left"></i>
-                    Назад к категориям
-                </a>
-                <div class="search-bar">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="card-search-input" placeholder="Поиск заведений...">
-                </div>
-                <button class="action-button" id="add-card-btn">
-                    <i class="fas fa-plus"></i>
-                    Добавить заведение
+                <button id="add-card-btn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Добавить заведение
+                </button>
+                <button onclick="testMediaServer()" class="btn btn-secondary" style="margin-left: 10px;">
+                    <i class="fas fa-network-wired"></i> Тест медиа-сервера
+                </button>
+                <button onclick="testDirectUpload()" class="btn btn-warning" style="margin-left: 10px;">
+                    <i class="fas fa-upload"></i> Прямой тест загрузки
+                </button>
+                <button onclick="testQuickUpload()" class="btn btn-success" style="margin-left: 10px;">
+                    <i class="fas fa-bolt"></i> Быстрый тест
                 </button>
             </div>
         </div>
@@ -990,23 +990,26 @@ let selected360File = null;
 // Переменные для 360° панорам
 let current360Mode = 'file';
 
-// Поиск карточек
-document.getElementById('card-search-input').addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase();
-    const rows = document.querySelectorAll('.cards-table tbody tr');
-    
-    rows.forEach(row => {
-        const cardName = row.querySelector('.card-name').textContent.toLowerCase();
-        const cardAddress = row.querySelector('.card-address');
-        const cardAddressText = cardAddress ? cardAddress.textContent.toLowerCase() : '';
+// Поиск карточек - проверяем существование элемента
+const searchInput = document.getElementById('card-search-input');
+if (searchInput) {
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const rows = document.querySelectorAll('.cards-table tbody tr');
         
-        if (cardName.includes(searchTerm) || cardAddressText.includes(searchTerm)) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
+        rows.forEach(row => {
+            const cardName = row.querySelector('.card-name').textContent.toLowerCase();
+            const cardAddress = row.querySelector('.card-address');
+            const cardAddressText = cardAddress ? cardAddress.textContent.toLowerCase() : '';
+            
+            if (cardName.includes(searchTerm) || cardAddressText.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
     });
-});
+}
 
 // Инициализация Google Maps для добавления заведения
 function initAddCardMap() {
@@ -1180,11 +1183,6 @@ function closeModal(modalId) {
         document.getElementById('photos-preview').innerHTML = '';
     } else if (modalId === 'tour360Modal') {
         document.getElementById('tour-360-url').value = '';
-        document.getElementById('panorama-360-input').value = '';
-        selected360File = null;
-        document.getElementById('file-360-preview').style.display = 'none';
-        document.getElementById('upload-360-progress').style.display = 'none';
-        document.getElementById('current-360-info').style.display = 'none';
     }
 }
 
@@ -1210,10 +1208,13 @@ function switchTo360Mode(mode) {
     }
 }
 
-// Добавление карточки
-document.getElementById('add-card-btn').addEventListener('click', function() {
-    openModal('addCardModal');
-});
+// Добавление карточки - проверяем существование кнопки
+const addCardButton = document.getElementById('add-card-btn');
+if (addCardButton) {
+    addCardButton.addEventListener('click', function() {
+        openModal('addCardModal');
+    });
+}
 
 function submitAddCard() {
     const title = document.getElementById('addCardTitle').value;
@@ -1467,6 +1468,10 @@ function uploadCardPhotos() {
     const fileInput = document.getElementById('photos-input');
     const files = fileInput.files;
     
+    console.log('DEBUG: Начало загрузки фотографий');
+    console.log('DEBUG: Card ID:', cardId);
+    console.log('DEBUG: Количество файлов:', files.length);
+    
     if (files.length === 0) {
         alert('Выберите файлы для загрузки');
         return;
@@ -1480,25 +1485,59 @@ function uploadCardPhotos() {
     const formData = new FormData();
     for (let i = 0; i < files.length; i++) {
         formData.append('photos', files[i]);
+        console.log(`DEBUG: Добавлен файл ${i+1}: ${files[i].name}, размер: ${files[i].size} байт`);
     }
+    
+    console.log('DEBUG: Отправляем запрос на:', `/api/v1/admin/service-cards/${cardId}/photos`);
     
     fetch(`/api/v1/admin/service-cards/${cardId}/photos`, {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('DEBUG: Получен ответ, статус:', response.status);
+        console.log('DEBUG: Headers:', response.headers);
+        
+        // Проверяем, что ответ корректный
+        if (!response.ok) {
+            console.error('DEBUG: Ошибка HTTP:', response.status, response.statusText);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        // Проверяем тип контента
+        const contentType = response.headers.get("content-type");
+        console.log('DEBUG: Content-Type:', contentType);
+        
+        if (!contentType || !contentType.includes("application/json")) {
+            console.error('DEBUG: Неожиданный Content-Type:', contentType);
+            // Получаем текст ответа для отладки
+            return response.text().then(text => {
+                console.error('DEBUG: Содержимое ответа как текст:', text);
+                throw new Error('Сервер вернул не JSON ответ');
+            });
+        }
+        
+        return response.json();
+    })
     .then(data => {
-        if (data.success) {
+        console.log('DEBUG: Получены данные JSON:', data);
+        
+        if (data && data.success) {
+            console.log('DEBUG: Успешная загрузка:', data.message);
             alert(data.message);
             closeModal('photosModal');
             location.reload();
         } else {
-            alert('Ошибка: ' + data.message);
+            console.error('DEBUG: Ошибка в данных:', data);
+            const errorMsg = data && data.message ? data.message : 'Неизвестная ошибка';
+            alert('Ошибка: ' + errorMsg);
         }
     })
     .catch(error => {
-        console.error('Ошибка:', error);
-        alert('Произошла ошибка при загрузке фотографий');
+        console.error('DEBUG: Произошла ошибка:', error);
+        console.error('DEBUG: Тип ошибки:', typeof error);
+        console.error('DEBUG: Стек ошибки:', error.stack);
+        alert('Произошла ошибка при загрузке фотографий: ' + error.message);
     });
 }
 
@@ -1637,6 +1676,137 @@ function delete360Tour() {
             alert('Произошла ошибка при удалении');
         });
     }
+}
+
+// Тестирование медиа-сервера
+function testMediaServer() {
+    console.log('DEBUG: Тестируем медиа-сервер...');
+    
+    fetch('/api/v1/admin/test-media-server')
+    .then(response => {
+        console.log('DEBUG: Ответ от тест-эндпоинта:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('DEBUG: Результат теста медиа-сервера:', data);
+        
+        if (data.success) {
+            const connection = data.connection ? 'ОК' : 'ОШИБКА';
+            const message = `Медиа-сервер: ${connection}\n\nДетали:\n${JSON.stringify(data.media_server_status, null, 2)}`;
+            alert(message);
+        } else {
+            alert('Ошибка тестирования: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('DEBUG: Ошибка при тестировании:', error);
+        alert('Ошибка при тестировании медиа-сервера: ' + error.message);
+    });
+}
+
+// Прямой тест загрузки файлов
+function testDirectUpload() {
+    console.log('DEBUG: Запускаем прямой тест загрузки...');
+    
+    // Создаем временный input для выбора файлов
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = 'image/*';
+    
+    input.onchange = function(e) {
+        const files = e.target.files;
+        if (files.length === 0) {
+            alert('Выберите файлы для тестирования');
+            return;
+        }
+        
+        console.log(`DEBUG: Выбрано ${files.length} файлов для теста`);
+        
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+            formData.append('photos', files[i]);
+            console.log(`DEBUG: Добавлен файл: ${files[i].name}`);
+        }
+        
+        console.log('DEBUG: Отправляем запрос на прямой тест...');
+        
+        fetch('/api/v1/admin/test-direct-upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            console.log('DEBUG: Получен ответ:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('DEBUG: Результат прямого теста:', data);
+            
+            if (data.success) {
+                alert(`✅ Прямой тест успешен!\n\nОтправлено файлов: ${data.files_sent}\nОтвет сервера: ${JSON.stringify(data.server_response, null, 2)}`);
+            } else {
+                alert(`❌ Ошибка прямого теста:\n${data.error}`);
+            }
+        })
+        .catch(error => {
+            console.error('DEBUG: Ошибка прямого теста:', error);
+            alert('Ошибка при выполнении прямого теста: ' + error.message);
+        });
+    };
+    
+    input.click();
+}
+
+// Быстрый тест загрузки
+function testQuickUpload() {
+    console.log('DEBUG: Запускаем быстрый тест загрузки...');
+    
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = 'image/*';
+    
+    input.onchange = function(e) {
+        const files = e.target.files;
+        if (files.length === 0) {
+            alert('Выберите файлы для быстрого теста');
+            return;
+        }
+        
+        console.log(`DEBUG: Выбрано ${files.length} файлов для быстрого теста`);
+        
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+            formData.append('photos', files[i]);
+            console.log(`DEBUG: Добавлен файл: ${files[i].name}`);
+        }
+        
+        console.log('DEBUG: Отправляем на /api/v1/admin/test-quick-upload');
+        
+        fetch('/api/v1/admin/test-quick-upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            console.log('DEBUG: Статус ответа:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('DEBUG: Результат быстрого теста:', data);
+            
+            if (data.error) {
+                alert(`❌ Ошибка быстрого теста:\n${data.error}`);
+            } else {
+                alert(`⚡ Быстрый тест завершен!\n\nСтатус код: ${data.status_code}\nФайлов отправлено: ${data.files_sent}\n\nОтвет сервера:\n${data.response}`);
+            }
+        })
+        .catch(error => {
+            console.error('DEBUG: Ошибка быстрого теста:', error);
+            alert('Ошибка при выполнении быстрого теста: ' + error.message);
+        });
+    };
+    
+    input.click();
 }
 </script>
 {% endblock %} 

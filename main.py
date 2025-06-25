@@ -8,11 +8,13 @@ import openpyxl
 import pandas as pd
 import random
 import shutil
+import httpx
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
 from io import BytesIO
 from uuid import uuid4
 from pathlib import Path
+import time
 
 from fastapi import FastAPI, Request, Depends, Form, status, HTTPException, Query, WebSocket, WebSocketDisconnect, Response, UploadFile, File, APIRouter
 from fastapi.staticfiles import StaticFiles
@@ -4077,74 +4079,100 @@ async def get_service_card_media_info(
 @app.post("/api/v1/admin/service-cards/{card_id}/photos")
 async def upload_service_card_photos(
     card_id: int,
-    request: Request,
     photos: List[UploadFile] = File(...),
     db: Session = Depends(deps.get_db)
 ):
-    """Загрузка фотографий для заведения"""
-    user = await check_admin_access(request, db)
-    if isinstance(user, RedirectResponse):
-        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
-    
+    """Загрузка фотографий для заведения - точная копия логики недвижимости"""
     try:
-        # Находим карточку заведения
+        print("=== ЗАГРУЗКА ФОТОГРАФИЙ ЗАВЕДЕНИЯ ===")
+        print(f"Card ID: {card_id}, файлов: {len(photos)}")
+        
+        # Проверяем что заведение существует
         service_card = db.query(ServiceCard).filter(ServiceCard.id == card_id).first()
         if not service_card:
             return JSONResponse(status_code=404, content={"success": False, "error": "Заведение не найдено"})
         
-        if len(photos) > 10:
-            return JSONResponse(status_code=400, content={"success": False, "message": "Максимум 10 фотографий"})
-        
-        # Используем медиа-сервер для загрузки
-        from app.utils.media_uploader import media_uploader
-        
-        # Генерируем ID для заведения
-        service_media_id = f"service-{card_id}"
-        
-        # Загружаем изображения на медиа-сервер
-        upload_result = await media_uploader.upload_property_images(photos, service_media_id)
-        
-        if upload_result.get("status") == "success" and upload_result.get("count", 0) > 0:
-            # Удаляем старые изображения из БД
-            db.query(ServiceCardImage).filter(ServiceCardImage.service_card_id == card_id).delete()
-            
-            uploaded_images = []
-            # Создаем записи в БД для каждого загруженного изображения
-            for i, file_info in enumerate(upload_result.get("files", [])):
-                image_url = f"https://wazir.kg/state/uploads/{service_media_id}/{file_info['filename']}"
-                
-                service_image = ServiceCardImage(
-                    service_card_id=card_id,
-                    url=image_url,
-                    is_main=(i == 0)  # Первое изображение - основное
-                )
-                db.add(service_image)
-                uploaded_images.append(image_url)
-                
-                # Если это первое изображение, обновляем основное изображение заведения
-                if i == 0:
-                    service_card.image_url = image_url
-            
-            # Обновляем дату загрузки фотографий
-            service_card.photos_uploaded_at = datetime.now()
-            db.commit()
-            
-            return {
-                "success": True,
-                "message": f"Успешно загружено {upload_result['count']} фотографий на медиа-сервер",
-                "count": upload_result["count"],
-                "images": uploaded_images
-            }
-        else:
-            return JSONResponse(status_code=500, content={
+        # Проверяем фотографии - ТОЧНО КАК В НЕДВИЖИМОСТИ
+        if not photos or len(photos) < 2:
+            return JSONResponse(status_code=400, content={
                 "success": False, 
-                "message": f"Ошибка загрузки на медиа-сервер: {upload_result.get('message', 'Неизвестная ошибка')}"
+                "message": "Необходимо загрузить минимум 2 фотографии"
             })
         
+        # Проверяем типы файлов - ТОЧНО КАК В НЕДВИЖИМОСТИ
+        allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+        for photo in photos:
+            if photo.content_type not in allowed_types:
+                return JSONResponse(status_code=400, content={
+                    "success": False,
+                    "message": f"Неподдерживаемый тип файла: {photo.content_type}"
+                })
+        
+        # Загружаем изображения на медиа-сервер - ТОЧНО КАК В НЕДВИЖИМОСТИ (БЕЗ ВТОРОГО ПАРАМЕТРА!)
+        print("DEBUG: Загрузка изображений на медиа-сервер...")
+        from app.utils.media_uploader import media_uploader
+        upload_result = await media_uploader.upload_property_images(photos)
+        
+        print(f"DEBUG: Результат загрузки: {upload_result}")
+        
+        if upload_result["status"] != "success":
+            return JSONResponse(status_code=400, content={
+                "success": False,
+                "message": f"Ошибка загрузки изображений: {upload_result['message']}"
+            })
+        
+        property_media_id = upload_result["property_id"]
+        images_data = upload_result["files"]
+        
+        print(f"DEBUG: Изображения загружены, media_id: {property_media_id}")
+        
+        # Удаляем старые изображения из БД
+        old_images = db.query(ServiceCardImage).filter(ServiceCardImage.service_card_id == card_id).all()
+        for old_image in old_images:
+            db.delete(old_image)
+        print(f"DEBUG: Удалено {len(old_images)} старых изображений")
+        
+        uploaded_images = []
+        # Создаем записи в БД для каждого загруженного изображения
+        for i, file_info in enumerate(images_data):
+            # Берем medium URL как основной
+            image_url = file_info["urls"]["medium"]
+            
+            print(f"DEBUG: Создаем запись для изображения: {image_url}")
+            
+            service_image = ServiceCardImage(
+                service_card_id=card_id,
+                url=image_url,
+                is_main=(i == 0)  # Первое изображение - основное
+            )
+            db.add(service_image)
+            uploaded_images.append(image_url)
+            
+            # Если это первое изображение, обновляем основное изображение заведения
+            if i == 0:
+                service_card.image_url = image_url
+                print(f"DEBUG: Установлено основное изображение: {image_url}")
+        
+        # Обновляем дату загрузки фотографий
+        from datetime import datetime
+        service_card.photos_uploaded_at = datetime.utcnow()
+        
+        db.commit()
+        print(f"DEBUG: Сохранено {len(uploaded_images)} изображений в БД")
+        print("=== ЗАГРУЗКА ЗАВЕРШЕНА УСПЕШНО ===")
+        
+        return {
+            "success": True,
+            "message": f"Успешно загружено {len(images_data)} фотографий",
+            "count": len(images_data),
+            "images": uploaded_images,
+            "media_id": property_media_id
+        }
+            
     except Exception as e:
         db.rollback()
-        print(f"ERROR: Ошибка при загрузке фотографий заведения: {str(e)}")
-        return JSONResponse(status_code=500, content={"success": False, "message": f"Ошибка сервера: {str(e)}"})
+        print(f"ОШИБКА: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
 
 @app.post("/mobile/test-debug-upload")
 async def test_debug_upload(
@@ -4296,7 +4324,192 @@ async def delete_service_card(
         print(f"ERROR: Ошибка при удалении заведения: {str(e)}")
         return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
 
- 
+# Тестовый эндпоинт для проверки медиа-сервера
+@app.get("/api/v1/admin/test-media-server")
+async def test_media_server(request: Request, db: Session = Depends(deps.get_db)):
+    """Тестирование соединения с медиа-сервером"""
+    try:
+        user = await check_admin_access(request, db)
+        if isinstance(user, RedirectResponse):
+            return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    except Exception as e:
+        return JSONResponse(status_code=403, content={"success": False, "error": "Ошибка проверки доступа"})
+    
+    try:
+        from app.utils.media_uploader import media_uploader
+        ping_result = await media_uploader.ping_server()
+        
+        return {
+            "success": True,
+            "media_server_status": ping_result,
+            "connection": ping_result.get("connected", False)
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "error": f"Ошибка тестирования медиа-сервера: {str(e)}"
+        })
+
+# Простой тестовый эндпоинт для диагностики
+@app.post("/api/v1/admin/test-upload")
+async def test_upload_endpoint(
+    request: Request,
+    photos: List[UploadFile] = File(...),
+    db: Session = Depends(deps.get_db)
+):
+    """Простой тестовый эндпоинт для проверки загрузки файлов"""
+    try:
+        user = await check_admin_access(request, db)
+        if isinstance(user, RedirectResponse):
+            return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    except Exception as e:
+        return JSONResponse(status_code=403, content={"success": False, "error": "Ошибка проверки доступа"})
+    
+    try:
+        result = {
+            "success": True,
+            "message": f"Получено {len(photos)} файлов для тестирования",
+            "files_info": [],
+            "media_server_test": None
+        }
+        
+        # Информация о файлах
+        for i, photo in enumerate(photos):
+            file_info = {
+                "index": i + 1,
+                "filename": photo.filename,
+                "content_type": photo.content_type,
+                "size": photo.size if hasattr(photo, 'size') else "unknown"
+            }
+            result["files_info"].append(file_info)
+        
+        # Тестируем медиа-сервер
+        try:
+            from app.utils.media_uploader import media_uploader
+            ping_result = await media_uploader.ping_server()
+            result["media_server_test"] = ping_result
+        except Exception as e:
+            result["media_server_test"] = {"error": str(e)}
+        
+        return result
+        
+    except Exception as e:
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "error": f"Ошибка тестирования: {str(e)}"
+        })
+
+@app.post("/api/v1/admin/test-direct-upload")
+async def test_direct_upload(
+    request: Request,
+    photos: List[UploadFile] = File(...),
+    db: Session = Depends(deps.get_db)
+):
+    """Прямой тест загрузки на медиа-сервер без лишней логики"""
+    try:
+        user = await check_admin_access(request, db)
+        if isinstance(user, RedirectResponse):
+            return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    except Exception as e:
+        return JSONResponse(status_code=403, content={"success": False, "error": "Ошибка проверки доступа"})
+    
+    try:
+        print(f"DEBUG: Прямой тест загрузки {len(photos)} файлов")
+        
+        # Подготавливаем файлы для отправки
+        files_data = []
+        for i, file in enumerate(photos):
+            file_content = await file.read()
+            file_size = len(file_content)
+            print(f"DEBUG: Файл {i+1}: {file.filename}, размер: {file_size} байт")
+            
+            files_data.append(
+                ("images[]", (file.filename, file_content, file.content_type))
+            )
+            await file.seek(0)
+        
+        test_property_id = f"test-direct-{card_id if 'card_id' in locals() else 'unknown'}"
+        
+        # Прямая отправка на медиа-сервер
+        import httpx
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            print(f"DEBUG: Отправляем на https://wazir.kg/state/upload.php")
+            response = await client.post(
+                "https://wazir.kg/state/upload.php",
+                files=files_data,
+                data={"property_id": test_property_id}
+            )
+            
+            print(f"DEBUG: Статус ответа: {response.status_code}")
+            print(f"DEBUG: Тело ответа: {response.text}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                return {
+                    "success": True,
+                    "message": "Прямая загрузка успешна",
+                    "server_response": result,
+                    "files_sent": len(photos)
+                }
+            else:
+                return JSONResponse(status_code=400, content={
+                    "success": False,
+                    "error": f"Ошибка медиа-сервера: {response.status_code}",
+                    "response": response.text
+                })
+                
+    except Exception as e:
+        print(f"ERROR: Ошибка прямого теста: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "error": f"Ошибка теста: {str(e)}"
+        })
+
+@app.get("/api/v1/admin/test-simple")
+async def test_simple():
+    """Простейший тест для проверки что сервер работает"""
+    import time
+    return {"status": "working", "message": "Сервер работает!", "timestamp": int(time.time())}
+
+@app.post("/api/v1/admin/test-quick-upload")
+async def test_quick_upload(photos: List[UploadFile] = File(...)):
+    """Супер-простой тест загрузки"""
+    try:
+        print(f"=== БЫСТРЫЙ ТЕСТ: {len(photos)} файлов ===")
+        
+        # Подготавливаем файлы для отправки точно как в media_uploader
+        files_data = []
+        for i, file in enumerate(photos):
+            file_content = await file.read()
+            print(f"Файл {i+1}: {file.filename}, размер: {len(file_content)}")
+            files_data.append(("images[]", (file.filename, file_content, file.content_type)))
+            await file.seek(0)
+        
+        # Прямой запрос на медиа-сервер
+        import httpx
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            print("Отправляем на https://wazir.kg/state/upload.php")
+            response = await client.post(
+                "https://wazir.kg/state/upload.php",
+                files=files_data,
+                data={"property_id": "test-quick-123"}
+            )
+            
+            print(f"Статус: {response.status_code}")
+            print(f"Ответ: {response.text}")
+            
+            return {
+                "status_code": response.status_code,
+                "response": response.text,
+                "files_sent": len(photos)
+            }
+            
+    except Exception as e:
+        print(f"ОШИБКА: {str(e)}")
+        return {"error": str(e)}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

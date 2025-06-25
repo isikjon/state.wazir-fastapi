@@ -956,6 +956,7 @@ async def mobile_search(
             "rooms": prop.rooms,
             "area": prop.area,
             "floor": prop.floor,
+            "building_floors": prop.building_floors,  # ДОБАВЛЯЕМ ЭТАЖНОСТЬ ЗДАНИЯ!
             "has_tour": bool(prop.tour_360_url or prop.tour_360_file_id),  # Обновленная логика проверки
             "tour_360_url": prop.tour_360_url,  # Добавляем URL для 360° тура
             # Добавляем поля для загруженных файлов

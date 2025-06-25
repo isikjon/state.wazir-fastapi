@@ -660,7 +660,7 @@
                         <div class="property-card bg-white mb-5 hover:shadow-lg transition-shadow">
                 <div class="relative" style="margin-top: 0; margin-bottom: 0;">
                                 <!-- Слайдер изображений -->
-                                <div class="swiper property-swiper">
+                                <div class="swiper property-swiper" data-property-id="{{ prop.id }}">
                                     <div class="swiper-wrapper">
                                         {% if prop.images %}
                                         {% for image in prop.images %}
@@ -685,12 +685,12 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Индикатор просмотра фото - ВЫНЕСЕН НАД СЛАЙДЕРОМ -->
-                                <div class="absolute bottom-3 right-3 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm font-medium z-10">
+                                <!-- Индикатор просмотра фото - ДИНАМИЧЕСКИЙ -->
+                                <div class="absolute bottom-3 right-3 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm font-medium z-10 photo-indicator" data-property-id="{{ prop.id }}">
                                     {% if prop.images %}
-                                    1/{{ prop.images_count or prop.images|length }}
+                                    <span class="current-slide">1</span>/<span class="total-slides">{{ prop.images_count or prop.images|length }}</span>
                                     {% else %}
-                                    1/1
+                                    <span class="current-slide">1</span>/<span class="total-slides">1</span>
                                     {% endif %}
                                 </div>
                             </div>
@@ -772,9 +772,20 @@
             src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
         <script>
         $(document).ready(function() {
-            // Инициализация слайдера для каждой карточки
-            const propertySwipers = new Swiper('.property-swiper', {
-                loop: true
+            // Инициализация слайдера для каждой карточки с динамическими индикаторами
+            $('.property-swiper').each(function(index, element) {
+                const propertyId = $(element).data('property-id');
+                const swiper = new Swiper(element, {
+                    loop: true,
+                    on: {
+                        slideChange: function() {
+                            // Обновляем индикатор для этого конкретного слайдера
+                            const indicator = $(`.photo-indicator[data-property-id="${propertyId}"]`);
+                            const currentSlide = this.realIndex + 1; // realIndex для loop
+                            indicator.find('.current-slide').text(currentSlide);
+                        }
+                    }
+                });
             });
             
             // Функция для форматирования чисел с пробелами

@@ -658,7 +658,7 @@
                     <!-- Карточка объявления -->
                     <a href="{{ url_for('property', property_id=prop.id) }}" class="block no-underline">
                         <div class="property-card bg-white mb-5 hover:shadow-lg transition-shadow">
-                <div class="relative" style="margin-top: 10px; margin-bottom: 0;">
+                <div class="relative" style="margin-top: 0; margin-bottom: 0;">
                                 <!-- Слайдер изображений -->
                                 <div class="swiper property-swiper">
                                     <div class="swiper-wrapper">
@@ -698,7 +698,7 @@
 
                 <div class="px-4 pb-4 pt-0">
                     <!-- Заголовок объявления -->
-                    <div class="mb-2"> 
+                    <div class="mb-2 mt-2"> 
                         <h2 class="text-lg font-semibold text-gray-900 leading-tight">{{ prop.title or "Продается недвижимость" }}</h2>
                     </div>
                                 <div class="mb-2">

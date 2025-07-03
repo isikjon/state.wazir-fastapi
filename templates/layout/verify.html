@@ -217,7 +217,7 @@
                         
                         // Отправляем код подтверждения повторно
                         $.ajax({
-                            url: '/api/v1/auth/send-code',
+                            url: '/api/v1/sms/send-code',
                             type: 'POST',
                             data: {
                                 contact_type: contact_type,
@@ -266,7 +266,7 @@
                 
                 // Отправляем запрос на проверку кода
                 $.ajax({
-                    url: '/api/v1/auth/verify-code',
+                    url: '/api/v1/sms/verify-code',
                     type: 'POST',
                     data: {
                         code: code,

@@ -59,8 +59,7 @@
                                 placeholder="Введите телефон">
                             <p
                                 class="text-xs text-gray-500 mt-1 font-montserrat"
-                                id="phone-format-hint">Формат: +996 XXX XXX
-                                XXX</p>
+                                id="phone-format-hint">Можно вводить с + или без</p>
                         </div>
 
                         <div id="error-message"
@@ -87,31 +86,18 @@
             src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
         <script>
         $(document).ready(function() {
-            // Маска для телефона (Киргизия)
-            $('#user-id').mask('+996 000 000 000', {
-                onKeyPress: function(cep, e, field, options) {
-                    // Если пользователь пытается изменить префикс +996, восстанавливаем его
-                    if (cep.length < 5) {
-                        $(field).val('+996 ');
-                    }
-                },
-                placeholder: "+996 ___ ___ ___"
-            });
-            
-            // Установка курсора после префикса при фокусе
-            $('#user-id').on('focus', function() {
-                if ($(this).val().length <= 5) {
-                    $(this).val('+996 ');
-                    // Устанавливаем курсор после префикса
-                    setTimeout(function() {
-                        const input = document.getElementById('user-id');
-                        const pos = 5;
-                        if (input.setSelectionRange) {
-                            input.focus();
-                            input.setSelectionRange(pos, pos);
-                        }
-                    }, 10);
+            // Разрешаем ввод плюса и цифр
+            $('#user-id').on('input', function() {
+                // Сохраняем плюс в начале, остальные символы только цифры
+                let value = $(this).val();
+                if (value.startsWith('+')) {
+                    // Если начинается с плюса, оставляем его и только цифры после
+                    value = '+' + value.substring(1).replace(/\D/g, '');
+                } else {
+                    // Если нет плюса в начале, оставляем только цифры
+                    value = value.replace(/\D/g, '');
                 }
+                $(this).val(value);
             });
             
             // Обработка табов
@@ -121,31 +107,11 @@
                 
                 // Изменение плейсхолдера и метки в зависимости от выбранного таба
                 if ($(this).attr('id') === 'tab-phone') {
-                    $('#user-id').attr('placeholder', 'Введите телефон');
+                    $('#user-id').attr('placeholder', 'Введите номер телефона');
                     $('#label-text').text('Введите телефон');
                     $('#user-id').attr('type', 'tel');
-                    $('#user-id').mask('+996 000 000 000', {
-                        onKeyPress: function(cep, e, field, options) {
-                            // Если пользователь пытается изменить префикс +996, восстанавливаем его
-                            if (cep.length < 5) {
-                                $(field).val('+996 ');
-                            }
-                        },
-                        placeholder: "+996 ___ ___ ___"
-                    });
-                    $('#phone-format-hint').show();
-                    
-                    // Установка курсора после префикса
-                    setTimeout(function() {
-                        const input = document.getElementById('user-id');
-                        const pos = 5;
-                        if (input.setSelectionRange) {
-                            input.focus();
-                            input.setSelectionRange(pos, pos);
-                        }
-                    }, 10);
+                    $('#phone-format-hint').text('Можно вводить с + или без').show();
                 } else {
-                    $('#user-id').unmask();
                     $('#user-id').attr('placeholder', 'Введите почту');
                     $('#label-text').text('Введите почту');
                     $('#user-id').attr('type', 'email');
@@ -173,10 +139,10 @@
                         return;
                     }
                 } else {
-                    // Проверка формата телефона для Кыргызстана
+                    // Проверка формата телефона для любой страны
                     const phoneValue = contact.replace(/\D/g, '');
-                    if (phoneValue.length !== 12 || !phoneValue.startsWith('996')) {
-                        $('#error-message').text('Введите корректный номер телефона Кыргызстана').removeClass('hidden');
+                    if (phoneValue.length < 10 || phoneValue.length > 15) {
+                        $('#error-message').text('Введите корректный номер телефона (от 10 до 15 цифр)').removeClass('hidden');
                         return;
                     }
                 }
@@ -213,7 +179,19 @@
                                     contact_type: contact_type,
                                     contact: contact
                                 },
+                                beforeSend: function(xhr) {
+                                    console.log("ОТЛАДКА - Отправка данных:", {
+                                        contact_type: contact_type,
+                                        contact: contact,
+                                        contact_length: contact.length,
+                                        has_plus: contact.startsWith('+'),
+                                        contact_chars: Array.from(contact).map(c => ({ char: c, code: c.charCodeAt(0) }))
+                                    });
+                                    console.log("ОТЛАДКА - Заголовки запроса:", xhr.getAllResponseHeaders());
+                                },
                                 success: function(response) {
+                                    console.log("ОТЛАДКА - Ответ от сервера:", JSON.stringify(response, null, 2));
+                                    
                                     if (response.success) {
                                         // Сохраняем данные в sessionStorage
                                         sessionStorage.setItem('reg_contact_type', contact_type);
@@ -222,13 +200,21 @@
                                         // Перенаправляем на страницу ввода кода
                                         window.location.href = '/mobile/register/verify';
                                     } else {
+                                        console.error("Ошибка отправки кода:", response.error);
                                         $('#error-message').text(response.error || 'Ошибка отправки кода').removeClass('hidden');
                                         $submitBtn.html('Продолжить');
                                         $submitBtn.prop('disabled', false);
                                     }
                                 },
-                                error: function() {
-                                    $('#error-message').text('Произошла ошибка. Пожалуйста, попробуйте позже.').removeClass('hidden');
+                                error: function(jqXHR, textStatus, errorThrown) {
+                                    console.error("Ajax ошибка:", textStatus, errorThrown);
+                                    console.log("Ответ:", jqXHR.responseText);
+                                    try {
+                                        var errorData = JSON.parse(jqXHR.responseText);
+                                        $('#error-message').text(errorData.error || 'Произошла ошибка. Пожалуйста, попробуйте позже.').removeClass('hidden');
+                                    } catch(e) {
+                                        $('#error-message').text('Произошла ошибка. Пожалуйста, попробуйте позже.').removeClass('hidden');
+                                    }
                                     $submitBtn.html('Продолжить');
                                     $submitBtn.prop('disabled', false);
                                 }

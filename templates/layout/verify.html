@@ -109,6 +109,12 @@
                                 Подтвердить
                             </button>
 
+                            <button type="button" id="telegram-auth-btn"
+                                class="btn btn-telegram w-full py-3 rounded-lg font-montserrat bg-blue-500 text-white hover:bg-blue-600">
+                                <i class="fab fa-telegram-plane mr-2"></i>
+                                Авторизоваться через Telegram
+                            </button>
+
                             <a href="{{ url_for('mobile_register') }}"
                                 class="btn btn-secondary w-full py-3 rounded-lg font-montserrat text-center">
                                 Назад
@@ -217,7 +223,7 @@
                         
                         // Отправляем код подтверждения повторно
                         $.ajax({
-                            url: '/api/v1/sms/send-code',
+                            url: '/api/v1/auth/send-code',
                             type: 'POST',
                             data: {
                                 contact_type: contact_type,
@@ -247,6 +253,47 @@
                 }
             }, 1000);
             
+            // Обработка кнопки Telegram авторизации
+            $('#telegram-auth-btn').on('click', function(e) {
+                e.preventDefault();
+                
+                if (contact_type !== 'phone') {
+                    $('#error-message').text('Авторизация через Telegram доступна только для телефонов').removeClass('hidden');
+                    return;
+                }
+                
+                const $btn = $(this);
+                $btn.html('<i class="fas fa-circle-notch fa-spin"></i> Подключение...');
+                $btn.prop('disabled', true);
+                
+                // Инициализируем Telegram авторизацию
+                $.ajax({
+                    url: '/api/v1/telegram/initiate',
+                    type: 'POST',
+                    data: {
+                        phone: contact
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Сохраняем session_id
+                            sessionStorage.setItem('telegram_session_id', response.session_id);
+                            
+                            // Перенаправляем в Telegram
+                            window.location.href = response.telegram_url;
+                        } else {
+                            $('#error-message').text(response.error || 'Ошибка подключения к Telegram').removeClass('hidden');
+                            $btn.html('<i class="fab fa-telegram-plane mr-2"></i> Авторизоваться через Telegram');
+                            $btn.prop('disabled', false);
+                        }
+                    },
+                    error: function() {
+                        $('#error-message').text('Произошла ошибка. Пожалуйста, попробуйте позже.').removeClass('hidden');
+                        $btn.html('<i class="fab fa-telegram-plane mr-2"></i> Авторизоваться через Telegram');
+                        $btn.prop('disabled', false);
+                    }
+                });
+            });
+            
             // Обработка отправки формы
             $('#code-form').on('submit', function(e) {
                 e.preventDefault();
@@ -264,17 +311,32 @@
                 $submitBtn.html('<i class="fas fa-circle-notch fa-spin"></i> Проверка...');
                 $submitBtn.prop('disabled', true);
                 
+                // Проверяем, есть ли session_id для Telegram
+                const telegramSessionId = sessionStorage.getItem('telegram_session_id');
+                let verifyUrl = '/api/v1/auth/verify-code';
+                let requestData = {
+                    code: code,
+                    contact_type: contact_type,
+                    contact: contact
+                };
+                
+                if (telegramSessionId) {
+                    verifyUrl = '/api/v1/telegram/verify-code';
+                    requestData = {
+                        phone: contact,
+                        code: code
+                    };
+                }
+                
                 // Отправляем запрос на проверку кода
                 $.ajax({
-                    url: '/api/v1/sms/verify-code',
+                    url: verifyUrl,
                     type: 'POST',
-                    data: {
-                        code: code,
-                        contact_type: contact_type,
-                        contact: contact
-                    },
+                    data: requestData,
                     success: function(response) {
                         if (response.verified) {
+                            // Очищаем session_id
+                            sessionStorage.removeItem('telegram_session_id');
                             // Перенаправляем на страницу создания профиля
                             window.location.href = "{{ url_for('mobile_profile_create') }}";
                         } else {

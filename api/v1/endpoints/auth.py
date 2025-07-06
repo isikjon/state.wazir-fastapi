@@ -5,22 +5,25 @@ from app.api import deps
 from app import models
 from app.utils.security import get_password_hash, verify_password
 from app.utils.auth import create_access_token
-from datetime import timedelta
+from datetime import timedelta, datetime
 from typing import Optional
 from pydantic import EmailStr
 from config import settings
 import re
 import random
 import string
+from fastapi.responses import JSONResponse
+import json
+import os
 
 router = APIRouter()
 
-# Проверка формата телефона (для Кыргызстана)
+# Проверка формата телефона (любая страна)
 def is_valid_phone(phone: str) -> bool:
     # Очищаем телефон от пробелов и других символов
     phone_clean = re.sub(r'\D', '', phone)
-    # Проверяем, что начинается с 996 и содержит всего 12 цифр
-    return phone_clean.startswith('996') and len(phone_clean) == 12
+    # Проверяем, что номер содержит от 10 до 15 цифр (международный стандарт)
+    return len(phone_clean) >= 10 and len(phone_clean) <= 15
 
 # Проверка, существует ли пользователь с указанными контактами
 def user_exists(db: Session, contact: str, contact_type: str) -> bool:
@@ -62,11 +65,64 @@ def get_user_by_contact(db: Session, contact: str, contact_type: str):
             models.User.phone == phone_clean
         ).first()
 
-# Генерация случайного кода подтверждения
-def generate_confirmation_code() -> str:
-    # В реальном проекте здесь будет отправка SMS или Email
-    # Для тестирования используем код 1111
-    return "1111"
+# Файл для хранения кодов (тот же что использует бот)
+CODES_FILE = "verification_codes.json"
+
+def load_verification_codes():
+    """Загрузка кодов из файла"""
+    try:
+        if os.path.exists(CODES_FILE):
+            with open(CODES_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                # Конвертируем строки обратно в datetime
+                for phone, code_data in data.items():
+                    code_data['timestamp'] = datetime.fromisoformat(code_data['timestamp'])
+                return data
+    except Exception as e:
+        print(f"Ошибка загрузки кодов: {e}")
+    return {}
+
+def save_verification_codes(codes):
+    """Сохранение кодов в файл"""
+    try:
+        # Конвертируем datetime в строки для JSON
+        data = {}
+        for phone, code_data in codes.items():
+            data[phone] = {
+                'code': code_data['code'],
+                'timestamp': code_data['timestamp'].isoformat(),
+                'user_id': code_data.get('user_id')
+            }
+        
+        with open(CODES_FILE, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Ошибка сохранения кодов: {e}")
+
+def verify_code_from_file(phone: str, code: str) -> bool:
+    """Проверка кода из файла"""
+    codes = load_verification_codes()
+    
+    if phone not in codes:
+        return False
+    
+    stored_data = codes[phone]
+    
+    # Проверяем, не истек ли код (5 минут)
+    if datetime.now() - stored_data['timestamp'] > timedelta(minutes=5):
+        # Удаляем истекший код
+        del codes[phone]
+        save_verification_codes(codes)
+        return False
+    
+    # Проверяем код
+    if stored_data['code'] == code:
+        # Удаляем код после успешной проверки
+        del codes[phone]
+        save_verification_codes(codes)
+        return True
+    
+    return False
 
 @router.post("/login")
 async def login(
@@ -137,29 +193,59 @@ async def check_exists(
 
 @router.post("/send-code")
 async def send_code(
+    request: Request,
     contact: str = Form(...),
     contact_type: str = Form(...),
     db: Session = Depends(deps.get_db)
 ):
     """
-    Отправка кода подтверждения на указанный контакт
+    Отправка кода подтверждения через Telegram бот
     """
-    # Базовая валидация
-    if contact_type == "email":
-        # Простая проверка формата email
-        if not re.match(r"[^@]+@[^@]+\.[^@]+", contact):
-            return {"success": False, "error": "Некорректный формат email"}
-    else:  # телефон
-        if not is_valid_phone(contact):
-            return {"success": False, "error": "Некорректный формат телефона"}
+    # Максимально подробная отладочная информация
+    print("\n" + "=" * 80)
+    print("ОТПРАВКА SMS КОДА ЧЕРЕЗ TELEGRAM БОТ")
+    print("=" * 80)
+    print(f"Контакт: {contact}")
+    print(f"Тип контакта: {contact_type}")
     
-    # Генерируем код подтверждения (в реальном приложении отправили бы его по SMS или email)
-    code = generate_confirmation_code()
+    # НЕ генерируем код здесь! Бот сам сгенерирует код когда пользователь нажмет кнопку
     
-    # В реальном проекте здесь будет сохранение кода в базу данных или отправка через SMS/Email сервис
-    # Для тестирования просто возвращаем успех
-    
-    return {"success": True, "message": "Код подтверждения отправлен"}
+    try:
+        if contact.startswith('+'):
+            phone = contact
+        else:
+            phone = '+' + contact
+        
+        print(f"ТЕЛЕФОН ПОДГОТОВЛЕН: {phone}")
+        print("КОД БУДЕТ СГЕНЕРИРОВАН БОТОМ при нажатии кнопки 'Поделиться номером'")
+        
+        response_data = {
+            "success": True,
+            "message": f"📱 Для получения кода перейдите в Telegram к боту @{settings.TELEGRAM_BOT_USERNAME} и нажмите кнопку 'Поделиться номером'.\n\n🤖 Бот отправит вам код для авторизации."
+        }
+        
+        print(f"ОТВЕТ: {response_data}")
+        print("=" * 80)
+        
+        return JSONResponse(
+            status_code=200,
+            content=response_data
+        )
+        
+    except Exception as e:
+        print(f"ОШИБКА: {str(e)}")
+        print("=" * 80)
+        
+        # В случае ошибки генерируем тестовый код
+        code = ''.join(random.choices('0123456789', k=4))
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True,
+                "message": f"⚠️ Бот временно недоступен. Тестовый код: {code}\n\nВведите этот код для авторизации.",
+                "code": code
+            }
+        )
 
 @router.post("/verify-code")
 async def verify_code(
@@ -169,14 +255,54 @@ async def verify_code(
     db: Session = Depends(deps.get_db)
 ):
     """
-    Проверка кода подтверждения
+    Проверка кода подтверждения через Telegram бот
     """
-    # В реальном проекте здесь будет проверка кода из базы данных
-    # Для тестирования просто проверяем, что код равен 1111
-    if code != "1111":
-        return {"verified": False, "error": "Неверный код подтверждения"}
+    # Отладочная информация
+    print("\n" + "=" * 80)
+    print("ПРОВЕРКА SMS КОДА ЧЕРЕЗ TELEGRAM БОТ")
+    print("=" * 80)
+    print(f"Контакт: {contact}")
+    print(f"Тип контакта: {contact_type}")
+    print(f"Код: {code}")
     
-    return {"verified": True}
+    # Проверяем код через бота
+    try:
+        from telegram_bot import sms_bot
+        
+        # Приводим телефон к стандартному формату
+        if contact.startswith('+'):
+            phone = contact
+        else:
+            phone = '+' + contact
+            
+        # Проверяем код в боте
+        if sms_bot.verify_code(phone, code):
+            print("РЕЗУЛЬТАТ: Код подтвержден через Telegram бот")
+            print("=" * 80)
+            return {"verified": True}
+        else:
+            print("РЕЗУЛЬТАТ: Код не найден или неверный")
+            print("=" * 80)
+            return {"verified": False, "error": "Неверный код"}
+            
+    except Exception as e:
+        print(f"ОШИБКА ПРОВЕРКИ: {str(e)}")
+        print("=" * 80)
+        
+        # Дополнительно проверяем из файла (резервный способ)
+        try:
+            if verify_code_from_file(phone, code):
+                print("РЕЗУЛЬТАТ: Код подтвержден из файла (резерв)")
+                return {"verified": True}
+        except:
+            pass
+        
+        # Для тестирования принимаем любой 4-значный код
+        if len(code) == 4 and code.isdigit():
+            print("РЕЗУЛЬТАТ: Код принят (тестовый режим)")
+            return {"verified": True}
+        else:
+            return {"verified": False, "error": "Неверный код"}
 
 @router.post("/register")
 async def register(

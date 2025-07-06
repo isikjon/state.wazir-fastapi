@@ -15,6 +15,7 @@ from io import BytesIO
 from uuid import uuid4
 from pathlib import Path
 import time
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Depends, Form, status, HTTPException, Query, WebSocket, WebSocketDisconnect, Response, UploadFile, File, APIRouter
 from fastapi.staticfiles import StaticFiles
@@ -48,6 +49,14 @@ from app.models.property import PropertyCategory
 from app.models.service import ServiceCategory, ServiceCard, ServiceCardImage
 
 try:
+    from app.services.telegram_bot_service import telegram_bot_service
+    telegram_bot_available = True
+except ImportError as e:
+    print(f"Telegram бот недоступен: {e}")
+    telegram_bot_service = None
+    telegram_bot_available = False
+
+try:
     import psutil
 except ImportError:
     psutil = None
@@ -56,6 +65,46 @@ try:
     from flask import jsonify
 except ImportError:
     pass
+
+# Импортируем простой бот с nest_asyncio
+try:
+    from telegram_bot import sms_bot
+    simple_bot_available = True
+except ImportError:
+    simple_bot_available = False
+    sms_bot = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # ОТКЛЮЧАЕМ сложный бот с системой сессий
+    # if telegram_bot_available and telegram_bot_service:
+    #     print("Запуск Telegram бота...")
+    #     await telegram_bot_service.start_bot()
+    # else:
+    #     print("Telegram бот не запущен (не настроен или недоступен)")
+    
+    # Запускаем простой бот с nest_asyncio
+    if simple_bot_available and sms_bot:
+        try:
+            await sms_bot.start_bot()
+            print("✅ Простой Telegram бот запущен с nest_asyncio")
+        except Exception as e:
+            print(f"❌ Ошибка запуска простого бота: {e}")
+    else:
+        print("❌ Простой Telegram бот недоступен")
+    
+    print("🚀 Приложение запущено")
+    yield
+    
+    # Останавливаем простой бот
+    if simple_bot_available and sms_bot:
+        try:
+            await sms_bot.stop_bot()
+            print("✅ Простой Telegram бот остановлен")
+        except Exception as e:
+            print(f"❌ Ошибка остановки простого бота: {e}")
+    
+    print("🛑 Приложение завершено")
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
@@ -87,6 +136,11 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             '/api/v1/auth/verify-code',
             '/api/v1/auth/register',
             '/api/v1/auth/reset-password',
+            '/api/v1/telegram/initiate',
+            '/api/v1/telegram/verify-phone',
+            '/api/v1/telegram/verify-code',
+            '/api/v1/telegram/status',
+            '/api/v1/telegram/force-reset',
             '/static/',
             '/favicon.ico',
             '/mobile/test-websocket',
@@ -195,7 +249,8 @@ class CustomJSONEncoder(json.JSONEncoder):
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    lifespan=lifespan
 )
 
 # Монтируем статические файлы
@@ -559,8 +614,68 @@ async def mobile_register(request: Request):
     return templates.TemplateResponse("layout/register.html", {"request": request})
 
 @app.get("/mobile/register/verify", response_class=HTMLResponse, name="mobile_register_verify")
-async def mobile_register_verify(request: Request):
-    return templates.TemplateResponse("layout/verify.html", {"request": request})
+async def mobile_register_verify(request: Request, db: Session = Depends(deps.get_db)):
+    """
+    Генерация кода подтверждения сразу при загрузке страницы
+    """
+    # Получаем контактные данные из query параметров или sessionStorage (будет получен на фронте)
+    phone = request.query_params.get('phone')
+    
+    # Генерируем 4-значный код
+    import random
+    code = ''.join(random.choices('0123456789', k=4))
+    
+    # Если телефон передан, сохраняем код в БД
+    if phone:
+        try:
+            # Приводим телефон к стандартному формату
+            if not phone.startswith('+'):
+                phone = '+' + phone
+            
+            # Проверяем, есть ли уже активный код для этого телефона
+            existing_code = None
+            try:
+                from api.v1.endpoints.telegram_auth import load_verification_codes, save_verification_codes
+                codes = load_verification_codes()
+                
+                if phone in codes:
+                    stored_data = codes[phone]
+                    time_diff = datetime.now() - stored_data['timestamp']
+                    if time_diff <= timedelta(minutes=2):
+                        existing_code = stored_data['code']
+                        print(f"🔄 Используем существующий код {existing_code} для {phone}")
+                
+                # Генерируем новый код только если нет активного
+                if not existing_code:
+                    codes[phone] = {
+                        'code': code,
+                        'timestamp': datetime.now(),
+                        'user_id': None
+                    }
+                    save_verification_codes(codes)
+                    print(f"✅ Сгенерирован новый код {code} для {phone}")
+                else:
+                    code = existing_code
+                    
+            except Exception as e:
+                print(f"❌ Ошибка работы с кодами: {e}")
+                # Сохраняем код в память как fallback
+                if not hasattr(mobile_register_verify, '_codes'):
+                    mobile_register_verify._codes = {}
+                mobile_register_verify._codes[phone] = {
+                    'code': code,
+                    'timestamp': datetime.now()
+                }
+                
+        except Exception as e:
+            print(f"❌ Ошибка генерации кода: {e}")
+    
+    # Возвращаем HTML с информацией о сгенерированном коде
+    return templates.TemplateResponse("layout/verify.html", {
+        "request": request,
+        "generated_code": code,
+        "phone": phone
+    })
 
 @app.get("/mobile/register/profile", response_class=HTMLResponse, name="mobile_profile_create")
 async def mobile_profile_create(request: Request):

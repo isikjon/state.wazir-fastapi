@@ -40,13 +40,18 @@ class Settings(BaseSettings):
     
     # Devino SMS Settings
     DEVINO_API_URL: str = "https://phoneverification.devinotele.com"
-    DEVINO_API_KEY: Optional[str] = None  # Вставим позже
-    DEVINO_TIMEOUT: int = 30  # Таймаут запросов в секундах
+    DEVINO_API_KEY: Optional[str] = None
+    DEVINO_TIMEOUT: int = 30
     
     # SMS Debug Settings
-    DEBUG_SMS: bool = True  # Включить логирование SMS кодов для отладки
-    SMS_CODE_EXPIRY_MINUTES: int = 5  # Время жизни SMS кода
-    SMS_RESEND_COOLDOWN_SECONDS: int = 60  # Кулдаун между отправками
+    DEBUG_SMS: bool = True
+    SMS_CODE_EXPIRY_MINUTES: int = 5
+    SMS_RESEND_COOLDOWN_SECONDS: int = 60
+    
+    # Telegram Auth Settings
+    TELEGRAM_BOT_TOKEN: Optional[str] = None
+    TELEGRAM_BOT_USERNAME: Optional[str] = None
+    TELEGRAM_CODE_EXPIRY_MINUTES: int = 5
     
     @validator("BACKEND_CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:

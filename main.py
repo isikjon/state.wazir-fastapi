@@ -83,26 +83,46 @@ async def lifespan(app: FastAPI):
     # else:
     #     print("Telegram бот не запущен (не настроен или недоступен)")
     
-    # Запускаем простой бот с nest_asyncio
-    if simple_bot_available and sms_bot:
-        try:
-            await sms_bot.start_bot()
-            print("✅ Простой Telegram бот запущен с nest_asyncio")
-        except Exception as e:
-            print(f"❌ Ошибка запуска простого бота: {e}")
-    else:
-        print("❌ Простой Telegram бот недоступен")
+    # 🔥 ПРИНУДИТЕЛЬНЫЙ ЗАПУСК ПРОСТОГО БОТА 🔥
+    print("🚀 Принудительный запуск простого Telegram бота...")
+    try:
+        # Проверяем настройки
+        if not settings.TELEGRAM_BOT_TOKEN:
+            print("❌ TELEGRAM_BOT_TOKEN не настроен!")
+        elif not settings.TELEGRAM_BOT_USERNAME:
+            print("❌ TELEGRAM_BOT_USERNAME не настроен!")
+        else:
+            print(f"✅ Настройки найдены: @{settings.TELEGRAM_BOT_USERNAME}")
+            
+            # Импортируем бота принудительно
+            try:
+                from telegram_bot import sms_bot
+                print("✅ telegram_bot импортирован успешно")
+                
+                # Запускаем бота в отдельной задаче
+                await sms_bot.start_bot()
+                print("✅ Простой Telegram бот запущен успешно!")
+                
+            except ImportError as e:
+                print(f"❌ Ошибка импорта telegram_bot: {e}")
+            except Exception as e:
+                print(f"❌ Ошибка запуска бота: {e}")
+                import traceback
+                print(f"❌ Traceback: {traceback.format_exc()}")
+    except Exception as e:
+        print(f"❌ Критическая ошибка при запуске бота: {e}")
     
     print("🚀 Приложение запущено")
     yield
     
     # Останавливаем простой бот
-    if simple_bot_available and sms_bot:
-        try:
-            await sms_bot.stop_bot()
-            print("✅ Простой Telegram бот остановлен")
-        except Exception as e:
-            print(f"❌ Ошибка остановки простого бота: {e}")
+    print("🛑 Остановка простого Telegram бота...")
+    try:
+        from telegram_bot import sms_bot
+        await sms_bot.stop_bot()
+        print("✅ Простой Telegram бот остановлен")
+    except Exception as e:
+        print(f"❌ Ошибка остановки простого бота: {e}")
     
     print("🛑 Приложение завершено")
 

@@ -311,8 +311,7 @@
                 $submitBtn.html('<i class="fas fa-circle-notch fa-spin"></i> Проверка...');
                 $submitBtn.prop('disabled', true);
                 
-                // Проверяем, есть ли session_id для Telegram
-                const telegramSessionId = sessionStorage.getItem('telegram_session_id');
+                // 🔥 ИСПРАВЛЕНО: Для телефонов всегда используем Telegram бот
                 let verifyUrl = '/api/v1/auth/verify-code';
                 let requestData = {
                     code: code,
@@ -320,13 +319,22 @@
                     contact: contact
                 };
                 
-                if (telegramSessionId) {
+                // Если это телефон - используем Telegram эндпоинт
+                if (contact_type === 'phone') {
                     verifyUrl = '/api/v1/telegram/verify-code';
                     requestData = {
                         phone: contact,
                         code: code
                     };
+                    console.log('🔥 Используем Telegram эндпоинт для телефона:', contact);
+                } else {
+                    console.log('📧 Используем обычный эндпоинт для email:', contact);
                 }
+                
+                console.log('📤 Отправляем запрос:', {
+                    url: verifyUrl,
+                    data: requestData
+                });
                 
                 // Отправляем запрос на проверку кода
                 $.ajax({
@@ -334,6 +342,7 @@
                     type: 'POST',
                     data: requestData,
                     success: function(response) {
+                        console.log('✅ Получен ответ:', response);
                         if (response.verified) {
                             // Очищаем session_id
                             sessionStorage.removeItem('telegram_session_id');
@@ -353,6 +362,7 @@
                         }
                     },
                     error: function() {
+                        console.log('❌ Ошибка запроса');
                         $('#error-message').text('Произошла ошибка при проверке кода. Пожалуйста, попробуйте позже.').removeClass('hidden');
                         $submitBtn.html('Подтвердить');
                         $submitBtn.prop('disabled', false);

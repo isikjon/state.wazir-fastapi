@@ -26,3 +26,5 @@ watchfiles
 websockets
 aiofiles
 Pillow
+openpyxl
+pymysql

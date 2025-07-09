@@ -28,3 +28,8 @@ aiofiles
 Pillow
 openpyxl
 pymysql
+pandas
+requests
+python-telegram-bot
+nest-asyncio
+aiohttp

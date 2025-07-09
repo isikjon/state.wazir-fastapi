@@ -8,8 +8,8 @@ from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardR
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from config import settings
 
-# Разрешаем вложенные event loops
-nest_asyncio.apply()
+# УБРАНО: nest_asyncio.apply() - несовместимо с uvloop
+# nest_asyncio.apply()
 
 # Настройка логирования - ТОЛЬКО КРИТИЧЕСКИЕ ОШИБКИ
 logging.basicConfig(

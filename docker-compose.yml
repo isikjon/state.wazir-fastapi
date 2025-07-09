@@ -18,6 +18,7 @@ services:
       - MEDIA_SERVER_URL=https://wazir.kg/media
     volumes:
       - ./media:/app/media
+      - ./static:/app/static
       - ./logs:/app/logs
     restart: unless-stopped
     healthcheck:

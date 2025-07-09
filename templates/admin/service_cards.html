@@ -1808,5 +1808,53 @@ function testQuickUpload() {
     
     input.click();
 }
+
+// Event listener для загрузки 360° файлов
+document.getElementById('panorama-360-input').addEventListener('change', function(e) {
+    const files = e.target.files;
+    const previewDiv = document.getElementById('file-360-preview');
+    const infoDiv = document.getElementById('file-360-info');
+    
+    if (files.length > 0) {
+        const file = files[0];
+        selected360File = file;
+        
+        // Валидация файла
+        const maxSize = 100 * 1024 * 1024; // 100MB
+        if (file.size > maxSize) {
+            alert('Файл слишком большой. Максимальный размер: 100MB');
+            this.value = '';
+            selected360File = null;
+            previewDiv.style.display = 'none';
+            return;
+        }
+        
+        // Проверка типа файла
+        if (!file.type.startsWith('image/')) {
+            alert('Можно загружать только изображения');
+            this.value = '';
+            selected360File = null;
+            previewDiv.style.display = 'none';
+            return;
+        }
+        
+        // Показываем информацию о файле
+        const fileSize = file.size < 1024 * 1024 ? 
+            `${(file.size / 1024).toFixed(1)} KB` : 
+            `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+            
+        infoDiv.innerHTML = `
+            <strong>Файл:</strong> ${file.name}<br>
+            <strong>Размер:</strong> ${fileSize}<br>
+            <strong>Тип:</strong> ${file.type}
+        `;
+        
+        previewDiv.style.display = 'block';
+        console.log('360° файл выбран:', file.name, fileSize);
+    } else {
+        selected360File = null;
+        previewDiv.style.display = 'none';
+    }
+});
 </script>
 {% endblock %} 

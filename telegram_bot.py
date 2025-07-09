@@ -11,12 +11,22 @@ from config import settings
 # Разрешаем вложенные event loops
 nest_asyncio.apply()
 
-# Настройка логирования
+# Настройка логирования - ТОЛЬКО КРИТИЧЕСКИЕ ОШИБКИ
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    level=logging.ERROR  # Изменил с INFO на ERROR
 )
+
+# Отключаем логи от httpx (HTTP запросы)
+logging.getLogger('httpx').setLevel(logging.CRITICAL)
+
+# Отключаем логи от telegram библиотеки  
+logging.getLogger('telegram').setLevel(logging.ERROR)
+logging.getLogger('telegram.ext').setLevel(logging.ERROR)
+
+# Оставляем только наш logger для критических ошибок
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)  # Для нашего бота оставляем INFO для статуса
 
 class SMSBot:
     def __init__(self):
@@ -197,13 +207,14 @@ class SMSBot:
             
     async def start_bot(self):
         """Запуск бота с nest_asyncio"""
+        print("🚀 [BOT] Инициализация Telegram бота...")
+        
         if not settings.TELEGRAM_BOT_TOKEN:
-            logger.error("TELEGRAM_BOT_TOKEN не найден в настройках")
+            print("❌ [BOT] TELEGRAM_BOT_TOKEN не найден в настройках")
             return
             
-        logger.info("Запуск простого Telegram бота...")
-        logger.info(f"🤖 Бот: @{settings.TELEGRAM_BOT_USERNAME}")
-        logger.info(f"🔑 Токен: {settings.TELEGRAM_BOT_TOKEN[:10]}...")
+        print(f"🤖 [BOT] Бот: @{settings.TELEGRAM_BOT_USERNAME}")
+        print(f"🔑 [BOT] Токен: {settings.TELEGRAM_BOT_TOKEN[:10]}...")
         
         try:
             # Создаем приложение
@@ -216,14 +227,16 @@ class SMSBot:
             
             # Запускаем бота в фоновой задаче с nest_asyncio
             self.bot_task = asyncio.create_task(self.application.run_polling(allowed_updates=Update.ALL_TYPES))
-            logger.info("Простой Telegram бот запущен успешно")
+            print("✅ [BOT] Telegram бот запущен успешно!")
             
         except Exception as e:
-            logger.error(f"Ошибка запуска бота: {e}")
+            print(f"❌ [BOT] Критическая ошибка запуска бота: {e}")
+            logger.error(f"Критическая ошибка запуска бота: {e}")
             raise
         
     async def stop_bot(self):
         """Остановка бота"""
+        print("🛑 [BOT] Остановка Telegram бота...")
         try:
             if hasattr(self, 'bot_task') and self.bot_task:
                 self.bot_task.cancel()
@@ -235,9 +248,10 @@ class SMSBot:
             if hasattr(self, 'application') and self.application:
                 await self.application.stop()
                 
-            logger.info("Простой Telegram бот остановлен")
+            print("✅ [BOT] Telegram бот остановлен успешно!")
         except Exception as e:
-            logger.error(f"Ошибка остановки бота: {e}")
+            print(f"❌ [BOT] Критическая ошибка остановки бота: {e}")
+            logger.error(f"Критическая ошибка остановки бота: {e}")
             
     async def main(self):
         """Запуск бота (для отдельного использования)"""

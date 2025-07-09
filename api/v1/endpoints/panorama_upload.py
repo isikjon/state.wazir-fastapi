@@ -148,18 +148,15 @@ async def upload_admin_panorama(
     file: UploadFile = File(...),
     db: Session = Depends(deps.get_db)
 ):
-    """Загрузка 360° панорамы для админки"""
     logger.info(f"🎯 Начинаем загрузку 360° панорамы для свойства {property_id} (админка)")
     logger.debug(f"📂 Информация о файле: {file.filename}, размер: {file.size if hasattr(file, 'size') else 'неизвестно'}")
     
-    # Проверка доступа администратора
     user = await check_admin_access(request, db)
     if isinstance(user, RedirectResponse):
         logger.warning("❌ Доступ запрещен - пользователь не администратор")
         return user
     
     try:
-        # Получение объявления
         logger.debug(f"🔍 Поиск объявления с ID: {property_id}")
         property_obj = db.query(models.Property).filter(models.Property.id == property_id).first()
         
@@ -169,107 +166,72 @@ async def upload_admin_panorama(
         
         logger.info(f"✅ Объявление найдено: {property_obj.title}")
         
-        # Создание временного файла для обработки
-        logger.debug("📁 Создание временного файла...")
-        with tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename).suffix) as temp_file:
-            # Сохранение загруженного файла
-            logger.debug("💾 Сохранение загруженного файла во временную папку...")
-            content = await file.read()
-            temp_file.write(content)
-            temp_file_path = Path(temp_file.name)
-            
-        logger.info(f"✅ Временный файл создан: {temp_file_path}")
-        logger.debug(f"📏 Размер файла: {len(content)} байт ({len(content) / (1024*1024):.2f} MB)")
+        logger.info("🔧 Инициализация процессора панорам...")
+        processor = PanoramaProcessor()
         
-        try:
-            # Инициализация процессора панорам
-            logger.info("🔧 Инициализация процессора панорам...")
-            processor = PanoramaProcessor()
-            
-            # Валидация файла
-            logger.info("🔍 Валидация загруженного файла...")
-            if not processor.validate_file(temp_file_path, len(content)):
-                logger.error("❌ Файл не прошел валидацию")
-                raise HTTPException(status_code=400, detail="Файл не прошел валидацию")
-            
-            logger.info("✅ Файл успешно прошел валидацию")
-            
-            # Удаление существующих файлов панорамы, если они есть
-            if property_obj.tour_360_file_id:
-                logger.info(f"🗑️ Удаление существующих файлов панорамы: {property_obj.tour_360_file_id}")
-                try:
-                    processor.delete_panorama_files(property_obj.tour_360_file_id, property_id)
-                    logger.info("✅ Существующие файлы панорамы удалены")
-                except Exception as e:
-                    logger.warning(f"⚠️ Ошибка удаления существующих файлов: {str(e)}")
-            
-            # Обработка панорамы
-            logger.info("🎨 Начинаем обработку панорамы...")
-            result = processor.process_panorama(temp_file_path, property_id)
-            logger.info("🎉 Панорама успешно обработана!")
-            
-            # Обновление записи в базе данных
-            logger.info("💾 Сохранение данных в базу данных...")
-            property_obj.tour_360_file_id = result['file_id']
-            property_obj.tour_360_original_url = result['original_url']
-            property_obj.tour_360_optimized_url = result['optimized_url']
-            property_obj.tour_360_preview_url = result['preview_url']
-            property_obj.tour_360_thumbnail_url = result['thumbnail_url']
-            property_obj.tour_360_metadata = json.dumps(result['metadata'], ensure_ascii=False)
-            property_obj.tour_360_uploaded_at = result['uploaded_at']
-            
-            # Очищаем URL если был установлен ранее
-            property_obj.tour_360_url = None
-            
-            logger.debug("📄 Данные для сохранения в БД:")
-            logger.debug(f"  file_id: {property_obj.tour_360_file_id}")
-            logger.debug(f"  original_url: {property_obj.tour_360_original_url}")
-            logger.debug(f"  optimized_url: {property_obj.tour_360_optimized_url}")
-            
-            # Коммит изменений в базе данных
-            logger.debug("🔄 Выполнение коммита в базе данных...")
-            db.commit()
-            logger.info("✅ Данные успешно сохранены в базе данных")
-            
-            # Обновление объекта из БД для получения актуальных данных
-            logger.debug("🔄 Обновление объекта из БД...")
-            db.refresh(property_obj)
-            
-            # Проверяем что данные действительно сохранились
-            logger.debug("🔍 Проверка сохраненных данных:")
-            logger.debug(f"  tour_360_file_id: {property_obj.tour_360_file_id}")
-            logger.debug(f"  tour_360_original_url: {property_obj.tour_360_original_url}")
-            logger.debug(f"  tour_360_optimized_url: {property_obj.tour_360_optimized_url}")
-            
-            # Формирование ответа
-            response_data = {
-                "success": True,
-                "message": "360° панорама успешно загружена и обработана",
-                "file_id": result['file_id'],
-                "urls": {
-                    "original": result['original_url'],
-                    "optimized": result['optimized_url'],
-                    "preview": result['preview_url'],
-                    "thumbnail": result['thumbnail_url']
-                },
-                "metadata": result['metadata'],
-                "uploaded_at": result['uploaded_at'].isoformat()
-            }
-            
-            logger.info("🎉 Загрузка 360° панорамы завершена успешно!")
-            logger.debug(f"📋 Ответ клиенту: {json.dumps(response_data, indent=2, ensure_ascii=False, default=str)}")
-            
-            return JSONResponse(content=response_data)
-            
-        finally:
-            # Удаление временного файла
-            logger.debug("🧹 Удаление временного файла...")
+        if property_obj.tour_360_file_id:
+            logger.info(f"🗑️ Удаление существующих файлов панорамы: {property_obj.tour_360_file_id}")
             try:
-                if temp_file_path.exists():
-                    temp_file_path.unlink()
-                    logger.debug("✅ Временный файл удален")
+                await processor.delete_panorama_files(property_obj.tour_360_file_id, property_id)
+                logger.info("✅ Существующие файлы панорамы удалены")
             except Exception as e:
-                logger.warning(f"⚠️ Ошибка удаления временного файла: {str(e)}")
+                logger.warning(f"⚠️ Ошибка удаления существующих файлов: {str(e)}")
+        
+        logger.info("🎨 Начинаем обработку панорамы...")
+        result = await processor.upload_panorama(file, property_id)
+        logger.info("🎉 Панорама успешно обработана!")
+        
+        if not result.get("success"):
+            error_message = result.get("message", "Неизвестная ошибка при загрузке панорамы")
+            logger.error(f"❌ Ошибка загрузки панорамы: {error_message}")
+            raise HTTPException(status_code=500, detail=f"Ошибка загрузки панорамы: {error_message}")
+        
+        logger.info("💾 Сохранение данных в базу данных...")
+        property_obj.tour_360_file_id = result['file_id']
+        property_obj.tour_360_original_url = result['urls']['original']
+        property_obj.tour_360_optimized_url = result['urls']['optimized']
+        property_obj.tour_360_preview_url = result['urls']['preview']
+        property_obj.tour_360_thumbnail_url = result['urls']['thumbnail']
+        property_obj.tour_360_metadata = json.dumps(result['metadata'], ensure_ascii=False)
+        property_obj.tour_360_uploaded_at = datetime.now()
+        
+        property_obj.tour_360_url = None
+        
+        logger.debug("📄 Данные для сохранения в БД:")
+        logger.debug(f"  file_id: {property_obj.tour_360_file_id}")
+        logger.debug(f"  original_url: {property_obj.tour_360_original_url}")
+        logger.debug(f"  optimized_url: {property_obj.tour_360_optimized_url}")
+        
+        logger.debug("🔄 Выполнение коммита в базе данных...")
+        db.commit()
+        logger.info("✅ Данные успешно сохранены в базе данных")
+        
+        logger.debug("🔄 Обновление объекта из БД...")
+        db.refresh(property_obj)
+        
+        logger.debug("🔍 Проверка сохраненных данных:")
+        logger.debug(f"  tour_360_file_id: {property_obj.tour_360_file_id}")
+        logger.debug(f"  tour_360_original_url: {property_obj.tour_360_original_url}")
+        logger.debug(f"  tour_360_optimized_url: {property_obj.tour_360_optimized_url}")
+        
+        response_data = {
+            "success": True,
+            "message": "360° панорама успешно загружена и обработана",
+            "file_id": result['file_id'],
+            "urls": {
+                "original": result['urls']['original'],
+                "optimized": result['urls']['optimized'],
+                "preview": result['urls']['preview'],
+                "thumbnail": result['urls']['thumbnail']
+            },
+            "metadata": result['metadata'],
+            "uploaded_at": datetime.now().isoformat()
+        }
+        
+        logger.info("🎉 Загрузка 360° панорамы завершена успешно!")
+        logger.debug(f"📋 Ответ клиенту: {json.dumps(response_data, indent=2, ensure_ascii=False, default=str)}")
+        
+        return JSONResponse(content=response_data)
         
     except HTTPException:
         raise
@@ -308,7 +270,7 @@ async def delete_admin_panorama(
             logger.info(f"🗑️ Удаление файлов панорамы: {property_obj.tour_360_file_id}")
             processor = PanoramaProcessor()
             try:
-                processor.delete_panorama_files(property_obj.tour_360_file_id, property_id)
+                await processor.delete_panorama_files(property_obj.tour_360_file_id, property_id)
                 logger.info("✅ Файлы панорамы удалены")
             except Exception as e:
                 logger.warning(f"⚠️ Ошибка удаления файлов: {str(e)}")
@@ -394,18 +356,15 @@ async def upload_company_panorama(
     file: UploadFile = File(...),
     db: Session = Depends(deps.get_db)
 ):
-    """Загрузка 360° панорамы для компаний"""
     logger.info(f"🎯 Начинаем загрузку 360° панорамы для свойства {property_id} (компания)")
     logger.debug(f"📂 Информация о файле: {file.filename}, размер: {file.size if hasattr(file, 'size') else 'неизвестно'}")
     
-    # Проверка доступа компании
     company = await check_company_access(request, db)
     if isinstance(company, RedirectResponse):
-        logger.warning("❌ Доступ запрещен - пользователь не является компанией")
+        logger.warning("❌ Доступ запрещен - пользователь не компания")
         return company
     
     try:
-        # Получение объявления
         logger.debug(f"🔍 Поиск объявления с ID: {property_id}")
         property_obj = db.query(models.Property).filter(
             models.Property.id == property_id,
@@ -418,100 +377,62 @@ async def upload_company_panorama(
         
         logger.info(f"✅ Объявление найдено: {property_obj.title}")
         
-        # Создание временного файла для обработки
-        logger.debug("📁 Создание временного файла...")
-        with tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename).suffix) as temp_file:
-            # Сохранение загруженного файла
-            logger.debug("💾 Сохранение загруженного файла во временную папку...")
-            content = await file.read()
-            temp_file.write(content)
-            temp_file_path = Path(temp_file.name)
-            
-        logger.info(f"✅ Временный файл создан: {temp_file_path}")
-        logger.debug(f"📏 Размер файла: {len(content)} байт ({len(content) / (1024*1024):.2f} MB)")
+        logger.info("🔧 Инициализация процессора панорам...")
+        processor = PanoramaProcessor()
         
-        try:
-            # Инициализация процессора панорам
-            logger.info("🔧 Инициализация процессора панорам...")
-            processor = PanoramaProcessor()
-            
-            # Валидация файла
-            logger.info("🔍 Валидация загруженного файла...")
-            if not processor.validate_file(temp_file_path, len(content)):
-                logger.error("❌ Файл не прошел валидацию")
-                raise HTTPException(status_code=400, detail="Файл не прошел валидацию")
-            
-            logger.info("✅ Файл успешно прошел валидацию")
-            
-            # Удаление существующих файлов панорамы, если они есть
-            if property_obj.tour_360_file_id:
-                logger.info(f"🗑️ Удаление существующих файлов панорамы: {property_obj.tour_360_file_id}")
-                try:
-                    processor.delete_panorama_files(property_obj.tour_360_file_id, property_id)
-                    logger.info("✅ Существующие файлы панорамы удалены")
-                except Exception as e:
-                    logger.warning(f"⚠️ Ошибка удаления существующих файлов: {str(e)}")
-            
-            # Обработка панорамы
-            logger.info("🎨 Начинаем обработку панорамы...")
-            result = processor.process_panorama(temp_file_path, property_id)
-            logger.info("🎉 Панорама успешно обработана!")
-            
-            # Обновление записи в базе данных
-            logger.info("💾 Сохранение данных в базу данных...")
-            property_obj.tour_360_file_id = result['file_id']
-            property_obj.tour_360_original_url = result['original_url']
-            property_obj.tour_360_optimized_url = result['optimized_url']
-            property_obj.tour_360_preview_url = result['preview_url']
-            property_obj.tour_360_thumbnail_url = result['thumbnail_url']
-            property_obj.tour_360_metadata = json.dumps(result['metadata'], ensure_ascii=False)
-            property_obj.tour_360_uploaded_at = result['uploaded_at']
-            
-            # Очищаем URL если был установлен ранее
-            property_obj.tour_360_url = None
-            
-            logger.debug("📄 Данные для сохранения в БД:")
-            logger.debug(f"  file_id: {property_obj.tour_360_file_id}")
-            logger.debug(f"  original_url: {property_obj.tour_360_original_url}")
-            logger.debug(f"  optimized_url: {property_obj.tour_360_optimized_url}")
-            
-            # Коммит изменений в базе данных
-            logger.debug("🔄 Выполнение коммита в базе данных...")
-            db.commit()
-            logger.info("✅ Данные успешно сохранены в базе данных")
-            
-            # Обновление объекта из БД
-            db.refresh(property_obj)
-            
-            # Формирование ответа
-            response_data = {
-                "success": True,
-                "message": "360° панорама успешно загружена и обработана",
-                "file_id": result['file_id'],
-                "urls": {
-                    "original": result['original_url'],
-                    "optimized": result['optimized_url'],
-                    "preview": result['preview_url'],
-                    "thumbnail": result['thumbnail_url']
-                },
-                "metadata": result['metadata'],
-                "uploaded_at": result['uploaded_at'].isoformat()
-            }
-            
-            logger.info("🎉 Загрузка 360° панорамы завершена успешно!")
-            logger.debug(f"📋 Ответ клиенту: {json.dumps(response_data, indent=2, ensure_ascii=False, default=str)}")
-            
-            return JSONResponse(content=response_data)
-            
-        finally:
-            # Удаление временного файла
-            logger.debug("🧹 Удаление временного файла...")
+        if property_obj.tour_360_file_id:
+            logger.info(f"🗑️ Удаление существующих файлов панорамы: {property_obj.tour_360_file_id}")
             try:
-                if temp_file_path.exists():
-                    temp_file_path.unlink()
-                    logger.debug("✅ Временный файл удален")
+                await processor.delete_panorama_files(property_obj.tour_360_file_id, property_id)
+                logger.info("✅ Существующие файлы панорамы удалены")
             except Exception as e:
-                logger.warning(f"⚠️ Ошибка удаления временного файла: {str(e)}")
+                logger.warning(f"⚠️ Ошибка удаления существующих файлов: {str(e)}")
+        
+        logger.info("🎨 Начинаем обработку панорамы...")
+        result = await processor.upload_panorama(file, property_id)
+        logger.info("🎉 Панорама успешно обработана!")
+        
+        if not result.get("success"):
+            error_message = result.get("message", "Неизвестная ошибка при загрузке панорамы")
+            logger.error(f"❌ Ошибка загрузки панорамы: {error_message}")
+            raise HTTPException(status_code=500, detail=f"Ошибка загрузки панорамы: {error_message}")
+        
+        logger.info("💾 Сохранение данных в базу данных...")
+        property_obj.tour_360_file_id = result['file_id']
+        property_obj.tour_360_original_url = result['urls']['original']
+        property_obj.tour_360_optimized_url = result['urls']['optimized']
+        property_obj.tour_360_preview_url = result['urls']['preview']
+        property_obj.tour_360_thumbnail_url = result['urls']['thumbnail']
+        property_obj.tour_360_metadata = json.dumps(result['metadata'], ensure_ascii=False)
+        property_obj.tour_360_uploaded_at = datetime.now()
+        
+        property_obj.tour_360_url = None
+        
+        logger.debug("🔄 Выполнение коммита в базе данных...")
+        db.commit()
+        logger.info("✅ Данные успешно сохранены в базе данных")
+        
+        logger.debug("🔄 Обновление объекта из БД...")
+        db.refresh(property_obj)
+        
+        response_data = {
+            "success": True,
+            "message": "360° панорама успешно загружена и обработана",
+            "file_id": result['file_id'],
+            "urls": {
+                "original": result['urls']['original'],
+                "optimized": result['urls']['optimized'],
+                "preview": result['urls']['preview'],
+                "thumbnail": result['urls']['thumbnail']
+            },
+            "metadata": result['metadata'],
+            "uploaded_at": datetime.now().isoformat()
+        }
+        
+        logger.info("🎉 Загрузка 360° панорамы завершена успешно!")
+        logger.debug(f"📋 Ответ клиенту: {json.dumps(response_data, indent=2, ensure_ascii=False, default=str)}")
+        
+        return JSONResponse(content=response_data)
         
     except HTTPException:
         raise
@@ -553,7 +474,7 @@ async def delete_company_panorama(
             logger.info(f"🗑️ Удаление файлов панорамы: {property_obj.tour_360_file_id}")
             processor = PanoramaProcessor()
             try:
-                processor.delete_panorama_files(property_obj.tour_360_file_id, property_id)
+                await processor.delete_panorama_files(property_obj.tour_360_file_id, property_id)
                 logger.info("✅ Файлы панорамы удалены")
             except Exception as e:
                 logger.warning(f"⚠️ Ошибка удаления файлов: {str(e)}")

@@ -1,49 +1,120 @@
-import httpx
 import uuid
+import os
+import shutil
+import io
 from typing import List, Optional, Dict, Any
 from fastapi import UploadFile
-import asyncio
+from pathlib import Path
+from PIL import Image, ImageOps
+from datetime import datetime
+import aiofiles
 
 class MediaUploader:
-    def __init__(self, media_server_url: str = "https://wazir.kg/state"):
-        self.base_url = media_server_url
+    def __init__(self, media_path: str = "media"):
+        self.media_path = Path(media_path)
+        self.media_path.mkdir(exist_ok=True)
         
     def generate_property_id(self) -> str:
-        """Генерирует ID в формате xxxx-xxxx-xxxx-xxxx"""
         hex_chars = f"{uuid.uuid4().hex}"
         return f"{hex_chars[0:4]}-{hex_chars[4:8]}-{hex_chars[8:12]}-{hex_chars[12:16]}"
     
     async def ping_server(self) -> Dict[str, Any]:
-        """Проверка связи с медиа-сервером"""
+        return {
+            "status": "success",
+            "data": {"message": "Local media server ready"},
+            "connected": True
+        }
+    
+    def _resize_image(self, image: Image.Image, size: tuple, quality: int = 85) -> bytes:
+        image = ImageOps.exif_transpose(image)
+        image.thumbnail(size, Image.Resampling.LANCZOS)
+        
+        if image.mode in ('RGBA', 'LA', 'P'):
+            background = Image.new('RGB', image.size, (255, 255, 255))
+            if image.mode == 'P':
+                image = image.convert('RGBA')
+            background.paste(image, mask=image.split()[-1] if image.mode in ('RGBA', 'LA') else None)
+            image = background
+        
+        buffer = io.BytesIO()
+        image.save(buffer, format='JPEG', quality=quality, optimize=True)
+        return buffer.getvalue()
+    
+    async def _save_image_variants(self, image: Image.Image, base_path: Path, file_id: str) -> Dict[str, str]:
+        variants = {
+            'original': (4096, 4096, 95),
+            'large': (1920, 1080, 85),
+            'medium': (800, 600, 80),
+            'small': (400, 300, 75),
+            'thumbnail': (150, 150, 70)
+        }
+        
+        urls = {}
+        for variant, (width, height, quality) in variants.items():
+            variant_data = self._resize_image(image.copy(), (width, height), quality)
+            variant_path = base_path / f"{file_id}_{variant}.jpg"
+            
+            async with aiofiles.open(variant_path, 'wb') as f:
+                await f.write(variant_data)
+            
+            relative_path = base_path.relative_to(self.media_path)
+            relative_path_str = str(relative_path).replace("\\", "/")
+            urls[variant] = f"/media/{relative_path_str}/{file_id}_{variant}.jpg"
+        
+        return urls
+    
+    async def upload_panorama(self, file_input, property_id: str) -> Dict[str, Any]:
         try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.get(f"{self.base_url}/upload.php?ping=1")
-                if response.status_code == 200:
-                    return {
-                        "status": "success",
-                        "data": response.json(),
-                        "connected": True
-                    }
-                else:
-                    return {
-                        "status": "error",
-                        "message": f"Server returned {response.status_code}",
-                        "connected": False
-                    }
+            if hasattr(file_input, 'read'):
+                file_content = await file_input.read()
+                filename = file_input.filename
+            elif isinstance(file_input, dict) and 'content' in file_input:
+                file_content = file_input['content']
+                filename = file_input.get('filename', 'panorama.jpg')
+            else:
+                file_content = file_input
+                filename = "panorama.jpg"
+            
+            file_id = str(uuid.uuid4())
+            
+            panorama_dir = self.media_path / "panoramas" / property_id
+            panorama_dir.mkdir(parents=True, exist_ok=True)
+            
+            image = Image.open(io.BytesIO(file_content))
+            
+            if image.width < 2048 or image.height < 1024:
+                return {
+                    "status": "error",
+                    "message": "Panorama must be at least 2048x1024 pixels"
+                }
+            
+            urls = await self._save_image_variants(image, panorama_dir, file_id)
+            
+            return {
+                "status": "success",
+                "file_id": file_id,
+                "original_url": urls.get("original", ""),
+                "optimized_url": urls.get("large", ""),
+                "preview_url": urls.get("medium", ""),
+                "thumbnail_url": urls.get("thumbnail", ""),
+                "uploaded_at": datetime.now(),
+                "metadata": {
+                    "original_name": filename,
+                    "file_size": len(file_content),
+                    "dimensions": f"{image.width}x{image.height}"
+                }
+            }
+            
         except Exception as e:
             return {
-                "status": "error", 
-                "message": str(e),
-                "connected": False
+                "status": "error",
+                "message": f"Panorama upload error: {str(e)}"
             }
-    
-    async def upload_property_images(
-        self, 
-        files: List[UploadFile], 
-        property_id: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """Загружает изображения для объявления"""
-        
+        finally:
+            if hasattr(file_input, 'seek'):
+                await file_input.seek(0)
+
+    async def upload_property_images(self, files: List[UploadFile], property_id: Optional[str] = None) -> Dict[str, Any]:
         if not property_id:
             property_id = self.generate_property_id()
         
@@ -54,98 +125,56 @@ class MediaUploader:
             }
         
         try:
-            print(f"DEBUG: Подготовка к загрузке {len(files)} файлов для property_id: {property_id}")
+            images_dir = self.media_path / "properties" / property_id
+            images_dir.mkdir(parents=True, exist_ok=True)
             
-            # Подготавливаем файлы для отправки - ИСПРАВЛЕННЫЙ СПОСОБ
-            # Отправляем все файлы с именем "images[]" чтобы PHP правильно их обработал
-            files_data = []
-            for i, file in enumerate(files):
+            uploaded_files = []
+            
+            for file in files:
                 file_content = await file.read()
-                file_size = len(file_content)
-                print(f"DEBUG: Файл {i+1}: {file.filename}, размер: {file_size} байт, тип: {file.content_type}")
+                file_id = str(uuid.uuid4())
                 
-                # Используем "images[]" как в вашем PHP коде
-                files_data.append(
-                    ("images[]", (file.filename, file_content, file.content_type))
-                )
-                # Сбрасываем указатель файла
+                image = Image.open(io.BytesIO(file_content))
+                urls = await self._save_image_variants(image, images_dir, file_id)
+                
+                uploaded_files.append({
+                    'file_id': file_id,
+                    'filename': f"{file_id}.jpg",
+                    'original_name': file.filename,
+                    'urls': urls,
+                    'url': urls.get('large', '')
+                })
+                
                 await file.seek(0)
             
-            print(f"DEBUG: Всего подготовлено {len(files_data)} файлов для отправки с именем 'images[]'")
-            
-            # Отправляем на медиа-сервер
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                print(f"DEBUG: Отправляем POST запрос на {self.base_url}/upload.php")
-                response = await client.post(
-                    f"{self.base_url}/upload.php",
-                    files=files_data,
-                    data={"property_id": property_id}
-                )
-                
-                print(f"DEBUG: Получен ответ со статусом: {response.status_code}")
-                print(f"DEBUG: Тело ответа: {response.text}")
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    print(f"DEBUG: Результат парсинга JSON: {result}")
-                    
-                    # Обновляем структуру в соответствии с новым форматом ответа PHP
-                    updated_files = []
-                    for file_info in result.get("files", []):
-                        # PHP возвращает структуру: {'file_id': '...', 'original_name': '...', 'urls': {...}}
-                        file_id = file_info.get('file_id')
-                        original_name = file_info.get('original_name')
-                        urls = file_info.get('urls', {})
-                        
-                        # Формируем единый объект с нужными данными
-                        updated_file_info = {
-                            'file_id': file_id,
-                            'filename': f"{file_id}.jpg",  # Генерируем имя файла
-                            'original_name': original_name,
-                            'urls': urls,
-                            # Для обратной совместимости добавляем основной URL
-                            'url': urls.get('large') or urls.get('medium') or urls.get('original', '')
-                        }
-                        updated_files.append(updated_file_info)
-                    
-                    return {
-                        "status": "success",
-                        "property_id": property_id,
-                        "files": updated_files,
-                        "count": result.get("count", 0),
-                        "message": result.get("message", "Upload successful"),
-                        "debug": result.get("debug", {})
-                    }
-                else:
-                    return {
-                        "status": "error",
-                        "message": f"Upload failed with status {response.status_code}",
-                        "response": response.text
-                    }
+            return {
+                "status": "success",
+                "property_id": property_id,
+                "files": uploaded_files,
+                "count": len(uploaded_files),
+                "message": "Upload successful"
+            }
                     
         except Exception as e:
-            print(f"ERROR: Ошибка при загрузке изображений: {str(e)}")
             return {
                 "status": "error",
                 "message": f"Upload error: {str(e)}"
             }
     
     async def delete_property_images(self, property_id: str) -> Dict[str, Any]:
-        """Удаляет все изображения объявления"""
         try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.post(
-                    f"{self.base_url}/delete.php",
-                    data={"property_id": property_id}
-                )
-                
-                if response.status_code == 200:
-                    return response.json()
-                else:
-                    return {
-                        "status": "error", 
-                        "message": f"Delete failed with status {response.status_code}"
-                    }
+            property_dir = self.media_path / "properties" / property_id
+            if property_dir.exists():
+                shutil.rmtree(property_dir)
+            
+            panorama_dir = self.media_path / "panoramas" / property_id
+            if panorama_dir.exists():
+                shutil.rmtree(panorama_dir)
+            
+            return {
+                "status": "success",
+                "message": "Images deleted successfully"
+            }
         except Exception as e:
             return {
                 "status": "error",
@@ -153,39 +182,27 @@ class MediaUploader:
             }
     
     async def upload_file(self, file: UploadFile, folder: str = "service_cards") -> Dict[str, Any]:
-        """Загружает один файл (для совместимости со старым кодом)"""
         try:
             file_content = await file.read()
             file_id = str(uuid.uuid4())
             
-            # Определяем расширение файла
+            upload_dir = self.media_path / folder
+            upload_dir.mkdir(parents=True, exist_ok=True)
+            
             file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
             filename = f"{file_id}.{file_extension}"
+            file_path = upload_dir / filename
             
-            # Отправляем файл
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                files_data = [("file", (filename, file_content, file.content_type))]
-                response = await client.post(
-                    f"{self.base_url}/upload_single.php",
-                    files=files_data,
-                    data={"folder": folder}
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    return {
-                        "status": "success",
-                        "file_id": file_id,
-                        "filename": filename,
-                        "url": result.get("url", f"/media/{folder}/{filename}"),
-                        "message": "File uploaded successfully"
-                    }
-                else:
-                    return {
-                        "status": "error",
-                        "message": f"Upload failed with status {response.status_code}",
-                        "response": response.text
-                    }
+            async with aiofiles.open(file_path, 'wb') as f:
+                await f.write(file_content)
+            
+            return {
+                "status": "success",
+                "file_id": file_id,
+                "filename": filename,
+                "url": f"/media/{folder}/{filename}",
+                "message": "File uploaded successfully"
+            }
                     
         except Exception as e:
             return {
@@ -193,5 +210,4 @@ class MediaUploader:
                 "message": f"Upload error: {str(e)}"
             }
 
-# Создаем экземпляр
 media_uploader = MediaUploader() 

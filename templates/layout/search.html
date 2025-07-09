@@ -310,6 +310,9 @@
                 transform: translateY(-2px);
                 box-shadow: 0 6px 12px rgba(0,0,0,0.08);
             }
+            .category-card.active {
+                box-shadow: 7px 7px 7px -4px rgb(251 146 60);
+            }
             .category-card::before {
                 content: '';
                 position: absolute;
@@ -328,6 +331,16 @@
                 font-size: 16px;
                 text-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* Тень для лучшей читаемости */
                 text-decoration: underline;
+            }
+            
+            /* Стили для активных кнопок фильтров */
+            .room-btn.active,
+            .apartment-type-btn.active,
+            .house-type-btn.active {
+                box-shadow: 5px 5px 5px -4px rgba(251, 146, 60, 0.65);
+                background-color: #fff7ed;
+                border-color: #f97316;
+                color: #ea580c;
             }
         </style>
 {% endblock %}
@@ -355,7 +368,7 @@
                         <!-- Аренда -->
                         <a href="/mobile/search?q=&category=Аренда">
                             <div
-                                class="category-card rounded-lg"
+                                class="category-card rounded-lg {% if selected_category == 'Аренда' %}active{% endif %}"
                                 style="background-image: url('https://wazir.kg/static/categories/arenda.png')">
                                 <h3
                                     class="category-title text-white font-medium font-montserrat">Аренда</h3>
@@ -364,7 +377,7 @@
                         <!-- Продажа -->
                         <a href="/mobile/search?q=&category=Продажа">
                             <div
-                                class="category-card rounded-lg"
+                                class="category-card rounded-lg {% if selected_category == 'Продажа' %}active{% endif %}"
                                 style="background-image: url('https://wazir.kg/static/categories/prodaja.png')">
                                 <h3
                                     class="category-title text-white font-medium font-montserrat">Продажа</h3>
@@ -373,7 +386,7 @@
                         <!-- Новостройки -->
                         <a href="/mobile/search?q=&category=Новостройки">
                             <div
-                                class="category-card rounded-lg"
+                                class="category-card rounded-lg {% if selected_category == 'Новостройки' %}active{% endif %}"
                                 style="background-image: url('https://wazir.kg/static/categories/novostroyki.png')">
                                 <h3
                                     class="category-title text-white font-medium font-montserrat">Новостройки</h3>
@@ -382,7 +395,7 @@
                         <!-- Посуточная -->
                         <a href="/mobile/search?q=&category=Посуточная">
                             <div
-                                class="category-card rounded-lg"
+                                class="category-card rounded-lg {% if selected_category == 'Посуточная' %}active{% endif %}"
                                 style="background-image: url('https://wazir.kg/static/categories/posutochnaya.png')">
                                 <h3
                                     class="category-title text-white font-medium font-montserrat">Посуточная</h3>
@@ -391,7 +404,7 @@
                         <!-- Коммерческая -->
                         <a href="/mobile/search?q=&category=Коммерческая">
                             <div
-                                class="category-card rounded-lg"
+                                class="category-card rounded-lg {% if selected_category == 'Коммерческая' %}active{% endif %}"
                                 style="background-image: url('https://wazir.kg/static/categories/kommercheskaya.png')">
                                 <h3
                                     class="category-title text-white font-medium font-montserrat">Коммерческая</h3>
@@ -400,7 +413,7 @@
                         <!-- Ипотека -->
                         <a href="/mobile/search?q=&category=Ипотека">
                             <div
-                                class="category-card rounded-lg"
+                                class="category-card rounded-lg {% if selected_category == 'Ипотека' %}active{% endif %}"
                                 style="background-image: url('https://wazir.kg/static/categories/ipoteka.png')">
                                 <h3
                                     class="category-title text-white font-medium font-montserrat">Ипотека</h3>

@@ -1,13 +1,1 @@
-{
-  "1-9": [
-    {
-      "id": 1,
-      "chat_id": 1,
-      "sender_id": 1,
-      "receiver_id": 9,
-      "content": "ss",
-      "timestamp": "2025-06-11T01:28:26",
-      "is_read": false
-    }
-  ]
-}
+{}

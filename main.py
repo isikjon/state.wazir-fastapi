@@ -18,10 +18,10 @@ import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Depends, Form, status, HTTPException, Query, WebSocket, WebSocketDisconnect, Response, UploadFile, File, APIRouter
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -99,9 +99,12 @@ async def lifespan(app: FastAPI):
                 from telegram_bot import sms_bot
                 print("✅ telegram_bot импортирован успешно")
                 
-                # Запускаем бота в отдельной задаче
-                await sms_bot.start_bot()
-                print("✅ Простой Telegram бот запущен успешно!")
+                # Запускаем бота в отдельной задаче БЕЗ ОЖИДАНИЯ
+                asyncio.create_task(sms_bot.start_bot())
+                print("✅ Задача запуска бота создана")
+                
+                # Даем боту время запуститься
+                await asyncio.sleep(1)
                 
             except ImportError as e:
                 print(f"❌ Ошибка импорта telegram_bot: {e}")
@@ -120,7 +123,6 @@ async def lifespan(app: FastAPI):
     try:
         from telegram_bot import sms_bot
         await sms_bot.stop_bot()
-        print("✅ Простой Telegram бот остановлен")
     except Exception as e:
         print(f"❌ Ошибка остановки простого бота: {e}")
     
@@ -161,7 +163,6 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             '/api/v1/telegram/verify-code',
             '/api/v1/telegram/status',
             '/api/v1/telegram/force-reset',
-            '/static/',
             '/favicon.ico',
             '/mobile/test-websocket',
             '/mobile/ws/',
@@ -273,10 +274,8 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Монтируем статические файлы
-app.mount("/static", StaticFiles(directory="static", html=True, check_dir=True), name="static")
-
-# Используем импортированный chat_manager вместо создания нового экземпляра
+app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/media", StaticFiles(directory="media"), name="media")
 
 app.add_middleware(
     CORSMiddleware,
@@ -300,12 +299,6 @@ async def type_error_handler(request, exc):
             content={"detail": "Error serializing the response"},
         )
     raise exc
-
-# Монтируем директорию media
-app.mount("/media", StaticFiles(directory="media", check_dir=True), name="media")
-
-# Монтируем директорию uploads для панорам
-app.mount("/uploads", StaticFiles(directory="uploads", check_dir=True), name="uploads")
 
 templates = Jinja2Templates(directory="templates")
 
@@ -743,8 +736,10 @@ async def mobile_service_category(request: Request, category_slug: str, db: Sess
     if not category:
         raise HTTPException(status_code=404, detail="Категория не найдена")
     
-    # Получаем все активные карточки заведений в данной категории
-    service_cards = db.query(ServiceCard).filter(
+    # Получаем все активные карточки заведений в данной категории С ИЗОБРАЖЕНИЯМИ
+    service_cards = db.query(ServiceCard).options(
+        joinedload(ServiceCard.images)
+    ).filter(
         ServiceCard.category_id == category.id,
         ServiceCard.is_active == True
     ).all()
@@ -3285,13 +3280,10 @@ async def superadmin_settings(request: Request, db: Session = Depends(deps.get_d
     if isinstance(user, RedirectResponse):
         return user
     
-    return templates.TemplateResponse(
-        "superadmin/settings.html",
-        {
-            "request": request,
-            "current_user": user,
-        }
-    )
+    return templates.TemplateResponse("superadmin/settings.html", {
+        "request": request,
+        "current_user": user
+    })
 
 # API роуты для суперадмина
 from passlib.context import CryptContext
@@ -3727,9 +3719,12 @@ async def admin_service_cards(request: Request, category_id: int, db: Session = 
             'is_active': True
         })()
     
-    # Получаем все карточки в данной категории
+    # Получаем все карточки в данной категории С ИЗОБРАЖЕНИЯМИ
     try:
-        service_cards_raw = db.query(ServiceCard).filter(ServiceCard.category_id == category_id).all()
+        from sqlalchemy.orm import joinedload
+        service_cards_raw = db.query(ServiceCard).options(
+            joinedload(ServiceCard.images)
+        ).filter(ServiceCard.category_id == category_id).all()
     except Exception as e:
         print(f"DEBUG: Ошибка получения карточек: {e}")
         # Если таблицы не созданы, возвращаем пустой список
@@ -3748,9 +3743,10 @@ async def admin_service_cards(request: Request, category_id: int, db: Session = 
             "website": card.website,
             "image_url": card.image_url,
             "is_active": card.is_active,
-            "images": [],  # Пока пустой список изображений
-            "has_360_tour": False,  # Пока False
-            "created_at": card.created_at
+            "images": [{"url": img.url, "is_main": img.is_main} for img in card.images],  # ЗАГРУЖАЕМ РЕАЛЬНЫЕ ИЗОБРАЖЕНИЯ
+            "has_360_tour": card.has_360_tour(),  # ПРОВЕРЯЕМ НАЛИЧИЕ 360° ТУРА
+            "created_at": card.created_at,
+            "photos_count": len(card.images)  # ДОБАВЛЯЕМ КОЛИЧЕСТВО ФОТОГРАФИЙ
         })
     
     return templates.TemplateResponse("admin/service_cards.html", {
@@ -3933,19 +3929,19 @@ async def create_service_card(
             try:
                 from app.utils.media_uploader import media_uploader
                 
-                # Генерируем ID для заведения (аналогично объявлениям)
-                service_media_id = f"service-{service_card.id}"
-                
-                # Загружаем изображения на медиа-сервер
-                upload_result = await media_uploader.upload_property_images(images, service_media_id)
+                # Загружаем изображения на медиа-сервер БЕЗ УКАЗАНИЯ property_id
+                # Медиа-сервер сам сгенерирует ID и вернет готовые URLs
+                upload_result = await media_uploader.upload_property_images(images)
                 
                 if upload_result.get("status") == "success" and upload_result.get("count", 0) > 0:
                     uploaded_count = upload_result["count"]
+                    images_data = upload_result["files"]
                     print(f"DEBUG: Успешно загружено {uploaded_count} изображений на медиа-сервер")
                     
                     # Создаем записи в БД для каждого загруженного изображения
-                    for i, file_info in enumerate(upload_result.get("files", [])):
-                        image_url = f"https://wazir.kg/state/uploads/{service_media_id}/{file_info['filename']}"
+                    for i, file_info in enumerate(images_data):
+                        # Берем medium URL как основной - КАК В ОТДЕЛЬНОЙ ЗАГРУЗКЕ
+                        image_url = file_info["urls"]["medium"]
                         
                         service_image = ServiceCardImage(
                             service_card_id=service_card.id,
@@ -3961,52 +3957,59 @@ async def create_service_card(
                     # Обновляем дату последней загрузки фотографий
                     service_card.photos_uploaded_at = datetime.now()
                     db.commit()
+                    print(f"DEBUG: Сохранено {len(images_data)} изображений в БД")
                 else:
                     print(f"ERROR: Ошибка загрузки на медиа-сервер: {upload_result.get('message', 'Неизвестная ошибка')}")
                     
             except Exception as e:
                 print(f"DEBUG: Ошибка при загрузке изображений на медиа-сервер: {str(e)}")
+                import traceback
+                print(f"DEBUG: Полная ошибка: {traceback.format_exc()}")
         
         # Обрабатываем 360° панораму
         if tour_360_file and tour_360_file.filename:
             try:
                 from app.utils.panorama_processor import PanoramaProcessor
-                import tempfile
-                from pathlib import Path
                 
                 processor = PanoramaProcessor()
                 
-                # Сохраняем временный файл
-                with tempfile.NamedTemporaryFile(delete=False, suffix=Path(tour_360_file.filename).suffix) as temp_file:
-                    content = await tour_360_file.read()
-                    temp_file.write(content)
-                    temp_file_path = Path(temp_file.name)
-                
-                try:
-                    # Валидация файла
-                    if processor.validate_file(temp_file_path, len(content)):
-                        # Обработка панорамы (используем service_card.id как property_id)
-                        result = processor.process_panorama(temp_file_path, service_card.id)
-                        
-                        # Обновление записи в базе данных
-                        service_card.tour_360_file_id = result['file_id']
-                        service_card.tour_360_original_url = result['original_url']
-                        service_card.tour_360_optimized_url = result['optimized_url']
-                        service_card.tour_360_preview_url = result['preview_url']
-                        service_card.tour_360_thumbnail_url = result['thumbnail_url']
-                        service_card.tour_360_metadata = json.dumps(result['metadata'], ensure_ascii=False)
-                        service_card.tour_360_uploaded_at = result['uploaded_at']
-                        
-                        db.commit()
-                        
-                finally:
-                    # Удаление временного файла
+                # Удаление существующих файлов панорамы, если они есть
+                if service_card.tour_360_file_id:
                     try:
-                        if temp_file_path.exists():
-                            temp_file_path.unlink()
+                        await processor.delete_panorama_files(service_card.tour_360_file_id, str(service_card.id))
                     except Exception as e:
-                        print(f"Ошибка удаления временного файла: {str(e)}")
-                        
+                        print(f"Ошибка удаления существующих файлов: {str(e)}")
+                
+                # Обработка панорамы (используем card_id как property_id)
+                result = await processor.upload_panorama(tour_360_file, service_card.id)
+                
+                if not result.get('success'):
+                    return JSONResponse(status_code=500, content={"success": False, "error": "Ошибка при загрузке панорамы"})
+                
+                service_card.tour_360_file_id = result.get('file_id')
+                service_card.tour_360_original_url = result['urls'].get('original')
+                service_card.tour_360_optimized_url = result['urls'].get('optimized')
+                service_card.tour_360_preview_url = result['urls'].get('preview')
+                service_card.tour_360_thumbnail_url = result['urls'].get('thumbnail')
+                service_card.tour_360_metadata = json.dumps(result.get('metadata', {}), ensure_ascii=False)
+                service_card.tour_360_uploaded_at = datetime.now()
+                
+                service_card.tour_360_url = None
+                
+                db.commit()
+                db.refresh(service_card)
+                
+                response_data = {
+                    "success": True,
+                    "message": "360° панорама успешно загружена и обработана",
+                    "file_id": result.get('file_id'),
+                    "urls": result['urls'],
+                    "metadata": result.get('metadata', {}),
+                    "uploaded_at": datetime.now().isoformat()
+                }
+                
+                return JSONResponse(content=response_data)
+                
             except Exception as e:
                 print(f"DEBUG: Ошибка при загрузке 360° панорамы: {str(e)}")
         
@@ -4037,88 +4040,46 @@ async def upload_service_card_360_file(
     file: UploadFile = File(...),
     db: Session = Depends(deps.get_db)
 ):
-    """Загрузка 360° панорамы для заведения (файл)"""
     user = await check_admin_access(request, db)
     if isinstance(user, RedirectResponse):
         return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
     
     try:
-        # Находим карточку заведения
         service_card = db.query(ServiceCard).filter(ServiceCard.id == card_id).first()
         if not service_card:
             return JSONResponse(status_code=404, content={"success": False, "error": "Заведение не найдено"})
         
-        # Проверяем тип файла
         if not file.content_type or not file.content_type.startswith('image/'):
             return JSONResponse(status_code=400, content={"success": False, "error": "Файл должен быть изображением"})
         
-        # Инициализируем процессор панорам
-        from app.utils.panorama_processor import PanoramaProcessor
-        import tempfile
-        from pathlib import Path
+        from app.utils.panorama_processor import panorama_processor
         
-        processor = PanoramaProcessor()
+        result = await panorama_processor.upload_panorama(file, card_id)
         
-        # Сохраняем временный файл
-        with tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename).suffix) as temp_file:
-            content = await file.read()
-            temp_file.write(content)
-            temp_file_path = Path(temp_file.name)
+        if not result.get("success"):
+            error_message = result.get("message", "Ошибка при загрузке панорамы")
+            return JSONResponse(status_code=500, content={"success": False, "error": error_message})
         
-        try:
-            # Валидация файла
-            if not processor.validate_file(temp_file_path, len(content)):
-                return JSONResponse(status_code=400, content={"success": False, "error": "Файл не прошел валидацию"})
-            
-            # Удаление существующих файлов панорамы, если они есть
-            if service_card.tour_360_file_id:
-                try:
-                    processor.delete_panorama_files(service_card.tour_360_file_id, card_id)
-                except Exception as e:
-                    print(f"Ошибка удаления существующих файлов: {str(e)}")
-            
-            # Обработка панорамы (используем card_id как property_id)
-            result = processor.process_panorama(temp_file_path, card_id)
-            
-            # Обновление записи в базе данных
-            service_card.tour_360_file_id = result['file_id']
-            service_card.tour_360_original_url = result['original_url']
-            service_card.tour_360_optimized_url = result['optimized_url']
-            service_card.tour_360_preview_url = result['preview_url']
-            service_card.tour_360_thumbnail_url = result['thumbnail_url']
-            service_card.tour_360_metadata = json.dumps(result['metadata'], ensure_ascii=False)
-            service_card.tour_360_uploaded_at = result['uploaded_at']
-            
-            # Очищаем URL если был установлен ранее
-            service_card.tour_360_url = None
-            
-            db.commit()
-            db.refresh(service_card)
-            
-            # Формирование ответа
-            response_data = {
-                "success": True,
-                "message": "360° панорама успешно загружена и обработана",
-                "file_id": result['file_id'],
-                "urls": {
-                    "original": result['original_url'],
-                    "optimized": result['optimized_url'],
-                    "preview": result['preview_url'],
-                    "thumbnail": result['thumbnail_url']
-                },
-                "metadata": result['metadata'],
-                "uploaded_at": result['uploaded_at'].isoformat()
-            }
-            
-            return JSONResponse(content=response_data)
-            
-        finally:
-            # Удаление временного файла
-            try:
-                if temp_file_path.exists():
-                    temp_file_path.unlink()
-            except Exception as e:
-                print(f"Ошибка удаления временного файла: {str(e)}")
+        service_card.tour_360_file_id = result['file_id']
+        service_card.tour_360_original_url = result['urls']['original']
+        service_card.tour_360_optimized_url = result['urls']['optimized']
+        service_card.tour_360_preview_url = result['urls']['preview']
+        service_card.tour_360_thumbnail_url = result['urls']['thumbnail']
+        service_card.tour_360_metadata = json.dumps(result['metadata'], ensure_ascii=False)
+        service_card.tour_360_uploaded_at = datetime.now()
+        service_card.tour_360_url = None
+        
+        db.commit()
+        db.refresh(service_card)
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": "360° панорама успешно загружена и обработана",
+            "file_id": result['file_id'],
+            "urls": result['urls'],
+            "metadata": result['metadata'],
+            "uploaded_at": datetime.now().isoformat()
+        })
         
     except Exception as e:
         db.rollback()
@@ -4645,6 +4606,157 @@ async def test_quick_upload(photos: List[UploadFile] = File(...)):
     except Exception as e:
         print(f"ОШИБКА: {str(e)}")
         return {"error": str(e)}
+
+# ============================ Company Routes ============================
+
+async def check_company_access(request: Request, db: Session):
+    """Проверка доступа компании"""
+    auth_token = request.cookies.get('access_token')
+    if not auth_token:
+        return RedirectResponse('/companies/login', status_code=303)
+    
+    try:
+        from jose import jwt
+        payload = jwt.decode(auth_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        
+        if not payload.get("is_company"):
+            return RedirectResponse('/companies/login', status_code=303)
+        
+        user = db.query(models.User).filter(models.User.id == payload["sub"]).first()
+        if not user or user.role != models.UserRole.COMPANY:
+            return RedirectResponse('/companies/login', status_code=303)
+        
+        return user
+        
+    except Exception as e:
+        print(f"DEBUG: Company auth error: {str(e)}")
+        return RedirectResponse('/companies/login', status_code=303)
+
+@app.get("/companies/login")
+async def company_login_get(request: Request):
+    return templates.TemplateResponse("companies/login.html", {"request": request})
+
+@app.post("/companies/login")
+async def company_login_post(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(deps.get_db)
+):
+    company = db.query(models.User).filter(
+        models.User.email == email,
+        models.User.role == models.UserRole.COMPANY
+    ).first()
+    
+    if not company or not verify_password(password, company.hashed_password):
+        return templates.TemplateResponse(
+            "companies/login.html",
+            {"request": request, "error": "Неверный email или пароль"}
+        )
+    
+    access_token = create_access_token(
+        data={"sub": str(company.id), "is_company": True}
+    )
+    
+    response = RedirectResponse(url="/companies/dashboard", status_code=303)
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=False,
+        max_age=3600 * 24,
+        samesite="lax",
+        path="/"
+    )
+    
+    return response
+
+@app.get("/companies/logout")
+async def company_logout():
+    response = RedirectResponse(url="/companies/login", status_code=303)
+    response.delete_cookie("access_token")
+    return response
+
+@app.get("/companies", response_class=HTMLResponse)
+@app.get("/companies/dashboard", response_class=HTMLResponse)
+async def company_dashboard(request: Request, db: Session = Depends(deps.get_db)):
+    user = await check_company_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    # Получаем статистику компании
+    company_properties = db.query(models.Property).filter(
+        models.Property.user_id == user.id
+    ).all()
+    
+    stats = {
+        "total_listings": len(company_properties),
+        "active_listings": len([p for p in company_properties if p.status == models.PropertyStatus.ACTIVE]),
+        "draft_listings": len([p for p in company_properties if p.status == models.PropertyStatus.DRAFT]),
+        "views_this_month": sum([p.views_count for p in company_properties]) if hasattr(models.Property, 'views_count') else 0
+    }
+    
+    return templates.TemplateResponse("companies/dashboard.html", {
+        "request": request,
+        "current_user": user,
+        "stats": stats,
+        "recent_properties": company_properties[:5]
+    })
+
+@app.get("/companies/listings", response_class=HTMLResponse)
+async def company_listings(request: Request, db: Session = Depends(deps.get_db)):
+    user = await check_company_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    # Получаем объявления компании
+    properties = db.query(models.Property).filter(
+        models.Property.user_id == user.id
+    ).order_by(models.Property.created_at.desc()).all()
+    
+    return templates.TemplateResponse("companies/listings.html", {
+        "request": request,
+        "current_user": user,
+        "properties": properties
+    })
+
+@app.get("/companies/create-listing", response_class=HTMLResponse)
+async def company_create_listing(request: Request, db: Session = Depends(deps.get_db)):
+    user = await check_company_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    # Получаем категории недвижимости
+    categories = db.query(models.PropertyCategory).filter(
+        models.PropertyCategory.is_active == True
+    ).all() if hasattr(models, 'PropertyCategory') else []
+    
+    return templates.TemplateResponse("companies/create_listing.html", {
+        "request": request,
+        "current_user": user,
+        "categories": categories
+    })
+
+@app.get("/companies/analytics", response_class=HTMLResponse)
+async def company_analytics(request: Request, db: Session = Depends(deps.get_db)):
+    user = await check_company_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    return templates.TemplateResponse("companies/analytics.html", {
+        "request": request,
+        "current_user": user
+    })
+
+@app.get("/companies/profile", response_class=HTMLResponse)
+async def company_profile(request: Request, db: Session = Depends(deps.get_db)):
+    user = await check_company_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    return templates.TemplateResponse("companies/profile.html", {
+        "request": request,
+        "current_user": user
+    })
 
 if __name__ == "__main__":
     import uvicorn

@@ -59,6 +59,43 @@
         font-size: 17px !important;
         text-decoration: none !important;
       }
+      
+      /* Стили для нижней навигации */
+      .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+      }
+      
+      .nav-icon-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .nav-indicator {
+        width: 6px;
+        height: 6px;
+        background-color: #f97316; /* Оранжевый цвет */
+        border-radius: 50%;
+        margin-top: 4px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      
+      .nav-item.active .nav-indicator {
+        opacity: 1;
+      }
+      
+      .nav-item.active .nav-icons {
+        color: #f97316; /* Оранжевый цвет для активной иконки */
+      }
+      
+      .nav-item.active img.nav-icons {
+        filter: brightness(0) saturate(100%) invert(49%) sepia(96%) saturate(2068%) hue-rotate(14deg) brightness(95%) contrast(97%);
+      }
     </style>
     {% block head %}{% endblock %}
   </head>
@@ -161,83 +198,100 @@
         <div class="flex justify-around items-center py-4">
           <a
             href="{{ url_for('dashboard') }}"
-            class="nav-item {% if request.endpoint == 'dashboard' %}active{% else %}text-gray-500{% endif %}"
+            class="nav-item {% if request.url.path == '/mobile' or request.url.path == '/mobile/' %}active{% else %}text-gray-500{% endif %}"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.75"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="nav-icons"
-            >
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-              <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
+            <div class="nav-icon-container">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="nav-icons"
+              >
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+            </div>
+            <div class="nav-indicator"></div>
           </a>
           <a
             href="{{ url_for('search') }}"
-            class="nav-item {% if request.endpoint == 'search' %}active{% else %}text-gray-500{% endif %}"
+            class="nav-item {% if request.url.path == '/mobile/search' %}active{% else %}text-gray-500{% endif %}"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.75"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="nav-icons"
-            >
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
+            <div class="nav-icon-container">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="nav-icons"
+              >
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
+            <div class="nav-indicator"></div>
           </a>
           <a
             href="{{ url_for('services') }}"
-            class="nav-item {% if request.endpoint == 'services' %}active{% else %}text-gray-500{% endif %}"
+            class="nav-item {% if request.url.path == '/mobile/services' or request.url.path.startswith('/mobile/services/') %}active{% else %}text-gray-500{% endif %}"
           >
-            <img
-              src="https://wazir.kg/static/360.png"
-              alt="360"
-              style="width: 30px; height: 24px"
-            />
+            <div class="nav-icon-container">
+              <img
+                src="https://wazir.kg/static/360.png"
+                alt="360"
+                style="width: 30px; height: 24px"
+                class="nav-icons"
+              />
+            </div>
+            <div class="nav-indicator"></div>
           </a>
           <a
             href="{{ url_for('support') }}"
-            class="nav-item {% if request.endpoint == 'support' %}active{% else %}text-gray-500{% endif %}"
+            class="nav-item {% if request.url.path == '/mobile/support' %}active{% else %}text-gray-500{% endif %}"
           >
-            <img
-              src="https://wazir.kg/static/support.png"
-              alt="support"
-              style="width: 24px; height: 24px"
-            />
+            <div class="nav-icon-container">
+              <img
+                src="https://wazir.kg/static/support.png"
+                alt="support"
+                style="width: 24px; height: 24px"
+                class="nav-icons"
+              />
+            </div>
+            <div class="nav-indicator"></div>
           </a>
           <a
             href="{{ url_for('profile') }}"
-            class="nav-item {% if request.endpoint == 'profile' %}active{% else %}text-gray-500{% endif %}"
+            class="nav-item {% if request.url.path == '/mobile/profile' %}active{% else %}text-gray-500{% endif %}"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.75"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="nav-icons"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
+            <div class="nav-icon-container">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="nav-icons"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <div class="nav-indicator"></div>
           </a>
         </div>
       </nav>

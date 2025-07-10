@@ -15,9 +15,6 @@ import string
 from fastapi.responses import JSONResponse
 import json
 import os
-from app.services.telegram_service import TelegramService
-from app.services.user_service import UserService
-from app.services.sms_service import SMSService
 from app.services.devino_sms_service import devino_sms_service
 from app.models.user import User
 

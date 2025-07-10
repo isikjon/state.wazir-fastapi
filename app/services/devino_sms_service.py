@@ -5,278 +5,394 @@ from datetime import datetime, timedelta
 from typing import Dict, Optional, Any
 from config import settings
 import random
+import sys
 
-# Настройка детального логирования
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('sms_debug.log', encoding='utf-8')
-    ]
-)
+class ColoredFormatter(logging.Formatter):
+    
+    COLORS = {
+        'DEBUG': '\033[36m',    # Cyan
+        'INFO': '\033[32m',     # Green  
+        'WARNING': '\033[33m',  # Yellow
+        'ERROR': '\033[31m',    # Red
+        'CRITICAL': '\033[35m', # Magenta
+    }
+    RESET = '\033[0m'
+    
+    def format(self, record):
+        log_color = self.COLORS.get(record.levelname, self.RESET)
+        record.levelname = f"{log_color}{record.levelname}{self.RESET}"
+        return super().format(record)
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("devino_sms")
+logger.setLevel(logging.DEBUG)
+
+if not logger.handlers:
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.DEBUG)
+    console_formatter = ColoredFormatter(
+        '%(asctime)s | %(levelname)s | %(name)s | %(message)s',
+        datefmt='%H:%M:%S'
+    )
+    console_handler.setFormatter(console_formatter)
+    
+    file_handler = logging.FileHandler('devino_sms.log', encoding='utf-8')
+    file_handler.setLevel(logging.DEBUG)
+    file_formatter = logging.Formatter(
+        '%(asctime)s | %(levelname)s | %(name)s | %(message)s'
+    )
+    file_handler.setFormatter(file_formatter)
+    
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
 
 
 class DevinoSMSResponse:
-    """Модель ответа от Devino API"""
-    def __init__(self, code: str, description: str, success: bool = False):
+    
+    def __init__(self, code: str, description: str, success: bool = False, data: Optional[Dict] = None):
         self.code = code
         self.description = description
         self.success = success
+        self.data = data or {}
         
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'DevinoSMSResponse':
-        logger.debug(f"🔍 Parsing Devino response: {data}")
+        logger.debug(f"🔍 Parsing response: {json.dumps(data, ensure_ascii=False)}")
         
         code = str(data.get("Code", ""))
         description = data.get("Description", "Unknown error")
         success = code == "0"
         
-        logger.debug(f"🔍 Parsed - Code: {code}, Success: {success}, Description: {description}")
+        logger.info(f"📊 Result → Code: {code} | Success: {success} | Description: {description}")
         
-        return cls(code=code, description=description, success=success)
+        return cls(code=code, description=description, success=success, data=data)
 
 
 class DevinoSMSService:
-    """Сервис для работы с Devino 2FA API"""
     
     def __init__(self):
-        self.api_url = settings.DEVINO_API_URL
+        logger.info("🚀 Initializing Devino SMS Service")
+        
+        self.api_url = settings.DEVINO_API_URL or "https://phoneverification.devinotele.com"
         self.api_key = settings.DEVINO_API_KEY
-        self.timeout = settings.DEVINO_TIMEOUT
+        self.timeout = settings.DEVINO_TIMEOUT or 30
         self.debug_mode = settings.DEBUG_SMS
         
-        # Максимально подробное логирование при инициализации
-        logger.info("🚀 Инициализация DevinoSMSService")
+        self._log_config()
+        self._validate_config()
+    
+    def _log_config(self):
+        logger.info("⚙️  Configuration:")
         logger.info(f"   📍 API URL: {self.api_url}")
-        logger.info(f"   🔑 API Key установлен: {bool(self.api_key)}")
+        logger.info(f"   🔑 API Key: {'✅ Set' if self.api_key else '❌ Missing'}")
         if self.api_key:
-            logger.info(f"   🔑 API Key (первые 10 символов): {self.api_key[:10]}...")
-        logger.info(f"   ⏱️ Timeout: {self.timeout}s")
-        logger.info(f"   🐛 Debug режим: {self.debug_mode}")
+            logger.info(f"   🔑 API Key Preview: {self.api_key[:8]}...{self.api_key[-4:]}")
+        logger.info(f"   ⏱️  Timeout: {self.timeout}s")
+        logger.info(f"   🐛 Debug Mode: {self.debug_mode}")
+    
+    def _validate_config(self):
+        logger.info("🔍 Validating configuration...")
+        
+        if not self.api_url:
+            logger.error("❌ DEVINO_API_URL is missing!")
+            raise ValueError("DEVINO_API_URL is required")
+            
+        if not self.api_key and not self.debug_mode:
+            logger.warning("⚠️  DEVINO_API_KEY is missing - running in DEBUG mode")
+            
+        if self.api_key and len(self.api_key) < 10:
+            logger.warning("⚠️  API Key seems too short")
+            
+        logger.info("✅ Configuration validation complete")
     
     def _get_headers(self) -> Dict[str, str]:
-        """Получить заголовки для запроса"""
-        logger.debug("🔧 Формирование заголовков запроса")
+        logger.debug("🔧 Building request headers")
         
         headers = {
             "Content-Type": "application/json",
-            "Accept": "application/json"
+            "Accept": "application/json",
+            "User-Agent": "Wazir-FastAPI/1.0"
         }
         
         if self.api_key:
             headers["X-ApiKey"] = self.api_key
-            logger.debug(f"✅ X-ApiKey добавлен в заголовки")
+            logger.debug("✅ X-ApiKey header added")
         else:
-            logger.error("❌ DEVINO_API_KEY не установлен!")
+            logger.warning("⚠️  No API key - headers without auth")
             
-        logger.debug(f"🔧 Заголовки сформированы: {list(headers.keys())}")
+        logger.debug(f"📋 Headers ready: {list(headers.keys())}")
         return headers
     
-    def _log_debug(self, message: str, data: Any = None):
-        """Расширенное логирование для отладки"""
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        
-        if data:
-            logger.info(f"📋 {message}")
-            logger.info(f"   📊 Data: {json.dumps(data, ensure_ascii=False, indent=2) if isinstance(data, (dict, list)) else data}")
-        else:
-            logger.info(f"📋 {message}")
-        
-        # Дополнительно записываем в файл
-        try:
-            with open("sms_debug.log", "a", encoding="utf-8") as f:
-                log_line = f"[{timestamp}] {message}"
-                if data:
-                    log_line += f" | Data: {data}"
-                f.write(log_line + "\n")
-        except Exception as e:
-            logger.error(f"❌ Ошибка записи в лог файл: {e}")
-    
     def _normalize_phone(self, phone: str) -> str:
-        """Нормализация номера телефона с подробным логированием"""
-        logger.debug(f"📱 Начало нормализации номера: '{phone}'")
+        logger.debug(f"📱 Normalizing phone: '{phone}'")
         
-        original_phone = phone
+        original = phone
+        normalized = ''.join(filter(str.isdigit, phone))
         
-        # Удаляем все кроме цифр
-        phone = ''.join(filter(str.isdigit, phone))
-        logger.debug(f"📱 После удаления не-цифр: '{phone}'")
+        if normalized.startswith('0'):
+            normalized = '996' + normalized[1:]
+            logger.debug(f"   🔄 Local format detected: 0xxx → 996xxx")
+        elif len(normalized) == 9:
+            normalized = '996' + normalized
+            logger.debug(f"   🔄 9-digit format detected: xxx → 996xxx")
+        elif not normalized.startswith('996') and len(normalized) > 9:
+            logger.debug(f"   ✅ International format detected")
         
-        # Оставляем номер как есть без добавления кода страны
-        logger.info(f"📱 Нормализация завершена: '{original_phone}' → '{phone}'")
-        return phone
+        logger.info(f"📱 Phone normalized: '{original}' → '{normalized}'")
+        return normalized
     
     async def send_verification_code(self, phone: str, imsi_code: Optional[str] = None) -> DevinoSMSResponse:
-        """
-        Отправить SMS код подтверждения с максимальным логированием
-        """
-        logger.info("=" * 80)
-        logger.info("🚀 НАЧАЛО ОТПРАВКИ SMS КОДА")
-        logger.info("=" * 80)
+        logger.info("=" * 60)
+        logger.info("🚀 SENDING SMS CODE via DEVINO 2FA API")
+        logger.info("=" * 60)
         
-        # Логируем исходный номер
-        logger.info(f"📱 Исходный номер: {phone}")
-        
-        # ТЕСТОВЫЙ РЕЖИМ - всегда успешный ответ
-        code = ''.join(random.choices('0123456789', k=4))
-        logger.info(f"🚀🚀🚀 ТЕСТОВЫЙ КОД АВТОРИЗАЦИИ: {code}")
-        print(f"ТЕСТОВЫЙ КОД АВТОРИЗАЦИИ ДЛЯ НОМЕРА {phone}: {code}")
-        
-        # Всегда возвращаем успех
-        return DevinoSMSResponse("0", f"Тестовый код: {code}", True)
-    
-    async def verify_code(self, phone: str, code: str) -> DevinoSMSResponse:
-        """
-        Проверить SMS код подтверждения с максимальным логированием
-        """
-        logger.info("=" * 80)
-        logger.info("🔍 НАЧАЛО ПРОВЕРКИ SMS КОДА")
-        logger.info("=" * 80)
+        if not self.api_key:
+            logger.warning("❌ No API key configured!")
+            if self.debug_mode:
+                code = ''.join(random.choices('0123456789', k=4))
+                logger.warning(f"🔧 DEBUG MODE: Generated test code: {code}")
+                print(f"\n🔥 DEBUG CODE FOR {phone}: {code}\n")
+                return DevinoSMSResponse("0", f"DEBUG: Test code {code}", True, {"code": code})
+            else:
+                return DevinoSMSResponse("1", "API key not configured", False)
         
         try:
-            # Нормализуем номер
-            logger.info(f"📱 Исходный номер: {phone}")
-            logger.info(f"🔢 Проверяемый код: {code}")
+            step = 1
+            logger.info(f"📍 Step {step}: Phone normalization")
             normalized_phone = self._normalize_phone(phone)
-            logger.info(f"📱 Нормализованный номер: {normalized_phone}")
             
-            # Подготавливаем данные запроса
+            step += 1
+            logger.info(f"📍 Step {step}: Building request payload")
+            request_data = {"DestinationNumber": normalized_phone}
+            
+            if imsi_code:
+                request_data["Imsi"] = imsi_code
+                logger.info(f"🔐 IMSI code included: {imsi_code}")
+            
+            logger.debug(f"📦 Request payload: {json.dumps(request_data, ensure_ascii=False)}")
+            
+            step += 1
+            logger.info(f"📍 Step {step}: Preparing HTTP request")
+            headers = self._get_headers()
+            full_url = f"{self.api_url}/SendCode"
+            logger.info(f"🌐 Target URL: {full_url}")
+            
+            step += 1
+            logger.info(f"📍 Step {step}: Sending HTTP request")
+            start_time = datetime.now()
+            
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                logger.debug(f"🔌 HTTP client created with {self.timeout}s timeout")
+                
+                response = await client.post(
+                    full_url,
+                    json=request_data,
+                    headers=headers
+                )
+                
+                duration = (datetime.now() - start_time).total_seconds()
+                logger.info(f"⏱️  Request completed in {duration:.2f}s")
+                
+                step += 1
+                logger.info(f"📍 Step {step}: Processing response")
+                logger.info(f"📨 HTTP Status: {response.status_code}")
+                logger.debug(f"📨 Response headers: {dict(response.headers)}")
+                
+                response_text = response.text
+                logger.debug(f"📨 Raw response: {response_text}")
+                
+                if response.status_code == 200:
+                    try:
+                        response_data = response.json()
+                        logger.debug(f"📨 JSON parsed successfully")
+                        
+                        devino_response = DevinoSMSResponse.from_dict(response_data)
+                        
+                        if devino_response.success:
+                            logger.info(f"✅ SMS code successfully sent to {normalized_phone}")
+                        else:
+                            logger.error(f"❌ Devino error: {devino_response.description}")
+                        
+                        return devino_response
+                        
+                    except json.JSONDecodeError as e:
+                        logger.error(f"❌ JSON parsing failed: {e}")
+                        logger.error(f"❌ Raw response: {response_text}")
+                        return DevinoSMSResponse(
+                            str(response.status_code), 
+                            f"JSON parsing error: {response_text}", 
+                            False
+                        )
+                else:
+                    logger.error(f"❌ HTTP error {response.status_code}")
+                    logger.error(f"❌ Response: {response_text}")
+                    return DevinoSMSResponse(
+                        str(response.status_code), 
+                        f"HTTP error: {response_text}", 
+                        False
+                    )
+                    
+        except httpx.TimeoutException:
+            logger.error(f"❌ Request timeout ({self.timeout}s)")
+            return DevinoSMSResponse("timeout", f"Request timeout ({self.timeout}s)", False)
+            
+        except httpx.RequestError as e:
+            logger.error(f"❌ Network error: {e}")
+            return DevinoSMSResponse("network_error", f"Network error: {str(e)}", False)
+            
+        except Exception as e:
+            logger.error(f"❌ Unexpected error: {e}")
+            logger.error(f"❌ Exception type: {type(e).__name__}")
+            import traceback
+            logger.error(f"❌ Traceback: {traceback.format_exc()}")
+            return DevinoSMSResponse("unexpected_error", f"Unexpected error: {str(e)}", False)
+        
+        finally:
+            logger.info("=" * 60)
+    
+    async def verify_code(self, phone: str, code: str) -> DevinoSMSResponse:
+        logger.info("=" * 60)
+        logger.info("🔍 VERIFYING SMS CODE via DEVINO 2FA API")
+        logger.info("=" * 60)
+        
+        if not self.api_key:
+            logger.warning("❌ No API key configured!")
+            if self.debug_mode:
+                if len(code) == 4 and code.isdigit():
+                    logger.warning(f"🔧 DEBUG MODE: Code {code} accepted")
+                    return DevinoSMSResponse("0", "DEBUG: Code accepted", True)
+                else:
+                    logger.warning(f"🔧 DEBUG MODE: Invalid code format")
+                    return DevinoSMSResponse("1", "DEBUG: Invalid code format", False)
+            else:
+                return DevinoSMSResponse("1", "API key not configured", False)
+        
+        try:
+            step = 1
+            logger.info(f"📍 Step {step}: Input validation")
+            logger.info(f"📱 Phone: {phone}")
+            logger.info(f"🔢 Code: {code}")
+            
+            if not code or len(code) != 4 or not code.isdigit():
+                logger.error(f"❌ Invalid code format: '{code}'")
+                return DevinoSMSResponse("1", "Invalid code format", False)
+            
+            step += 1
+            logger.info(f"📍 Step {step}: Phone normalization")
+            normalized_phone = self._normalize_phone(phone)
+            
+            step += 1
+            logger.info(f"📍 Step {step}: Building verification payload")
             request_data = {
                 "DestinationNumber": normalized_phone,
                 "Code": code
             }
+            logger.debug(f"📦 Verification payload: {json.dumps(request_data, ensure_ascii=False)}")
             
-            logger.info(f"📤 Данные запроса: {json.dumps(request_data, ensure_ascii=False, indent=2)}")
-            
-            # Получаем заголовки
+            step += 1
+            logger.info(f"📍 Step {step}: Preparing verification request")
             headers = self._get_headers()
-            logger.info(f"📋 Заголовки запроса: {json.dumps(dict(headers), ensure_ascii=False, indent=2)}")
-            
-            # Формируем полный URL
             full_url = f"{self.api_url}/CheckCode"
-            logger.info(f"🌐 Полный URL: {full_url}")
+            logger.info(f"🌐 Target URL: {full_url}")
             
-            # Отправляем запрос
-            logger.info("🌐 Отправка HTTP запроса на проверку...")
+            step += 1
+            logger.info(f"📍 Step {step}: Sending verification request")
+            start_time = datetime.now()
             
             async with httpx.AsyncClient(timeout=self.timeout) as client:
-                logger.debug(f"🔧 HTTP клиент создан с timeout={self.timeout}")
+                response = await client.post(
+                    full_url,
+                    json=request_data,
+                    headers=headers
+                )
                 
-                start_time = datetime.now()
-                logger.info(f"⏰ Время начала запроса: {start_time}")
+                duration = (datetime.now() - start_time).total_seconds()
+                logger.info(f"⏱️  Verification completed in {duration:.2f}s")
                 
-                try:
-                    response = await client.post(
-                        full_url,
-                        headers=headers,
-                        json=request_data
-                    )
-                    
-                    end_time = datetime.now()
-                    duration = (end_time - start_time).total_seconds()
-                    logger.info(f"⏰ Запрос выполнен за: {duration:.3f}s")
-                    
-                    logger.info(f"📨 HTTP статус: {response.status_code}")
-                    logger.info(f"📨 Заголовки ответа: {dict(response.headers)}")
-                    
-                    # Получаем raw текст ответа
-                    response_text = response.text
-                    logger.info(f"📨 Raw ответ: {response_text}")
-                    
-                    # Парсим JSON
+                step += 1
+                logger.info(f"📍 Step {step}: Processing verification response")
+                logger.info(f"📨 HTTP Status: {response.status_code}")
+                
+                response_text = response.text
+                logger.debug(f"📨 Raw verification response: {response_text}")
+                
+                if response.status_code == 200:
                     try:
                         response_data = response.json()
-                        logger.info(f"📨 Parsed JSON: {json.dumps(response_data, ensure_ascii=False, indent=2)}")
-                    except Exception as json_error:
-                        logger.error(f"❌ Ошибка парсинга JSON: {json_error}")
-                        logger.error(f"❌ Raw response: {response_text}")
-                        return DevinoSMSResponse("json_error", f"Ошибка парсинга ответа: {json_error}")
+                        logger.debug(f"📨 Verification JSON parsed successfully")
+                        
+                        devino_response = DevinoSMSResponse.from_dict(response_data)
+                        
+                        if devino_response.success:
+                            logger.info(f"✅ Code {code} verified successfully for {normalized_phone}")
+                        else:
+                            logger.warning(f"❌ Code verification failed: {devino_response.description}")
+                        
+                        return devino_response
+                        
+                    except json.JSONDecodeError as e:
+                        logger.error(f"❌ Verification JSON parsing failed: {e}")
+                        return DevinoSMSResponse(
+                            str(response.status_code), 
+                            f"JSON parsing error: {response_text}", 
+                            False
+                        )
+                else:
+                    logger.error(f"❌ Verification HTTP error {response.status_code}")
+                    logger.error(f"❌ Response: {response_text}")
+                    return DevinoSMSResponse(
+                        str(response.status_code), 
+                        f"HTTP error: {response_text}", 
+                        False
+                    )
                     
-                    # Создаем объект ответа
-                    devino_response = DevinoSMSResponse.from_dict(response_data)
-                    
-                    logger.info("📊 РЕЗУЛЬТАТ ПРОВЕРКИ:")
-                    logger.info(f"   ✅ Успех: {devino_response.success}")
-                    logger.info(f"   🔢 Код: {devino_response.code}")
-                    logger.info(f"   📝 Описание: {devino_response.description}")
-                    
-                    if devino_response.success:
-                        logger.info("🎉 SMS КОД УСПЕШНО ПОДТВЕРЖДЕН!")
-                        self._log_debug(f"✅ SMS КОД ПОДТВЕРЖДЕН для {normalized_phone}", {
-                            "phone": normalized_phone,
-                            "code": code,
-                            "response": response_data
-                        })
-                    else:
-                        logger.warning("⚠️ SMS код НЕ подтвержден")
-                        self._log_debug(f"❌ Неверный SMS код: {devino_response.description}", {
-                            "phone": normalized_phone,
-                            "code": code,
-                            "error_code": devino_response.code,
-                            "response": response_data
-                        })
-                    
-                    return devino_response
-                    
-                except httpx.HTTPStatusError as http_error:
-                    logger.error(f"❌ HTTP ошибка: {http_error}")
-                    logger.error(f"❌ Статус: {http_error.response.status_code}")
-                    logger.error(f"❌ Тело ответа: {http_error.response.text}")
-                    return DevinoSMSResponse("http_error", f"HTTP ошибка: {http_error}")
-                    
-        except httpx.TimeoutException as timeout_error:
-            error_msg = f"Таймаут при проверке SMS кода ({self.timeout}s)"
-            logger.error(f"⏰ {error_msg}")
-            logger.error(f"⏰ Timeout error: {timeout_error}")
-            self._log_debug(f"❌ {error_msg}")
-            return DevinoSMSResponse("timeout", error_msg)
+        except httpx.TimeoutException:
+            logger.error(f"❌ Verification timeout ({self.timeout}s)")
+            return DevinoSMSResponse("timeout", f"Verification timeout ({self.timeout}s)", False)
             
-        except httpx.RequestError as request_error:
-            error_msg = f"Ошибка сети при проверке SMS кода: {str(request_error)}"
-            logger.error(f"🌐 {error_msg}")
-            logger.exception("Network error details:")
-            self._log_debug(f"❌ {error_msg}")
-            return DevinoSMSResponse("network_error", error_msg)
+        except httpx.RequestError as e:
+            logger.error(f"❌ Verification network error: {e}")
+            return DevinoSMSResponse("network_error", f"Network error: {str(e)}", False)
             
         except Exception as e:
-            error_msg = f"Неожиданная ошибка при проверке SMS кода: {str(e)}"
-            logger.error(f"💥 {error_msg}")
-            logger.exception("Полная трассировка ошибки:")
-            self._log_debug(f"❌ {error_msg}")
-            return DevinoSMSResponse("unknown_error", error_msg)
-            
-        finally:
-            logger.info("=" * 80)
-            logger.info("🏁 КОНЕЦ ПРОВЕРКИ SMS КОДА")
-            logger.info("=" * 80)
-    
-    def get_error_message(self, code: str) -> str:
-        """Получить понятное сообщение об ошибке по коду"""
-        error_messages = {
-            "0": "Успешно",
-            "1": "Неверный API ключ",
-            "2": "Неверный номер телефона",
-            "3": "Превышен лимит запросов",
-            "4": "Внутренняя ошибка сервера",
-            "5": "Ошибка отправки SMS",
-            "6": "Неверный IMSI код",
-            "7": "Код уже существует",
-            "timeout": "Превышено время ожидания",
-            "network_error": "Ошибка сети",
-            "unknown_error": "Неизвестная ошибка",
-            "json_error": "Ошибка парсинга ответа",
-            "http_error": "HTTP ошибка"
-        }
+            logger.error(f"❌ Verification unexpected error: {e}")
+            import traceback
+            logger.error(f"❌ Traceback: {traceback.format_exc()}")
+            return DevinoSMSResponse("unexpected_error", f"Unexpected error: {str(e)}", False)
         
-        message = error_messages.get(code, f"Неизвестная ошибка (код: {code})")
-        logger.debug(f"🔍 Получение сообщения для кода '{code}': {message}")
-        return message
+        finally:
+            logger.info("=" * 60)
+    
+    async def get_balance(self) -> DevinoSMSResponse:
+        logger.info("💰 Checking Devino account balance")
+        
+        if not self.api_key:
+            logger.error("❌ Cannot check balance: API key not configured")
+            return DevinoSMSResponse("1", "API key not configured", False)
+        
+        try:
+            headers = self._get_headers()
+            full_url = f"{self.api_url}/GetBalance"
+            logger.info(f"🌐 Balance URL: {full_url}")
+            
+            start_time = datetime.now()
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(full_url, headers=headers)
+                
+                duration = (datetime.now() - start_time).total_seconds()
+                logger.info(f"⏱️  Balance request completed in {duration:.2f}s")
+                
+                if response.status_code == 200:
+                    response_data = response.json()
+                    logger.info(f"💰 Balance response: {json.dumps(response_data, ensure_ascii=False)}")
+                    return DevinoSMSResponse.from_dict(response_data)
+                else:
+                    logger.error(f"❌ Balance check failed: HTTP {response.status_code}")
+                    logger.error(f"❌ Response: {response.text}")
+                    return DevinoSMSResponse(str(response.status_code), "Balance check failed", False)
+                    
+        except Exception as e:
+            logger.error(f"❌ Balance check error: {e}")
+            return DevinoSMSResponse("error", f"Balance check error: {str(e)}", False)
 
 
-# Глобальный экземпляр сервиса
-logger.info("🔧 Создание глобального экземпляра DevinoSMSService")
 devino_sms_service = DevinoSMSService()
-logger.info("✅ Глобальный экземпляр DevinoSMSService создан")

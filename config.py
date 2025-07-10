@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     
     # Devino SMS Settings
     DEVINO_API_URL: str = "https://phoneverification.devinotele.com"
-    DEVINO_API_KEY: Optional[str] = None
+    DEVINO_API_KEY: Optional[str] = None  # Получается из переменной окружения DEVINO_API_KEY
     DEVINO_TIMEOUT: int = 30
     
     # SMS Debug Settings

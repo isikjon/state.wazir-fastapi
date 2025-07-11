@@ -3,7 +3,7 @@ import logging
 import random
 import string
 from typing import Dict, Any, Optional, Tuple
-from app.core.config import settings
+from config import settings
 
 # Создаем цветной логгер для Devino SMS
 logger = logging.getLogger("devino_sms")

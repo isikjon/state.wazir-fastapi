@@ -58,10 +58,10 @@
                             </label>
                             <input type="tel" id="user-id" name="contact"
                                 class="form-input font-montserrat"
-                                placeholder="Введите телефон">
+                                placeholder="+996 XXX XXX XXX">
                             <p
                                 class="text-xs text-gray-500 mt-1 font-montserrat"
-                                id="phone-format-hint">Можно вводить с + или без</p>
+                                id="phone-format-hint">Формат: +996 XXX XXX XXX</p>
                         </div>
 
                         <div id="error-message"
@@ -88,18 +88,37 @@
             src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
         <script>
         $(document).ready(function() {
-            // Разрешаем ввод плюса и цифр
-            $('#user-id').on('input', function() {
-                // Сохраняем плюс в начале, остальные символы только цифры
-                let value = $(this).val();
-                if (value.startsWith('+')) {
-                    // Если начинается с плюса, оставляем его и только цифры после
-                    value = '+' + value.substring(1).replace(/\D/g, '');
-                } else {
-                    // Если нет плюса в начале, оставляем только цифры
-                    value = value.replace(/\D/g, '');
+            // Применяем маску для телефона Кыргызстана
+            function applyPhoneMask() {
+                $('#user-id').mask('+996 000 000 000', {
+                    placeholder: '+996 XXX XXX XXX',
+                    translation: {
+                        '0': {pattern: /[0-9]/}
+                    }
+                });
+            }
+            
+            // Инициализируем маску при загрузке
+            applyPhoneMask();
+            
+            // Автоматически устанавливаем +996 при фокусе, если поле пустое
+            $('#user-id').on('focus', function() {
+                if ($(this).val() === '') {
+                    $(this).val('+996 ');
                 }
-                $(this).val(value);
+            });
+            
+            // Предотвращаем удаление +996
+            $('#user-id').on('keydown', function(e) {
+                const value = $(this).val();
+                const cursorPos = this.selectionStart;
+                
+                // Если пытаются удалить часть +996, предотвращаем это
+                if ((e.key === 'Backspace' || e.key === 'Delete') && cursorPos <= 5) {
+                    e.preventDefault();
+                    $(this).val('+996 ');
+                    this.setSelectionRange(5, 5);
+                }
             });
             
             // Обработка табов
@@ -109,17 +128,24 @@
                 
                 // Изменение плейсхолдера и метки в зависимости от выбранного таба
                 if ($(this).attr('id') === 'tab-phone') {
-                    $('#user-id').attr('placeholder', 'Введите номер телефона');
+                    $('#user-id').attr('placeholder', '+996 XXX XXX XXX');
                     $('#label-text').text('Введите телефон');
                     $('#user-id').attr('type', 'tel');
-                    $('#phone-format-hint').text('Можно вводить с + или без').show();
+                    $('#phone-format-hint').text('Формат: +996 XXX XXX XXX').show();
+                    applyPhoneMask();
                 } else {
+                    $('#user-id').unmask();
                     $('#user-id').attr('placeholder', 'Введите почту');
                     $('#label-text').text('Введите почту');
                     $('#user-id').attr('type', 'email');
                     $('#phone-format-hint').hide();
                 }
             });
+            
+            // Функция для извлечения чистого номера телефона
+            function getCleanPhone(phoneValue) {
+                return phoneValue.replace(/\D/g, '');
+            }
             
             // Обработка отправки формы
             $('#register-form').on('submit', function(e) {
@@ -141,10 +167,19 @@
                         return;
                     }
                 } else {
-                    // Проверка формата телефона для любой страны
-                    const phoneValue = contact.replace(/\D/g, '');
-                    if (phoneValue.length < 10 || phoneValue.length > 15) {
-                        $('#error-message').text('Введите корректный номер телефона (от 10 до 15 цифр)').removeClass('hidden');
+                    // Проверка формата телефона для Кыргызстана
+                    const phoneValue = getCleanPhone(contact);
+                    
+                    // Проверяем, что номер начинается с 996 и имеет правильную длину
+                    if (!phoneValue.startsWith('996') || phoneValue.length !== 12) {
+                        $('#error-message').text('Введите корректный номер телефона Кыргызстана (+996 XXX XXX XXX)').removeClass('hidden');
+                        return;
+                    }
+                    
+                    // Проверяем, что после 996 идут корректные цифры
+                    const localNumber = phoneValue.substring(3); // номер без 996
+                    if (localNumber.length !== 9 || !/^[0-9]{9}$/.test(localNumber)) {
+                        $('#error-message').text('Введите корректный номер телефона Кыргызстана (+996 XXX XXX XXX)').removeClass('hidden');
                         return;
                     }
                 }
@@ -156,13 +191,19 @@
                 $submitBtn.html('<i class="fas fa-circle-notch fa-spin"></i> Проверка...');
                 $submitBtn.prop('disabled', true);
                 
+                // Для телефона отправляем в формате +996XXXXXXXXX (без пробелов)
+                let contactToSend = contact;
+                if (contact_type === 'phone') {
+                    contactToSend = '+' + getCleanPhone(contact);
+                }
+                
                 // Проверяем, существует ли пользователь с таким контактом
                 $.ajax({
                     url: '/api/v1/auth/check-exists',
                     type: 'POST',
                     data: {
                         contact_type: contact_type,
-                        contact: contact
+                        contact: contactToSend
                     },
                     success: function(response) {
                         if (response.exists) {
@@ -179,17 +220,15 @@
                                 type: 'POST',
                                 data: {
                                     contact_type: contact_type,
-                                    contact: contact
+                                    contact: contactToSend
                                 },
                                 beforeSend: function(xhr) {
                                     console.log("ОТЛАДКА - Отправка данных:", {
                                         contact_type: contact_type,
-                                        contact: contact,
-                                        contact_length: contact.length,
-                                        has_plus: contact.startsWith('+'),
-                                        contact_chars: Array.from(contact).map(c => ({ char: c, code: c.charCodeAt(0) }))
+                                        contact: contactToSend,
+                                        original_input: contact,
+                                        clean_phone: contact_type === 'phone' ? getCleanPhone(contact) : null
                                     });
-                                    console.log("ОТЛАДКА - Заголовки запроса:", xhr.getAllResponseHeaders());
                                 },
                                 success: function(response) {
                                     console.log("ОТЛАДКА - Ответ от сервера:", JSON.stringify(response, null, 2));
@@ -197,7 +236,7 @@
                                     if (response.success) {
                                         // Сохраняем данные в sessionStorage
                                         sessionStorage.setItem('reg_contact_type', contact_type);
-                                        sessionStorage.setItem('reg_contact', contact);
+                                        sessionStorage.setItem('reg_contact', contactToSend);
                                         
                                         // Перенаправляем на страницу ввода кода
                                         window.location.href = '/mobile/register/verify';

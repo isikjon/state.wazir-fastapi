@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from sqlalchemy import or_
-from app import deps
+from app.api import deps
 from app import models
 from app.utils.security import get_password_hash, verify_password
 from app.utils.auth import create_access_token

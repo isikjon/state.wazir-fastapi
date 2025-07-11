@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Form, Request
+from fastapi import APIRouter, Depends, HTTPException, Form, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from sqlalchemy import or_
-from app.api import deps
+from app import deps
 from app import models
 from app.utils.security import get_password_hash, verify_password
 from app.utils.auth import create_access_token
@@ -12,11 +15,9 @@ from config import settings
 import re
 import random
 import string
-from fastapi.responses import JSONResponse
 import json
 import os
-from app.services.devino_sms_service import devino_sms_service
-from app.models.user import User
+from app.services.devino_sms_service import DevinoSMSService
 
 router = APIRouter()
 
@@ -198,12 +199,10 @@ async def send_code(
     request: Request,
     contact: str = Form(...),
     contact_type: str = Form(...),
-    use_sms: bool = Form(True),  # Новый параметр для выбора SMS
+    use_sms: bool = Form(True),  # Изменил default на True
     db: Session = Depends(deps.get_db)
 ):
-    """
-    Отправка кода подтверждения через Telegram бот ИЛИ Devino SMS
-    """
+    """Отправка кода подтверждения"""
     print("\n" + "=" * 80)
     print("ОТПРАВКА SMS КОДА")
     print("=" * 80)
@@ -212,50 +211,68 @@ async def send_code(
     print(f"Использовать SMS: {use_sms}")
     
     try:
-        if contact.startswith('+'):
-            phone = contact
-        else:
-            phone = '+' + contact
-        
-        print(f"ТЕЛЕФОН ПОДГОТОВЛЕН: {phone}")
-        
-        # Выбираем способ отправки
-        if use_sms:
-            # Отправляем через Devino SMS API
-            print("🔥 Отправка через DEVINO SMS API")
-            result = await devino_sms_service.send_verification_code(phone)
+        if contact_type == "phone":
+            # Нормализация номера телефона
+            normalized_phone = contact.strip()
+            if not normalized_phone.startswith('+'):
+                if normalized_phone.startswith('0'):
+                    normalized_phone = '+996' + normalized_phone[1:]
+                elif len(normalized_phone) == 9:
+                    normalized_phone = '+996' + normalized_phone
+                else:
+                    normalized_phone = '+' + normalized_phone
             
-            if result.success:
+            print(f"ТЕЛЕФОН ПОДГОТОВЛЕН: {normalized_phone}")
+            
+            if use_sms:
+                print("🔥 Отправка через DEVINO SMS API")
+                devino_service = DevinoSMSService()
+                
+                # Используем новый метод send_sms_code
+                result = await devino_service.send_sms_code(normalized_phone)
+                
+                print(f"ОТВЕТ: {result}")
+                print("=" * 80)
+                
+                if result.get('success'):
+                    response_data = {
+                        "success": True,
+                        "message": result.get('message', 'SMS код отправлен'),
+                        "contact": normalized_phone,
+                        "debug": result.get('debug', False)
+                    }
+                else:
+                    response_data = {
+                        "success": False,
+                        "error": result.get('error', 'Неизвестная ошибка отправки SMS')
+                    }
+            else:
+                print("🤖 Отправка через Telegram Bot")
                 response_data = {
                     "success": True,
-                    "message": f"📱 SMS код отправлен на номер {phone}"
+                    "message": f"📱 Для получения кода перейдите в Telegram к боту @{settings.TELEGRAM_BOT_USERNAME} и нажмите кнопку 'Поделиться номером'.\n\n🤖 Бот отправит вам код для авторизации."
                 }
-            else:
-                response_data = {
-                    "success": False,
-                    "error": f"Ошибка отправки SMS: {result.description}"
-                }
+                
         else:
-            # Отправляем через Telegram бот (текущий способ)
-            print("🤖 Отправка через TELEGRAM БОТ")
             response_data = {
-                "success": True,
-                "message": f"📱 Для получения кода перейдите в Telegram к боту @{settings.TELEGRAM_BOT_USERNAME} и нажмите кнопку 'Поделиться номером'.\n\n🤖 Бот отправит вам код для авторизации."
+                "success": False,
+                "error": "Поддерживается только отправка на номер телефона"
             }
-        
-        print(f"ОТВЕТ: {response_data}")
-        print("=" * 80)
-        
+            
         return JSONResponse(
             status_code=200,
             content=response_data
         )
-        
+            
     except Exception as e:
-        print(f"ОШИБКА: {str(e)}")
+        print(f"КРИТИЧЕСКАЯ ОШИБКА: {str(e)}")
+        print("=" * 80)
         return JSONResponse(
             status_code=500,
-            content={"success": False, "error": "Внутренняя ошибка сервера"}
+            content={
+                "success": False,
+                "error": f"Ошибка сервера: {str(e)}"
+            }
         )
 
 @router.post("/verify-code")
@@ -263,57 +280,64 @@ async def verify_code(
     code: str = Form(...),
     contact: str = Form(...),
     contact_type: str = Form(...),
-    use_sms: bool = Form(True),  # Новый параметр для выбора способа проверки
+    use_sms: bool = Form(True),  # Изменил default на True
     db: Session = Depends(deps.get_db)
 ):
-    """
-    Проверка кода подтверждения через Telegram бот ИЛИ Devino SMS
-    """
+    """Проверка кода подтверждения"""
     print("\n" + "=" * 80)
     print("ПРОВЕРКА SMS КОДА")
     print("=" * 80)
     print(f"Контакт: {contact}")
-    print(f"Тип контакта: {contact_type}")
     print(f"Код: {code}")
     print(f"Использовать SMS: {use_sms}")
     
     try:
-        # Приводим телефон к стандартному формату
-        if contact.startswith('+'):
-            phone = contact
-        else:
-            phone = '+' + contact
+        if contact_type == "phone":
+            # Нормализация номера телефона
+            normalized_phone = contact.strip()
+            if not normalized_phone.startswith('+'):
+                if normalized_phone.startswith('0'):
+                    normalized_phone = '+996' + normalized_phone[1:]
+                elif len(normalized_phone) == 9:
+                    normalized_phone = '+996' + normalized_phone
+                else:
+                    normalized_phone = '+' + normalized_phone
             
-        # Выбираем способ проверки
-        if use_sms:
-            # Проверяем через Devino SMS API
-            print("🔥 Проверка через DEVINO SMS API")
-            result = await devino_sms_service.verify_code(phone, code)
+            print(f"ТЕЛЕФОН ПОДГОТОВЛЕН: {normalized_phone}")
+            print(f"КОД ДЛЯ ПРОВЕРКИ: {code}")
             
-            if result.success:
-                print("РЕЗУЛЬТАТ: Код подтвержден через Devino SMS")
+            if use_sms:
+                print("🔥 Проверка через DEVINO SMS API")
+                devino_service = DevinoSMSService()
+                
+                # Используем новый метод verify_sms_code
+                result = await devino_service.verify_sms_code(normalized_phone, code)
+                
+                print(f"ОТВЕТ: {result}")
                 print("=" * 80)
-                return {"verified": True}
+                
+                if result.get('success'):
+                    is_valid = result.get('valid', False)
+                    if is_valid:
+                        return {"verified": True}
+                    else:
+                        return {"verified": False, "error": result.get('message', 'Неверный код подтверждения')}
+                else:
+                    return {"verified": False, "error": result.get('error', 'Ошибка проверки кода')}
             else:
-                print(f"РЕЗУЛЬТАТ: Ошибка Devino SMS: {result.description}")
-                print("=" * 80)
-                return {"verified": False, "error": result.description}
+                print("🤖 Проверка через Telegram Bot")
+                from telegram_bot import sms_bot
+                
+                if sms_bot.verify_code(normalized_phone, code):
+                    return {"verified": True}
+                else:
+                    return {"verified": False, "error": "Неверный код"}
+                
         else:
-            # Проверяем через Telegram бот (текущий способ)
-            print("🤖 Проверка через TELEGRAM БОТ")
-            from telegram_bot import sms_bot
-            
-            if sms_bot.verify_code(phone, code):
-                print("РЕЗУЛЬТАТ: Код подтвержден через Telegram бот")
-                print("=" * 80)
-                return {"verified": True}
-            else:
-                print("РЕЗУЛЬТАТ: Код не найден или неверный")
-                print("=" * 80)
-                return {"verified": False, "error": "Неверный код"}
+            return {"verified": False, "error": "Поддерживается только проверка номера телефона"}
             
     except Exception as e:
-        print(f"ОШИБКА ПРОВЕРКИ: {str(e)}")
+        print(f"КРИТИЧЕСКАЯ ОШИБКА: {str(e)}")
         print("=" * 80)
         
         # Для тестирования принимаем любой 4-значный код
@@ -404,138 +428,127 @@ async def reset_password(
     return {"success": True} 
 
 @router.post("/devino/send-test")
-async def test_devino_send_sms(
-    phone: str = Form(..., description="Phone number to send test SMS"),
-    include_imsi: bool = Form(False, description="Include IMSI code test")
+async def devino_send_test(
+    phone: str = Form(...),
+    imsi_code: str = Form(None)
 ):
+    """Тестовая отправка SMS через Devino API"""
     print("\n" + "=" * 80)
-    print("🧪 DEVINO SMS TEST - SEND CODE")
+    print("🧪 DEVINO SMS TEST - SEND")
     print("=" * 80)
     print(f"📱 Phone: {phone}")
-    print(f"🔐 Include IMSI: {include_imsi}")
     
     try:
-        imsi_code = "901700000001234" if include_imsi else None
+        devino_service = DevinoSMSService()
+        
         if imsi_code:
             print(f"🔐 Test IMSI: {imsi_code}")
         
-        result = await devino_sms_service.send_verification_code(phone, imsi_code)
+        result = await devino_service.send_sms_code(phone)
         
         response_data = {
-            "service": "Devino SMS Test",
+            "success": result.get('success', False),
+            "message": result.get('message', ''),
+            "error": result.get('error', ''),
             "phone": phone,
-            "success": result.success,
-            "code": result.code,
-            "description": result.description,
-            "data": result.data,
-            "imsi_included": bool(imsi_code)
+            "debug": result.get('debug', False)
         }
         
-        if result.success:
-            print(f"✅ TEST PASSED: {result.description}")
-            if 'code' in result.data:
-                print(f"🔑 Generated code: {result.data['code']}")
-        else:
-            print(f"❌ TEST FAILED: {result.description}")
-        
+        print(f"✅ Result: {response_data}")
         print("=" * 80)
-        return response_data
+        
+        return JSONResponse(content=response_data)
         
     except Exception as e:
-        print(f"💥 TEST ERROR: {str(e)}")
+        error_msg = f"Test error: {str(e)}"
+        print(f"❌ {error_msg}")
         print("=" * 80)
-        return {
-            "service": "Devino SMS Test",
-            "phone": phone,
-            "success": False,
-            "error": str(e)
-        }
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": error_msg}
+        )
 
-@router.post("/devino/verify-test")
-async def test_devino_verify_sms(
-    phone: str = Form(..., description="Phone number"),
-    code: str = Form(..., description="4-digit verification code")
+@router.post("/devino/verify-test")  
+async def devino_verify_test(
+    phone: str = Form(...),
+    code: str = Form(...)
 ):
+    """Тестовая проверка SMS кода через Devino API"""
     print("\n" + "=" * 80)
-    print("🧪 DEVINO SMS TEST - VERIFY CODE")
+    print("🧪 DEVINO SMS TEST - VERIFY")
     print("=" * 80)
     print(f"📱 Phone: {phone}")
     print(f"🔢 Code: {code}")
     
     try:
-        result = await devino_sms_service.verify_code(phone, code)
+        devino_service = DevinoSMSService()
+        result = await devino_service.verify_sms_code(phone, code)
         
         response_data = {
-            "service": "Devino SMS Verification Test",
+            "success": result.get('success', False),
+            "valid": result.get('valid', False),
+            "message": result.get('message', ''),
+            "error": result.get('error', ''),
             "phone": phone,
-            "code": code,
-            "success": result.success,
-            "result_code": result.code,
-            "description": result.description,
-            "data": result.data
+            "debug": result.get('debug', False)
         }
         
-        if result.success:
-            print(f"✅ VERIFICATION PASSED: {result.description}")
-        else:
-            print(f"❌ VERIFICATION FAILED: {result.description}")
-        
+        print(f"✅ Result: {response_data}")
         print("=" * 80)
-        return response_data
+        
+        return JSONResponse(content=response_data)
         
     except Exception as e:
-        print(f"💥 VERIFICATION ERROR: {str(e)}")
+        error_msg = f"Verification test error: {str(e)}"
+        print(f"❌ {error_msg}")
         print("=" * 80)
-        return {
-            "service": "Devino SMS Verification Test",
-            "phone": phone,
-            "code": code,
-            "success": False,
-            "error": str(e)
-        }
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": error_msg}
+        )
 
 @router.get("/devino/test")
-async def test_devino_sms():
+async def devino_test():
+    """Тест конфигурации Devino SMS API"""
     print("\n" + "=" * 80)
-    print("🔍 DEVINO SMS API STATUS CHECK")
+    print("🧪 DEVINO SMS CONFIGURATION TEST")
     print("=" * 80)
     
-    config_status = {
-        "api_url": devino_sms_service.api_url,
-        "api_key_configured": bool(devino_sms_service.api_key),
-        "debug_mode": devino_sms_service.debug_mode,
-        "timeout": devino_sms_service.timeout
-    }
-    
-    print(f"📋 Configuration: {config_status}")
-    
-    balance_result = None
-    if devino_sms_service.api_key:
-        try:
-            print("💰 Checking balance...")
-            balance_result = await devino_sms_service.get_balance()
-            print(f"💰 Balance result: {balance_result.success} - {balance_result.description}")
-        except Exception as e:
-            print(f"💥 Balance error: {e}")
-            balance_result = {"error": str(e)}
-    else:
-        print("⚠️  No API key - skipping balance check")
-    
-    print("=" * 80)
-    
-    return {
-        "service": "Devino SMS API",
-        "status": "configured" if devino_sms_service.api_key else "not_configured",
-        "config": config_status,
-        "balance": {
-            "success": balance_result.success if balance_result and hasattr(balance_result, 'success') else False,
-            "description": balance_result.description if balance_result and hasattr(balance_result, 'description') else "API key not configured",
-            "data": balance_result.data if balance_result and hasattr(balance_result, 'data') else None
-        } if balance_result else {"error": "API key not configured"},
-        "endpoints": {
-            "send_test": "/api/v1/auth/devino/send-test",
-            "verify_test": "/api/v1/auth/devino/verify-test",
-            "production_send": "/api/v1/auth/send-code?use_sms=true",
-            "production_verify": "/api/v1/auth/verify-code?use_sms=true"
+    try:
+        devino_service = DevinoSMSService()
+        
+        config_status = {
+            "api_url": devino_service.api_url,
+            "api_key_configured": bool(devino_service.api_key),
+            "debug_mode": devino_service.debug_mode
         }
-    } 
+        
+        print(f"📋 Configuration: {config_status}")
+        
+        balance_result = None
+        if devino_service.api_key:
+            try:
+                print("💰 Checking balance...")
+                balance_result = await devino_service.get_balance()
+                print(f"💰 Balance result: {balance_result}")
+            except Exception as e:
+                print(f"❌ Balance check failed: {e}")
+                balance_result = {"error": str(e)}
+        
+        print("=" * 80)
+        
+        return {
+            "service": "Devino SMS API",
+            "status": "configured" if devino_service.api_key else "not_configured",
+            "config": config_status,
+            "balance": balance_result
+        }
+        
+    except Exception as e:
+        error_msg = f"Configuration test failed: {str(e)}"
+        print(f"❌ {error_msg}")
+        print("=" * 80)
+        return JSONResponse(
+            status_code=500,
+            content={"error": error_msg}
+        ) 

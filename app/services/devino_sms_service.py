@@ -140,7 +140,6 @@ class DevinoSMSService:
             
             logger.debug(f"📦 Request payload: {payload}")
             
-            # DEBUG режим
             if self.debug_mode:
                 logger.warning("🔧 DEBUG MODE: Simulating SMS send")
                 generated_code = code or self._generate_code()

@@ -165,31 +165,45 @@ function resetModal() {
 }
 
 function loadExisting360Data(propertyId) {
-    fetch(`/api/v1/admin/properties/${propertyId}/360`)
+    fetch(`/api/v1/panorama_upload/admin/properties/${propertyId}/360`)
         .then(response => response.json())
         .then(data => {
-            if (data.success && (data.tour_360_url || data.tour_360_file_id)) {
-                // Показываем информацию о существующей панораме
-                $('#existing-panorama-info').removeClass('hidden');
+            if (data.success && data.data) {
+                const panoramaData = data.data;
+                $('#360-status').text(panoramaData.status || 'Неизвестно');
+                $('#360-file-name').text(panoramaData.file_name || 'Неизвестно');
+                $('#360-file-size').text(panoramaData.file_size || 'Неизвестно');
+                $('#360-upload-date').text(formatDate(panoramaData.upload_date) || 'Неизвестно');
+                
+                // Показать информацию о панораме
+                $('#existing-360-info').removeClass('hidden');
+                $('#360-upload-section').addClass('hidden');
                 $('#delete-360-btn').removeClass('hidden');
                 
-                if (data.tour_360_uploaded_at) {
-                    $('#current-upload-date').text(formatDate(data.tour_360_uploaded_at));
-                    $('#panorama-type').text('Загруженный файл');
-                } else if (data.tour_360_url) {
-                    $('#current-upload-date').text('Внешняя ссылка');
-                    $('#panorama-type').text('URL');
-                    
-                    // Заполняем форму URL
-                    $('#tour-360-url').val(data.tour_360_url);
-                    if (data.tour_360_date) {
-                        $('#tour-360-date').val(data.tour_360_date);
-                    }
-                }
+                // Скрыть кнопки загрузки
+                $('#save-360-btn').addClass('hidden');
+                $('#reset-360-btn').addClass('hidden');
+            } else {
+                // Показать секцию загрузки
+                $('#existing-360-info').addClass('hidden');
+                $('#360-upload-section').removeClass('hidden');
+                $('#delete-360-btn').addClass('hidden');
+                
+                // Показать кнопки загрузки
+                $('#save-360-btn').removeClass('hidden');
+                $('#reset-360-btn').removeClass('hidden');
             }
         })
         .catch(error => {
-            console.error('Ошибка загрузки данных 360°:', error);
+            console.error('Ошибка при загрузке информации о 360°:', error);
+            // В случае ошибки показать секцию загрузки
+            $('#existing-360-info').addClass('hidden');
+            $('#360-upload-section').removeClass('hidden');
+            $('#delete-360-btn').addClass('hidden');
+            
+            // Показать кнопки загрузки
+            $('#save-360-btn').removeClass('hidden');
+            $('#reset-360-btn').removeClass('hidden');
         });
 }
 
@@ -247,7 +261,7 @@ function uploadFileMode() {
         $('#upload-progress').addClass('hidden');
     });
     
-    xhr.open('POST', `/api/v1/panorama/admin/properties/${currentPropertyId}/360/upload`);
+    xhr.open('POST', `/api/v1/panorama_upload/admin/properties/${currentPropertyId}/360/upload`);
     xhr.send(formData);
 }
 
@@ -266,16 +280,21 @@ function uploadUrlMode() {
         formData.append('tour_360_date', tourDate);
     }
     
-    fetch(`/api/v1/admin/properties/${currentPropertyId}/360`, {
+    fetch(`/api/v1/panorama_upload/admin/properties/${currentPropertyId}/360`, {
         method: 'POST',
-        body: formData
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            url: tourUrl
+        })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('360° панорама успешно сохранена!');
-            $('#upload-360-modal').addClass('hidden');
-            location.reload();
+            alert('360° панорама успешно загружена через URL!');
+            $('#360-modal').modal('hide');
+            loadExisting360Data(currentPropertyId);
         } else {
             alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'));
         }
@@ -287,22 +306,22 @@ function uploadUrlMode() {
 }
 
 function delete360Panorama() {
-    fetch(`/api/v1/panorama/admin/properties/${currentPropertyId}/360`, {
+    fetch(`/api/v1/panorama_upload/admin/properties/${currentPropertyId}/360`, {
         method: 'DELETE'
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             alert('360° панорама успешно удалена!');
-            $('#upload-360-modal').addClass('hidden');
-            location.reload();
+            $('#360-modal').modal('hide');
+            loadExisting360Data(currentPropertyId);
         } else {
             alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'));
         }
     })
     .catch(error => {
-        console.error('Ошибка при удалении 360° панорамы:', error);
-        alert('Произошла ошибка при удалении');
+        console.error('Ошибка при удалении 360°:', error);
+        alert('Произошла ошибка при удалении панорамы');
     });
 }
 

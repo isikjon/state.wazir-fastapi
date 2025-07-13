@@ -62,7 +62,7 @@
         
         /* Sidebar */
         .sidebar {
-            background-color: var(--sidebar-bg, var(--color-secondary));
+            background: linear-gradient(90deg, #0f172a, #028688);
             width: 280px;
             position: fixed;
             top: 0;
@@ -79,7 +79,7 @@
         .sidebar-link {
             border-left: 3px solid transparent;
             transition: all 0.2s ease;
-            color: var(--sidebar-text, #f1f5f9);
+            color: #ffffff;
         }
         
         .sidebar-link.active {
@@ -88,7 +88,7 @@
         }
         
         .sidebar-link:hover:not(.active) {
-            background-color: var(--sidebar-item-hover, rgba(255, 255, 255, 0.02));
+            background-color: rgba(255, 255, 255, 0.02);
             border-left-color: var(--color-primary);
         }
         
@@ -225,7 +225,7 @@
                             src="{{ url_for('static', path='layout/assets/img/logo_non.png') }}"
                             alt="Wazir Logo" class="h-10">
                         <h1 class="text-xl font-semibold font-montserrat"
-                            style="color: var(--header-text);">Wazir
+                            style="color: #ffffff;">Wazir
                             Админ</h1>
                     </div>
                 </div>
@@ -235,16 +235,16 @@
                         <div class="flex items-center space-x-3">
                             <div
                                 class="w-10 h-10 rounded-full flex items-center justify-center"
-                                style="background-color: var(--color-secondary); color: var(--header-text);">
+                                style="background-color: var(--color-secondary); color: #ffffff;">
                                 {% if current_admin and current_admin.avatar_url %}
                                     <img src="{{ current_admin.avatar_url }}" alt="Avatar" class="w-full h-full rounded-full object-cover">
                                 {% else %}
                                     <i class="fas fa-user"></i>
                                 {% endif %}
                             </div>
-                            <div style="color: var(--header-text);">
+                            <div style="color: #ffffff;">
                                 <p class="font-medium">{{ current_admin.full_name if current_admin and current_admin.full_name else 'Администратор' }}</p>
-                                <p class="text-xs" style="color: var(--hint-color);">{{ current_admin.email if current_admin and current_admin.email else 'admin@wazir.kg' }}</p>
+                                <p class="text-xs" style="color: #ffffff;">{{ current_admin.email if current_admin and current_admin.email else 'admin@wazir.kg' }}</p>
                             </div>
                         </div>
                     </div>

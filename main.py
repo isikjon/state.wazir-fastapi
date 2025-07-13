@@ -4685,7 +4685,7 @@ async def company_dashboard(request: Request, db: Session = Depends(deps.get_db)
     
     # Получаем статистику компании
     company_properties = db.query(models.Property).filter(
-        models.Property.user_id == user.id
+        models.Property.owner_id == user.id
     ).all()
     
     stats = {
@@ -4710,7 +4710,7 @@ async def company_listings(request: Request, db: Session = Depends(deps.get_db))
     
     # Получаем объявления компании
     properties = db.query(models.Property).filter(
-        models.Property.user_id == user.id
+        models.Property.owner_id == user.id
     ).order_by(models.Property.created_at.desc()).all()
     
     return templates.TemplateResponse("companies/listings.html", {
@@ -4725,12 +4725,10 @@ async def company_create_listing(request: Request, db: Session = Depends(deps.ge
     if isinstance(user, RedirectResponse):
         return user
     
-    # Получаем категории недвижимости
-    categories = db.query(models.PropertyCategory).filter(
-        models.PropertyCategory.is_active == True
-    ).all() if hasattr(models, 'PropertyCategory') else []
+    # Получаем категории для выбора
+    categories = db.query(models.PropertyCategory).all()
     
-    return templates.TemplateResponse("companies/create_listing.html", {
+    return templates.TemplateResponse("companies/create-listing.html", {
         "request": request,
         "current_user": user,
         "categories": categories
@@ -4742,6 +4740,7 @@ async def company_analytics(request: Request, db: Session = Depends(deps.get_db)
     if isinstance(user, RedirectResponse):
         return user
     
+    # Простая аналитика - можно расширить позже
     return templates.TemplateResponse("companies/analytics.html", {
         "request": request,
         "current_user": user

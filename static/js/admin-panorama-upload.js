@@ -175,20 +175,17 @@ function loadExisting360Data(propertyId) {
                 $('#360-file-size').text(panoramaData.file_size || 'Неизвестно');
                 $('#360-upload-date').text(formatDate(panoramaData.upload_date) || 'Неизвестно');
                 
-                // Показать информацию о панораме
                 $('#existing-360-info').removeClass('hidden');
                 $('#360-upload-section').addClass('hidden');
                 $('#delete-360-btn').removeClass('hidden');
                 
-                // Скрыть кнопки загрузки
                 $('#save-360-btn').addClass('hidden');
                 $('#reset-360-btn').addClass('hidden');
             } else {
-                // Показать секцию загрузки
                 $('#existing-360-info').addClass('hidden');
                 $('#360-upload-section').removeClass('hidden');
                 $('#delete-360-btn').addClass('hidden');
-                
+                    
                 // Показать кнопки загрузки
                 $('#save-360-btn').removeClass('hidden');
                 $('#reset-360-btn').removeClass('hidden');

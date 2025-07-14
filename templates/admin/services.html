@@ -644,22 +644,19 @@ function editCategory(id, title, isActive) {
 function submitEditCategory() {
     const id = document.getElementById('editCategoryId').value;
     const name = document.getElementById('editCategoryTitle').value;
-    const isActive = document.getElementById('editCategoryActive').checked;
+    // const isActive = document.getElementById('editCategoryActive').checked; // не используется в API
     
     if (!name) {
         alert('Введите название категории');
         return;
     }
     
+    const formData = new FormData();
+    formData.append('title', name);
+    
     fetch(`/api/v1/admin/service-categories/${id}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            name: name,
-            is_active: isActive
-        })
+        body: formData
     })
     .then(response => response.json())
     .then(data => {

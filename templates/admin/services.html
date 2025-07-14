@@ -601,22 +601,19 @@ document.getElementById('add-category-btn').addEventListener('click', function()
 
 function submitAddCategory() {
     const name = document.getElementById('addCategoryTitle').value;
-    const isActive = document.getElementById('addCategoryActive').checked;
-    
+    // const isActive = document.getElementById('addCategoryActive').checked; // не используется в API
+
     if (!name) {
         alert('Введите название категории');
         return;
     }
-    
+
+    const formData = new FormData();
+    formData.append('title', name);
+
     fetch('/api/v1/admin/service-categories', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            name: name,
-            is_active: isActive
-        })
+        body: formData
     })
     .then(response => response.json())
     .then(data => {

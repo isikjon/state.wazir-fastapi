@@ -96,7 +96,8 @@
                 <p class="text-2xl font-bold text-gray-900">{{ "{:,.0f}".format(stats.avg_price or 0) }} ₽</p>
                 <p class="text-xs text-orange-600 mt-1">
                     <i class="fas fa-ruble-sign"></i>
-                    {% if stats.price_change >= 0 %}+{% endif %}{{ stats.price_change or 0 }}% за месяц
+                    {% set price_change = stats.get('price_change', 0) %}
+                    {% if price_change >= 0 %}+{% endif %}{{ price_change }}% за месяц
                 </p>
             </div>
             <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">

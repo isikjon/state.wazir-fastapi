@@ -600,10 +600,10 @@ document.getElementById('add-category-btn').addEventListener('click', function()
 });
 
 function submitAddCategory() {
-    const title = document.getElementById('addCategoryTitle').value;
+    const name = document.getElementById('addCategoryTitle').value;
     const isActive = document.getElementById('addCategoryActive').checked;
     
-    if (!title) {
+    if (!name) {
         alert('Введите название категории');
         return;
     }
@@ -611,10 +611,10 @@ function submitAddCategory() {
     fetch('/api/v1/admin/service-categories', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            title: title,
+            name: name,
             is_active: isActive
         })
     })
@@ -643,10 +643,10 @@ function editCategory(id, title, isActive) {
 
 function submitEditCategory() {
     const id = document.getElementById('editCategoryId').value;
-    const title = document.getElementById('editCategoryTitle').value;
+    const name = document.getElementById('editCategoryTitle').value;
     const isActive = document.getElementById('editCategoryActive').checked;
     
-    if (!title) {
+    if (!name) {
         alert('Введите название категории');
         return;
     }
@@ -654,10 +654,10 @@ function submitEditCategory() {
     fetch(`/api/v1/admin/service-categories/${id}`, {
         method: 'PUT',
         headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            title: title,
+            name: name,
             is_active: isActive
         })
     })

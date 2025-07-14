@@ -1356,27 +1356,30 @@ function editCard(id, title, description, address, phone, email, website, image_
 
 function submitEditCard() {
     const id = document.getElementById('editCardId').value;
-    const formData = {
-        title: document.getElementById('editCardTitle').value,
-        description: document.getElementById('editCardDescription').value,
-        address: document.getElementById('editCardAddress').value,
-        phone: document.getElementById('editCardPhone').value,
-        email: document.getElementById('editCardEmail').value,
-        website: document.getElementById('editCardWebsite').value,
-        is_active: true // По умолчанию активно
-    };
-    
-    if (!formData.title) {
+    const title = document.getElementById('editCardTitle').value;
+    const description = document.getElementById('editCardDescription').value;
+    const address = document.getElementById('editCardAddress').value;
+    const phone = document.getElementById('editCardPhone').value;
+    const email = document.getElementById('editCardEmail').value;
+    const website = document.getElementById('editCardWebsite').value;
+    const latitude = document.getElementById('editCardLatitude').value;
+    const longitude = document.getElementById('editCardLongitude').value;
+    if (!title) {
         alert('Введите название заведения');
         return;
     }
-    
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('address', address);
+    formData.append('phone', phone);
+    formData.append('email', email);
+    formData.append('website', website);
+    if (latitude) formData.append('latitude', latitude);
+    if (longitude) formData.append('longitude', longitude);
     fetch(`/api/v1/admin/service-cards/${id}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
+        body: formData
     })
     .then(response => response.json())
     .then(data => {
@@ -1876,5 +1879,105 @@ document.getElementById('panorama-360-input').addEventListener('change', functio
         previewDiv.style.display = 'none';
     }
 });
+
+// Новая функция для инициализации карты в модалке редактирования
+function initEditCardMap(lat, lng) {
+    const defaultLocation = (lat && lng) ? { lat: parseFloat(lat), lng: parseFloat(lng) } : { lat: 40.5283, lng: 72.7985 };
+    let map = new google.maps.Map(document.getElementById('editCardMap'), {
+        zoom: 13,
+        center: defaultLocation,
+        mapTypeControl: true,
+        streetViewControl: false,
+        fullscreenControl: false
+    });
+    let marker = null;
+    if (lat && lng) {
+        marker = new google.maps.Marker({
+            position: defaultLocation,
+            map: map,
+            title: 'Местоположение заведения',
+            icon: {
+                url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                scaledSize: new google.maps.Size(32, 32)
+            }
+        });
+    }
+    // Автокомплит для адреса
+    const addressInput = document.getElementById('editCardAddress');
+    const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+        componentRestrictions: { country: 'kg' },
+        fields: ['formatted_address', 'geometry', 'name']
+    });
+    autocomplete.addListener('place_changed', function() {
+        const place = autocomplete.getPlace();
+        if (!place.geometry) {
+            alert('Адрес не найден. Пожалуйста, выберите из списка.');
+            return;
+        }
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        document.getElementById('editCardLatitude').value = lat.toFixed(6);
+        document.getElementById('editCardLongitude').value = lng.toFixed(6);
+        if (marker) marker.setMap(null);
+        marker = new google.maps.Marker({
+            position: { lat: lat, lng: lng },
+            map: map,
+            title: 'Местоположение заведения',
+            icon: {
+                url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                scaledSize: new google.maps.Size(32, 32)
+            }
+        });
+        map.setCenter({ lat: lat, lng: lng });
+        // Исправление Plus Code
+        let address = place.formatted_address;
+        if (address && /\w{4,}\+\w{2,}/.test(address)) {
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ location: { lat: lat, lng: lng } }, function(results, status) {
+                if (status === 'OK' && results && results.length > 0) {
+                    const normal = results.find(r => r.formatted_address && !/\w{4,}\+\w{2,}/.test(r.formatted_address));
+                    if (normal) {
+                        document.getElementById('editCardAddress').value = normal.formatted_address;
+                    } else {
+                        document.getElementById('editCardAddress').value = results[0].formatted_address;
+                    }
+                } else {
+                    document.getElementById('editCardAddress').value = address;
+                }
+            });
+        } else {
+            document.getElementById('editCardAddress').value = address;
+        }
+    });
+    // Клик по карте
+    map.addListener('click', function(event) {
+        const lat = event.latLng.lat();
+        const lng = event.latLng.lng();
+        document.getElementById('editCardLatitude').value = lat.toFixed(6);
+        document.getElementById('editCardLongitude').value = lng.toFixed(6);
+        if (marker) marker.setMap(null);
+        marker = new google.maps.Marker({
+            position: { lat: lat, lng: lng },
+            map: map,
+            title: 'Местоположение заведения',
+            icon: {
+                url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                scaledSize: new google.maps.Size(32, 32)
+            }
+        });
+        // Получаем адрес по координатам
+        const geocoder = new google.maps.Geocoder();
+        geocoder.geocode({ location: { lat: lat, lng: lng } }, function(results, status) {
+            if (status === 'OK' && results && results.length > 0) {
+                const normal = results.find(r => r.formatted_address && !/\w{4,}\+\w{2,}/.test(r.formatted_address));
+                if (normal) {
+                    document.getElementById('editCardAddress').value = normal.formatted_address;
+                } else {
+                    document.getElementById('editCardAddress').value = results[0].formatted_address;
+                }
+            }
+        });
+    });
+}
 </script>
 {% endblock %} 

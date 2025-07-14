@@ -1018,8 +1018,8 @@ function initAddCardMap() {
     // Автокомплит для адреса
     const addressInput = document.getElementById('addCardAddress');
     const autocomplete = new google.maps.places.Autocomplete(addressInput, {
-        types: ['geocode'],
-        componentRestrictions: { country: 'kg' }
+        componentRestrictions: { country: 'kg' },
+        fields: ['formatted_address', 'geometry', 'name']
     });
     autocomplete.addListener('place_changed', function() {
         const place = autocomplete.getPlace();
@@ -1075,9 +1075,8 @@ function initAddCardMap() {
         geocoder.geocode({ location: { lat: lat, lng: lng } }, function(results, status) {
             if (status === 'OK' && results[0]) {
                 const addressField = document.getElementById('addCardAddress');
-                if (!addressField.value) {
-                    addressField.value = results[0].formatted_address;
-                }
+                // Всегда обновляем поле адреса на найденный адрес
+                addressField.value = results[0].formatted_address;
             }
         });
     });

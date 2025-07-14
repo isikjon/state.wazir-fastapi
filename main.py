@@ -4713,10 +4713,19 @@ async def company_listings(request: Request, db: Session = Depends(deps.get_db))
         models.Property.owner_id == user.id
     ).order_by(models.Property.created_at.desc()).all()
     
+    total_count = len(properties)
+    active_count = len([p for p in properties if p.status == models.PropertyStatus.ACTIVE])
+    pending_count = len([p for p in properties if p.status == models.PropertyStatus.PENDING])
+    draft_count = len([p for p in properties if p.status == models.PropertyStatus.DRAFT])
+    
     return templates.TemplateResponse("companies/listings.html", {
         "request": request,
         "current_user": user,
-        "properties": properties
+        "properties": properties,
+        "total_count": total_count,
+        "active_count": active_count,
+        "pending_count": pending_count,
+        "draft_count": draft_count
     })
 
 @app.get("/companies/create-listing", response_class=HTMLResponse)
@@ -4740,10 +4749,30 @@ async def company_analytics(request: Request, db: Session = Depends(deps.get_db)
     if isinstance(user, RedirectResponse):
         return user
     
-    # Простая аналитика - можно расширить позже
+    # Получаем все объявления компании
+    company_properties = db.query(models.Property).filter(
+        models.Property.owner_id == user.id
+    ).all()
+    
+    # Простейшая статистика (можно расширить)
+    stats = {
+        "total_properties": len(company_properties),
+        "active_properties": len([p for p in company_properties if p.status == models.PropertyStatus.ACTIVE]),
+        "pending_properties": len([p for p in company_properties if p.status == models.PropertyStatus.PENDING]),
+        "draft_properties": len([p for p in company_properties if p.status == models.PropertyStatus.DRAFT]),
+    }
+    
+    # Топ-объявления по просмотрам
+    top_properties = sorted(company_properties, key=lambda p: getattr(p, 'views', 0), reverse=True)[:5]
+    # Последние объявления
+    recent_properties = sorted(company_properties, key=lambda p: getattr(p, 'created_at', None) or 0, reverse=True)[:5]
+    
     return templates.TemplateResponse("companies/analytics.html", {
         "request": request,
-        "current_user": user
+        "current_user": user,
+        "stats": stats,
+        "top_properties": top_properties,
+        "recent_properties": recent_properties
     })
 
 @app.get("/companies/profile", response_class=HTMLResponse)

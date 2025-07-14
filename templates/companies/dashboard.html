@@ -268,10 +268,10 @@
     const viewsChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: {{ chart_labels|tojson if chart_labels else '[]'|safe }},
+            labels: {{ chart_labels|default([])|tojson|safe }},
             datasets: [{
                 label: 'Просмотры',
-                data: {{ chart_data|tojson if chart_data else '[]'|safe }},
+                data: {{ chart_data|default([])|tojson|safe }},
                 borderColor: '#144b44',
                 backgroundColor: 'rgba(20, 75, 68, 0.1)',
                 borderWidth: 2,

@@ -1047,20 +1047,38 @@ function initAddCardMap() {
         });
         // Центрируем карту
         addCardMap.setCenter({ lat: lat, lng: lng });
+        // Исправление: если в place.formatted_address Plus Code, ищем нормальный адрес
+        let address = place.formatted_address;
+        if (address && /\w{4,}\+\w{2,}/.test(address)) {
+            // Plus Code, пробуем получить подробный адрес через геокодер
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ location: { lat: lat, lng: lng } }, function(results, status) {
+                if (status === 'OK' && results && results.length > 0) {
+                    // Ищем первый нормальный адрес
+                    const normal = results.find(r => r.formatted_address && !/\w{4,}\+\w{2,}/.test(r.formatted_address));
+                    if (normal) {
+                        document.getElementById('addCardAddress').value = normal.formatted_address;
+                    } else {
+                        document.getElementById('addCardAddress').value = results[0].formatted_address;
+                    }
+                } else {
+                    document.getElementById('addCardAddress').value = address;
+                }
+            });
+        } else {
+            document.getElementById('addCardAddress').value = address;
+        }
     });
     
     // Обработчик клика по карте
     addCardMap.addListener('click', function(event) {
         const lat = event.latLng.lat();
         const lng = event.latLng.lng();
-        // Обновляем поля координат
         document.getElementById('addCardLatitude').value = lat.toFixed(6);
         document.getElementById('addCardLongitude').value = lng.toFixed(6);
-        // Убираем старый маркер
         if (addCardMarker) {
             addCardMarker.setMap(null);
         }
-        // Добавляем новый маркер
         addCardMarker = new google.maps.Marker({
             position: { lat: lat, lng: lng },
             map: addCardMap,
@@ -1073,10 +1091,14 @@ function initAddCardMap() {
         // Получаем адрес по координатам
         const geocoder = new google.maps.Geocoder();
         geocoder.geocode({ location: { lat: lat, lng: lng } }, function(results, status) {
-            if (status === 'OK' && results[0]) {
-                const addressField = document.getElementById('addCardAddress');
-                // Всегда обновляем поле адреса на найденный адрес
-                addressField.value = results[0].formatted_address;
+            if (status === 'OK' && results && results.length > 0) {
+                // Ищем первый нормальный адрес
+                const normal = results.find(r => r.formatted_address && !/\w{4,}\+\w{2,}/.test(r.formatted_address));
+                if (normal) {
+                    document.getElementById('addCardAddress').value = normal.formatted_address;
+                } else {
+                    document.getElementById('addCardAddress').value = results[0].formatted_address;
+                }
             }
         });
     });
@@ -1392,29 +1414,6 @@ function deleteCard(id, title) {
         });
     }
 }
-
-// Закрытие модальных окон по клику вне области
-window.addEventListener('click', function(event) {
-    // Для обычных модальных окон
-    if (event.target.classList.contains('modal')) {
-        event.target.classList.remove('show');
-        event.target.style.display = 'none';
-    }
-    
-    // Для модальных окон с backdrop
-    if (event.target.classList.contains('modal-backdrop')) {
-        event.target.classList.remove('show');
-        event.target.style.display = 'none';
-        
-        // Очистка полей при закрытии
-        if (event.target.id === 'photosModal') {
-            document.getElementById('photos-input').value = '';
-            document.getElementById('photos-preview').innerHTML = '';
-        } else if (event.target.id === 'tour360Modal') {
-            document.getElementById('tour-360-url').value = '';
-        }
-    }
-});
 
 // Функция для работы с изображениями заведения
 function viewCardImages(cardId) {

@@ -21,7 +21,7 @@
 
 .cards-header {
     padding: 1.25rem 1.5rem;
-    background: linear-gradient(135deg, var(--color-secondary) 0%, #1e293b 100%);
+    background:  #1e293b;
     color: white;
     display: flex;
     justify-content: space-between;
@@ -583,15 +583,6 @@
                 <button id="add-card-btn" class="btn btn-primary">
                     <i class="fas fa-plus"></i> Добавить заведение
                 </button>
-                <button onclick="testMediaServer()" class="btn btn-secondary" style="margin-left: 10px;">
-                    <i class="fas fa-network-wired"></i> Тест медиа-сервера
-                </button>
-                <button onclick="testDirectUpload()" class="btn btn-warning" style="margin-left: 10px;">
-                    <i class="fas fa-upload"></i> Прямой тест загрузки
-                </button>
-                <button onclick="testQuickUpload()" class="btn btn-success" style="margin-left: 10px;">
-                    <i class="fas fa-bolt"></i> Быстрый тест
-                </button>
             </div>
         </div>
 
@@ -1013,7 +1004,8 @@ if (searchInput) {
 
 // Инициализация Google Maps для добавления заведения
 function initAddCardMap() {
-    const defaultLocation = { lat: 42.8746, lng: 74.5698 }; // Бишкек
+    // Ош: 40.5283, 72.7985
+    const defaultLocation = { lat: 40.5283, lng: 72.7985 }; // Ош
     
     addCardMap = new google.maps.Map(document.getElementById('addCardMap'), {
         zoom: 13,
@@ -1023,20 +1015,26 @@ function initAddCardMap() {
         fullscreenControl: false
     });
     
-    // Обработчик клика по карте
-    addCardMap.addListener('click', function(event) {
-        const lat = event.latLng.lat();
-        const lng = event.latLng.lng();
-        
-        // Обновляем поля координат
+    // Автокомплит для адреса
+    const addressInput = document.getElementById('addCardAddress');
+    const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+        types: ['geocode'],
+        componentRestrictions: { country: 'kg' }
+    });
+    autocomplete.addListener('place_changed', function() {
+        const place = autocomplete.getPlace();
+        if (!place.geometry) {
+            alert('Адрес не найден. Пожалуйста, выберите из списка.');
+            return;
+        }
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
         document.getElementById('addCardLatitude').value = lat.toFixed(6);
         document.getElementById('addCardLongitude').value = lng.toFixed(6);
-        
         // Убираем старый маркер
         if (addCardMarker) {
             addCardMarker.setMap(null);
         }
-        
         // Добавляем новый маркер
         addCardMarker = new google.maps.Marker({
             position: { lat: lat, lng: lng },
@@ -1047,7 +1045,31 @@ function initAddCardMap() {
                 scaledSize: new google.maps.Size(32, 32)
             }
         });
-        
+        // Центрируем карту
+        addCardMap.setCenter({ lat: lat, lng: lng });
+    });
+    
+    // Обработчик клика по карте
+    addCardMap.addListener('click', function(event) {
+        const lat = event.latLng.lat();
+        const lng = event.latLng.lng();
+        // Обновляем поля координат
+        document.getElementById('addCardLatitude').value = lat.toFixed(6);
+        document.getElementById('addCardLongitude').value = lng.toFixed(6);
+        // Убираем старый маркер
+        if (addCardMarker) {
+            addCardMarker.setMap(null);
+        }
+        // Добавляем новый маркер
+        addCardMarker = new google.maps.Marker({
+            position: { lat: lat, lng: lng },
+            map: addCardMap,
+            title: 'Местоположение заведения',
+            icon: {
+                url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                scaledSize: new google.maps.Size(32, 32)
+            }
+        });
         // Получаем адрес по координатам
         const geocoder = new google.maps.Geocoder();
         geocoder.geocode({ location: { lat: lat, lng: lng } }, function(results, status) {

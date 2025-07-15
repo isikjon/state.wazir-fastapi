@@ -12,12 +12,9 @@ config = context.config
 fileConfig(config.config_file_name)
 
 # Импорт моделей для автогенерации миграций
+from database import Base
 from app.models import *
-target_metadata = None
-
-# Если у тебя есть target_metadata, укажи его явно, например:
-# from app.models.base import Base
-# target_metadata = Base.metadata
+target_metadata = Base.metadata
 
 
 def run_migrations_online():

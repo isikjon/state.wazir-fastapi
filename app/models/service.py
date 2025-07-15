@@ -61,3 +61,13 @@ class ServiceCard(Base, TimestampMixin):
     # Связь с изображениями
     images = relationship("ServiceCardImage", back_populates="service_card", cascade="all, delete-orphan")
     panoramas = relationship("ServiceCardPanorama", backref="service_card", cascade="all, delete-orphan") 
+
+
+class ServiceCardImage(Base, TimestampMixin):
+    __tablename__ = "service_card_images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    url = Column(String(255), nullable=False)
+    is_main = Column(Boolean, default=False)
+    service_card_id = Column(Integer, ForeignKey("service_cards.id"), nullable=False)
+    service_card = relationship("ServiceCard", back_populates="images") 

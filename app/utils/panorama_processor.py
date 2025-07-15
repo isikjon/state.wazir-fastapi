@@ -84,7 +84,7 @@ class PanoramaProcessor:
                         "preview": result.get("preview_url"),
                         "thumbnail": result.get("thumbnail_url")
                     },
-                    "metadata": result.get("metadata", {})
+                    "meta": result.get("metadata", {})
                 }
             else:
                 logger.error(f"❌ Ошибка загрузки: {result.get('message')}")

@@ -36,7 +36,7 @@ class PropertyPanorama(Base, TimestampMixin):
     optimized_url = Column(String(255), nullable=True)
     preview_url = Column(String(255), nullable=True)
     thumbnail_url = Column(String(255), nullable=True)
-    metadata = Column(Text, nullable=True)
+    meta = Column(Text, nullable=True)
     uploaded_at = Column(DateTime, nullable=True)
     type = Column(String(20), default="file")
     notes = Column(String(255), nullable=True)

@@ -17,6 +17,22 @@ class ServiceCategory(Base, TimestampMixin):
     service_cards = relationship("ServiceCard", back_populates="category")
 
 
+class ServiceCardPanorama(Base, TimestampMixin):
+    __tablename__ = "service_card_panoramas"
+    id = Column(Integer, primary_key=True, index=True)
+    service_card_id = Column(Integer, ForeignKey("service_cards.id"))
+    url = Column(String(255), nullable=True)
+    file_id = Column(String(100), nullable=True)
+    original_url = Column(String(255), nullable=True)
+    optimized_url = Column(String(255), nullable=True)
+    preview_url = Column(String(255), nullable=True)
+    thumbnail_url = Column(String(255), nullable=True)
+    metadata = Column(Text, nullable=True)
+    uploaded_at = Column(DateTime, nullable=True)
+    type = Column(String(20), default="file")
+    notes = Column(String(255), nullable=True)
+
+
 class ServiceCard(Base, TimestampMixin):
     """Модель для карточек заведений в сервисах"""
     __tablename__ = "service_cards"
@@ -35,16 +51,6 @@ class ServiceCard(Base, TimestampMixin):
     latitude = Column(Float, nullable=True)  # Широта
     longitude = Column(Float, nullable=True)  # Долгота
     
-    # Поля для 360° панорам (аналогично Property)
-    tour_360_url = Column(String(255), nullable=True)  # URL для старой совместимости
-    tour_360_file_id = Column(String(100), nullable=True)  # ID файла панорамы
-    tour_360_original_url = Column(String(255), nullable=True)  # Путь к оригинальному файлу
-    tour_360_optimized_url = Column(String(255), nullable=True)  # Путь к оптимизированному файлу
-    tour_360_preview_url = Column(String(255), nullable=True)  # Путь к превью
-    tour_360_thumbnail_url = Column(String(255), nullable=True)  # Путь к миниатюре
-    tour_360_metadata = Column(Text, nullable=True)  # JSON с метаданными панорамы
-    tour_360_uploaded_at = Column(DateTime, nullable=True)  # Дата загрузки панорамы
-    
     # Поля для системы изображений
     photos_uploaded_at = Column(DateTime, nullable=True)  # Дата последней загрузки фотографий
     
@@ -54,25 +60,4 @@ class ServiceCard(Base, TimestampMixin):
     
     # Связь с изображениями
     images = relationship("ServiceCardImage", back_populates="service_card", cascade="all, delete-orphan")
-    
-    def has_360_tour(self) -> bool:
-        """Проверяет, есть ли у заведения 360° панорама"""
-        return bool(self.tour_360_file_id or self.tour_360_url)
-    
-    def get_360_tour_url(self) -> str:
-        """Возвращает URL для 360° панорамы"""
-        if self.tour_360_optimized_url:
-            return self.tour_360_optimized_url
-        return self.tour_360_url
-
-
-class ServiceCardImage(Base, TimestampMixin):
-    """Модель для дополнительных изображений карточек заведений"""
-    __tablename__ = "service_card_images"
-
-    id = Column(Integer, primary_key=True, index=True)
-    url = Column(String(255), nullable=False)
-    is_main = Column(Boolean, default=False)
-    
-    service_card_id = Column(Integer, ForeignKey("service_cards.id"), nullable=False)
-    service_card = relationship("ServiceCard", back_populates="images") 
+    panoramas = relationship("ServiceCardPanorama", backref="service_card", cascade="all, delete-orphan") 

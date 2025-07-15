@@ -4042,11 +4042,12 @@ async def create_service_card(
         return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
 
 # API для загрузки 360° панорамы заведения (файл)
-@app.post("/api/v1/admin/service-cards/{card_id}/360/upload")
-async def upload_service_card_360_file(
+@app.post("/api/v1/admin/service-cards/{card_id}/panoramas/upload")
+async def upload_service_card_panoramas(
     card_id: int,
     request: Request,
-    file: UploadFile = File(...),
+    files: List[UploadFile] = File(...),
+    notes: List[str] = Form(default=[]),
     db: Session = Depends(deps.get_db)
 ):
     user = await check_admin_access(request, db)
@@ -4058,41 +4059,597 @@ async def upload_service_card_360_file(
         if not service_card:
             return JSONResponse(status_code=404, content={"success": False, "error": "Заведение не найдено"})
         
-        if not file.content_type or not file.content_type.startswith('image/'):
-            return JSONResponse(status_code=400, content={"success": False, "error": "Файл должен быть изображением"})
+        if not files:
+            return JSONResponse(status_code=400, content={"success": False, "error": "Не выбраны файлы для загрузки"})
+        
+        # Проверяем лимит файлов (максимум 10 панорам за раз)
+        if len(files) > 10:
+            return JSONResponse(status_code=400, content={"success": False, "error": "Максимум 10 панорам за одну загрузку"})
         
         from app.utils.panorama_processor import panorama_processor
+        uploaded_panoramas = []
+        errors = []
         
-        result = await panorama_processor.upload_panorama(file, card_id)
-        
-        if not result.get("success"):
-            error_message = result.get("message", "Ошибка при загрузке панорамы")
-            return JSONResponse(status_code=500, content={"success": False, "error": error_message})
-        
-        service_card.tour_360_file_id = result['file_id']
-        service_card.tour_360_original_url = result['urls']['original']
-        service_card.tour_360_optimized_url = result['urls']['optimized']
-        service_card.tour_360_preview_url = result['urls']['preview']
-        service_card.tour_360_thumbnail_url = result['urls']['thumbnail']
-        service_card.tour_360_metadata = json.dumps(result['metadata'], ensure_ascii=False)
-        service_card.tour_360_uploaded_at = datetime.now()
-        service_card.tour_360_url = None
+        for i, file in enumerate(files):
+            try:
+                # Проверяем тип файла
+                if not file.content_type or not file.content_type.startswith('image/'):
+                    errors.append(f"Файл {file.filename}: должен быть изображением")
+                    continue
+                
+                # Проверяем размер файла (300 МБ)
+                file_size = 0
+                content = await file.read()
+                file_size = len(content)
+                await file.seek(0)  # Возвращаем указатель в начало
+                
+                if file_size > 300 * 1024 * 1024:  # 300 МБ
+                    errors.append(f"Файл {file.filename}: превышает лимит 300 МБ")
+                    continue
+                
+                # Загружаем панораму
+                result = await panorama_processor.upload_panorama(file, card_id)
+                
+                if not result.get("success"):
+                    errors.append(f"Файл {file.filename}: {result.get('message', 'Ошибка загрузки')}")
+                    continue
+                
+                # Создаем запись панорамы в БД
+                panorama = models.ServiceCardPanorama(
+                    service_card_id=card_id,
+                    file_id=result['file_id'],
+                    original_url=result['urls']['original'],
+                    optimized_url=result['urls']['optimized'],
+                    preview_url=result['urls']['preview'],
+                    thumbnail_url=result['urls']['thumbnail'],
+                    meta=json.dumps(result.get('metadata', {}), ensure_ascii=False),
+                    uploaded_at=datetime.now(),
+                    type="file",
+                    notes=notes[i] if i < len(notes) else None
+                )
+                
+                db.add(panorama)
+                db.flush()  # Получаем ID
+                
+                uploaded_panoramas.append({
+                    "id": panorama.id,
+                    "file_id": result['file_id'],
+                    "urls": result['urls'],
+                    "metadata": result.get('metadata', {}),
+                    "notes": panorama.notes,
+                    "uploaded_at": panorama.uploaded_at.isoformat()
+                })
+                
+            except Exception as e:
+                errors.append(f"Файл {file.filename}: {str(e)}")
+                continue
         
         db.commit()
-        db.refresh(service_card)
+        
+        # Формируем ответ
+        response_data = {
+            "success": True,
+            "message": f"Загружено {len(uploaded_panoramas)} панорам",
+            "uploaded": uploaded_panoramas,
+            "total_uploaded": len(uploaded_panoramas),
+            "total_files": len(files)
+        }
+        
+        if errors:
+            response_data["errors"] = errors
+            response_data["message"] += f", {len(errors)} ошибок"
+        
+        return JSONResponse(content=response_data)
+        
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR: Ошибка при загрузке панорам: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
+
+# API для загрузки панорам недвижимости (множественные файлы)
+@app.post("/api/v1/admin/properties/{property_id}/panoramas/upload")
+async def upload_property_panoramas(
+    property_id: int,
+    request: Request,
+    files: List[UploadFile] = File(...),
+    notes: List[str] = Form(default=[]),
+    db: Session = Depends(deps.get_db)
+):
+    user = await check_admin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    
+    try:
+        property_obj = db.query(models.Property).filter(models.Property.id == property_id).first()
+        if not property_obj:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Объект недвижимости не найден"})
+        
+        if not files:
+            return JSONResponse(status_code=400, content={"success": False, "error": "Не выбраны файлы для загрузки"})
+        
+        if len(files) > 10:
+            return JSONResponse(status_code=400, content={"success": False, "error": "Максимум 10 панорам за одну загрузку"})
+        
+        from app.utils.panorama_processor import panorama_processor
+        uploaded_panoramas = []
+        errors = []
+        
+        for i, file in enumerate(files):
+            try:
+                if not file.content_type or not file.content_type.startswith('image/'):
+                    errors.append(f"Файл {file.filename}: должен быть изображением")
+                    continue
+                
+                content = await file.read()
+                file_size = len(content)
+                await file.seek(0)
+                
+                if file_size > 300 * 1024 * 1024:  # 300 МБ
+                    errors.append(f"Файл {file.filename}: превышает лимит 300 МБ")
+                    continue
+                
+                result = await panorama_processor.upload_panorama(file, property_id)
+                
+                if not result.get("success"):
+                    errors.append(f"Файл {file.filename}: {result.get('message', 'Ошибка загрузки')}")
+                    continue
+                
+                panorama = models.PropertyPanorama(
+                    property_id=property_id,
+                    file_id=result['file_id'],
+                    original_url=result['urls']['original'],
+                    optimized_url=result['urls']['optimized'],
+                    preview_url=result['urls']['preview'],
+                    thumbnail_url=result['urls']['thumbnail'],
+                    meta=json.dumps(result.get('metadata', {}), ensure_ascii=False),
+                    uploaded_at=datetime.now(),
+                    type="file",
+                    notes=notes[i] if i < len(notes) else None
+                )
+                
+                db.add(panorama)
+                db.flush()
+                
+                uploaded_panoramas.append({
+                    "id": panorama.id,
+                    "file_id": result['file_id'],
+                    "urls": result['urls'],
+                    "metadata": result.get('metadata', {}),
+                    "notes": panorama.notes,
+                    "uploaded_at": panorama.uploaded_at.isoformat()
+                })
+                
+            except Exception as e:
+                errors.append(f"Файл {file.filename}: {str(e)}")
+                continue
+        
+        db.commit()
+        
+        response_data = {
+            "success": True,
+            "message": f"Загружено {len(uploaded_panoramas)} панорам",
+            "uploaded": uploaded_panoramas,
+            "total_uploaded": len(uploaded_panoramas),
+            "total_files": len(files)
+        }
+        
+        if errors:
+            response_data["errors"] = errors
+            response_data["message"] += f", {len(errors)} ошибок"
+        
+        return JSONResponse(content=response_data)
+        
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR: Ошибка при загрузке панорам недвижимости: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
+
+# API для добавления панорам по URL (сервис-карты)
+@app.post("/api/v1/admin/service-cards/{card_id}/panoramas/url")
+async def add_service_card_panorama_url(
+    card_id: int,
+    request: Request,
+    urls: List[str] = Form(...),
+    notes: List[str] = Form(default=[]),
+    db: Session = Depends(deps.get_db)
+):
+    user = await check_admin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    
+    try:
+        service_card = db.query(ServiceCard).filter(ServiceCard.id == card_id).first()
+        if not service_card:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Заведение не найдено"})
+        
+        if not urls:
+            return JSONResponse(status_code=400, content={"success": False, "error": "Не указаны URL панорам"})
+        
+        if len(urls) > 10:
+            return JSONResponse(status_code=400, content={"success": False, "error": "Максимум 10 панорам за одну операцию"})
+        
+        added_panoramas = []
+        errors = []
+        
+        for i, url in enumerate(urls):
+            try:
+                if not url.strip():
+                    continue
+                
+                panorama = models.ServiceCardPanorama(
+                    service_card_id=card_id,
+                    url=url.strip(),
+                    type="url",
+                    notes=notes[i] if i < len(notes) else None,
+                    uploaded_at=datetime.now()
+                )
+                
+                db.add(panorama)
+                db.flush()
+                
+                added_panoramas.append({
+                    "id": panorama.id,
+                    "url": panorama.url,
+                    "type": panorama.type,
+                    "notes": panorama.notes,
+                    "uploaded_at": panorama.uploaded_at.isoformat()
+                })
+                
+            except Exception as e:
+                errors.append(f"URL {url}: {str(e)}")
+                continue
+        
+        db.commit()
+        
+        response_data = {
+            "success": True,
+            "message": f"Добавлено {len(added_panoramas)} панорам",
+            "added": added_panoramas,
+            "total_added": len(added_panoramas),
+            "total_urls": len(urls)
+        }
+        
+        if errors:
+            response_data["errors"] = errors
+            response_data["message"] += f", {len(errors)} ошибок"
+        
+        return JSONResponse(content=response_data)
+        
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR: Ошибка при добавлении панорам по URL: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
+
+# API для добавления панорам по URL (недвижимость)
+@app.post("/api/v1/admin/properties/{property_id}/panoramas/url")
+async def add_property_panorama_url(
+    property_id: int,
+    request: Request,
+    urls: List[str] = Form(...),
+    notes: List[str] = Form(default=[]),
+    db: Session = Depends(deps.get_db)
+):
+    user = await check_admin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    
+    try:
+        property_obj = db.query(models.Property).filter(models.Property.id == property_id).first()
+        if not property_obj:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Объект недвижимости не найден"})
+        
+        if not urls:
+            return JSONResponse(status_code=400, content={"success": False, "error": "Не указаны URL панорам"})
+        
+        if len(urls) > 10:
+            return JSONResponse(status_code=400, content={"success": False, "error": "Максимум 10 панорам за одну операцию"})
+        
+        added_panoramas = []
+        errors = []
+        
+        for i, url in enumerate(urls):
+            try:
+                if not url.strip():
+                    continue
+                
+                panorama = models.PropertyPanorama(
+                    property_id=property_id,
+                    url=url.strip(),
+                    type="url",
+                    notes=notes[i] if i < len(notes) else None,
+                    uploaded_at=datetime.now()
+                )
+                
+                db.add(panorama)
+                db.flush()
+                
+                added_panoramas.append({
+                    "id": panorama.id,
+                    "url": panorama.url,
+                    "type": panorama.type,
+                    "notes": panorama.notes,
+                    "uploaded_at": panorama.uploaded_at.isoformat()
+                })
+                
+            except Exception as e:
+                errors.append(f"URL {url}: {str(e)}")
+                continue
+        
+        db.commit()
+        
+        response_data = {
+            "success": True,
+            "message": f"Добавлено {len(added_panoramas)} панорам",
+            "added": added_panoramas,
+            "total_added": len(added_panoramas),
+            "total_urls": len(urls)
+        }
+        
+        if errors:
+            response_data["errors"] = errors
+            response_data["message"] += f", {len(errors)} ошибок"
+        
+        return JSONResponse(content=response_data)
+        
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR: Ошибка при добавлении панорам недвижимости по URL: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
+
+# API для компаний - загрузка панорам недвижимости
+@app.post("/api/v1/companies/properties/{property_id}/panoramas/upload")
+async def companies_upload_property_panoramas(
+    property_id: int,
+    request: Request,
+    files: List[UploadFile] = File(...),
+    notes: List[str] = Form(default=[]),
+    db: Session = Depends(deps.get_db)
+):
+    # Проверяем доступ компании
+    current_user = deps.get_current_active_user(request, db)
+    if not current_user or current_user.role != models.UserRole.COMPANY:
+        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    
+    try:
+        property_obj = db.query(models.Property).filter(
+            models.Property.id == property_id,
+            models.Property.owner_id == current_user.id
+        ).first()
+        
+        if not property_obj:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Объект недвижимости не найден или не принадлежит вам"})
+        
+        if not files:
+            return JSONResponse(status_code=400, content={"success": False, "error": "Не выбраны файлы для загрузки"})
+        
+        if len(files) > 10:
+            return JSONResponse(status_code=400, content={"success": False, "error": "Максимум 10 панорам за одну загрузку"})
+        
+        from app.utils.panorama_processor import panorama_processor
+        uploaded_panoramas = []
+        errors = []
+        
+        for i, file in enumerate(files):
+            try:
+                if not file.content_type or not file.content_type.startswith('image/'):
+                    errors.append(f"Файл {file.filename}: должен быть изображением")
+                    continue
+                
+                content = await file.read()
+                file_size = len(content)
+                await file.seek(0)
+                
+                if file_size > 300 * 1024 * 1024:  # 300 МБ
+                    errors.append(f"Файл {file.filename}: превышает лимит 300 МБ")
+                    continue
+                
+                result = await panorama_processor.upload_panorama(file, property_id)
+                
+                if not result.get("success"):
+                    errors.append(f"Файл {file.filename}: {result.get('message', 'Ошибка загрузки')}")
+                    continue
+                
+                panorama = models.PropertyPanorama(
+                    property_id=property_id,
+                    file_id=result['file_id'],
+                    original_url=result['urls']['original'],
+                    optimized_url=result['urls']['optimized'],
+                    preview_url=result['urls']['preview'],
+                    thumbnail_url=result['urls']['thumbnail'],
+                    meta=json.dumps(result.get('metadata', {}), ensure_ascii=False),
+                    uploaded_at=datetime.now(),
+                    type="file",
+                    notes=notes[i] if i < len(notes) else None
+                )
+                
+                db.add(panorama)
+                db.flush()
+                
+                uploaded_panoramas.append({
+                    "id": panorama.id,
+                    "file_id": result['file_id'],
+                    "urls": result['urls'],
+                    "metadata": result.get('metadata', {}),
+                    "notes": panorama.notes,
+                    "uploaded_at": panorama.uploaded_at.isoformat()
+                })
+                
+            except Exception as e:
+                errors.append(f"Файл {file.filename}: {str(e)}")
+                continue
+        
+        db.commit()
+        
+        response_data = {
+            "success": True,
+            "message": f"Загружено {len(uploaded_panoramas)} панорам",
+            "uploaded": uploaded_panoramas,
+            "total_uploaded": len(uploaded_panoramas),
+            "total_files": len(files)
+        }
+        
+        if errors:
+            response_data["errors"] = errors
+            response_data["message"] += f", {len(errors)} ошибок"
+        
+        return JSONResponse(content=response_data)
+        
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR: Ошибка при загрузке панорам компанией: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
+
+# API для создания объявления компанией с поддержкой панорам
+@app.post("/api/v1/companies/properties")
+async def companies_create_property(
+    request: Request,
+    title: str = Form(...),
+    description: str = Form(...),
+    price: float = Form(...),
+    address: str = Form(...),
+    city: str = Form(...),
+    area: float = Form(...),
+    type: str = Form("apartment"),
+    rooms: int = Form(None),
+    floor: int = Form(None),
+    building_floors: int = Form(None),
+    has_balcony: bool = Form(False),
+    has_furniture: bool = Form(False),
+    has_renovation: bool = Form(False),
+    has_parking: bool = Form(False),
+    has_elevator: bool = Form(False),
+    has_security: bool = Form(False),
+    has_internet: bool = Form(False),
+    has_air_conditioning: bool = Form(False),
+    has_heating: bool = Form(False),
+    has_yard: bool = Form(False),
+    has_pool: bool = Form(False),
+    has_gym: bool = Form(False),
+    bathroom_type: str = Form(None),
+    category_id: int = Form(None),
+    latitude: float = Form(None),
+    longitude: float = Form(None),
+    photos: List[UploadFile] = File(default=[]),
+    panorama_files: List[UploadFile] = File(default=[]),
+    panorama_notes: List[str] = Form(default=[]),
+    panorama_urls: List[str] = Form(default=[]),
+    db: Session = Depends(deps.get_db)
+):
+    # Проверяем доступ компании
+    current_user = deps.get_current_active_user(request, db)
+    if not current_user or current_user.role != models.UserRole.COMPANY:
+        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    
+    try:
+        # Создаем объявление
+        property_obj = models.Property(
+            title=title,
+            description=description,
+            price=price,
+            address=address,
+            city=city,
+            area=area,
+            type=type,
+            rooms=rooms,
+            floor=floor,
+            building_floors=building_floors,
+            has_balcony=has_balcony,
+            has_furniture=has_furniture,
+            has_renovation=has_renovation,
+            has_parking=has_parking,
+            has_elevator=has_elevator,
+            has_security=has_security,
+            has_internet=has_internet,
+            has_air_conditioning=has_air_conditioning,
+            has_heating=has_heating,
+            has_yard=has_yard,
+            has_pool=has_pool,
+            has_gym=has_gym,
+            bathroom_type=bathroom_type,
+            category_id=category_id,
+            latitude=latitude,
+            longitude=longitude,
+            owner_id=current_user.id,
+            status=models.PropertyStatus.PENDING
+        )
+        
+        db.add(property_obj)
+        db.flush()  # Получаем ID
+        
+        # Загружаем фотографии
+        if photos:
+            for photo in photos:
+                if photo.content_type and photo.content_type.startswith('image/'):
+                    # Здесь должна быть логика загрузки фото на медиа-сервер
+                    # Пока создаем заглушку
+                    image = models.PropertyImage(
+                        property_id=property_obj.id,
+                        url=f"/media/properties/{property_obj.id}/{photo.filename}",
+                        is_main=len(property_obj.images) == 0
+                    )
+                    db.add(image)
+        
+        # Загружаем панорамы (файлы)
+        if panorama_files:
+            from app.utils.panorama_processor import panorama_processor
+            
+            for i, file in enumerate(panorama_files):
+                try:
+                    if not file.content_type or not file.content_type.startswith('image/'):
+                        continue
+                    
+                    content = await file.read()
+                    file_size = len(content)
+                    await file.seek(0)
+                    
+                    if file_size > 300 * 1024 * 1024:  # 300 МБ
+                        continue
+                    
+                    result = await panorama_processor.upload_panorama(file, property_obj.id)
+                    
+                    if result.get("success"):
+                        panorama = models.PropertyPanorama(
+                            property_id=property_obj.id,
+                            file_id=result['file_id'],
+                            original_url=result['urls']['original'],
+                            optimized_url=result['urls']['optimized'],
+                            preview_url=result['urls']['preview'],
+                            thumbnail_url=result['urls']['thumbnail'],
+                            meta=json.dumps(result.get('metadata', {}), ensure_ascii=False),
+                            uploaded_at=datetime.now(),
+                            type="file",
+                            notes=panorama_notes[i] if i < len(panorama_notes) else None
+                        )
+                        db.add(panorama)
+                        
+                except Exception as e:
+                    print(f"Ошибка загрузки панорамы {file.filename}: {e}")
+                    continue
+        
+        # Добавляем панорамы по URL
+        if panorama_urls:
+            for i, url in enumerate(panorama_urls):
+                if url.strip():
+                    panorama = models.PropertyPanorama(
+                        property_id=property_obj.id,
+                        url=url.strip(),
+                        type="url",
+                        notes=panorama_notes[i] if i < len(panorama_notes) else None,
+                        uploaded_at=datetime.now()
+                    )
+                    db.add(panorama)
+        
+        db.commit()
         
         return JSONResponse(content={
             "success": True,
-            "message": "360° панорама успешно загружена и обработана",
-            "file_id": result['file_id'],
-            "urls": result['urls'],
-            "metadata": result['metadata'],
-            "uploaded_at": datetime.now().isoformat()
+            "message": "Объявление успешно создано",
+            "property_id": property_obj.id
         })
         
     except Exception as e:
         db.rollback()
-        print(f"ERROR: Ошибка при загрузке 360° панорамы: {str(e)}")
+        print(f"ERROR: Ошибка при создании объявления: {str(e)}")
         return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
 
 # API для сохранения 360° панорамы заведения (URL) - для обратной совместимости

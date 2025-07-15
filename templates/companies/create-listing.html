@@ -13,11 +13,11 @@
         border: 1px solid #e5e7eb;
         transition: all 0.2s ease;
     }
-    
+
     .form-section:hover {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
-    
+
     .form-label {
         display: block;
         font-weight: 500;
@@ -25,8 +25,10 @@
         margin-bottom: 8px;
         font-size: 14px;
     }
-    
-    .form-input, .form-select, .form-textarea {
+
+    .form-input,
+    .form-select,
+    .form-textarea {
         width: 100%;
         padding: 12px 16px;
         border: 1px solid #d1d5db;
@@ -35,23 +37,25 @@
         transition: all 0.2s ease;
         background: #f9fafb;
     }
-    
-    .form-input:focus, .form-select:focus, .form-textarea:focus {
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
         outline: none;
         border-color: #144b44;
         background: white;
         box-shadow: 0 0 0 3px rgba(20, 75, 68, 0.1);
     }
-    
+
     .form-textarea {
         min-height: 120px;
         resize: vertical;
     }
-    
+
     .required {
         color: #ef4444;
     }
-    
+
     .photo-upload-area {
         border: 2px dashed #d1d5db;
         border-radius: 12px;
@@ -61,19 +65,19 @@
         transition: all 0.2s ease;
         background: #f8fafc;
     }
-    
+
     .photo-upload-area:hover {
         border-color: #144b44;
         background: #f0f9ff;
     }
-    
+
     .uploaded-photos {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
         gap: 16px;
         margin-top: 20px;
     }
-    
+
     .photo-item {
         position: relative;
         aspect-ratio: 4/3;
@@ -81,13 +85,13 @@
         overflow: hidden;
         background: #f3f4f6;
     }
-    
+
     .photo-item img {
         width: 100%;
         height: 100%;
         object-fit: cover;
     }
-    
+
     .photo-remove {
         position: absolute;
         top: 8px;
@@ -104,19 +108,19 @@
         cursor: pointer;
         transition: all 0.2s ease;
     }
-    
+
     .photo-remove:hover {
         background: #ef4444;
         transform: scale(1.1);
     }
-    
+
     .checkbox-group {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 12px;
         margin-top: 12px;
     }
-    
+
     .checkbox-item {
         display: flex;
         align-items: center;
@@ -126,17 +130,17 @@
         cursor: pointer;
         transition: all 0.2s ease;
     }
-    
+
     .checkbox-item:hover {
         border-color: #144b44;
         background: #f8fafc;
     }
-    
+
     .checkbox-item input[type="checkbox"] {
         margin-right: 8px;
         accent-color: #144b44;
     }
-    
+
     .btn-save {
         background: #144b44;
         color: white;
@@ -148,39 +152,110 @@
         transition: all 0.2s ease;
         font-size: 16px;
     }
-    
+
     .btn-save:hover {
         background: #1a5650;
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(20, 75, 68, 0.3);
     }
-    
+
     .btn-save:disabled {
         background: #9ca3af;
         cursor: not-allowed;
         transform: none;
         box-shadow: none;
     }
-    
+
     .grid-2 {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 20px;
     }
-    
+
     .grid-3 {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
         gap: 20px;
     }
-    
+
+    /* Стили для панорам */
+    .panorama-tabs {
+        display: flex;
+        gap: 8px;
+        border-bottom: 1px solid #e5e7eb;
+        margin-bottom: 16px;
+    }
+
+    .panorama-tab {
+        padding: 12px 20px;
+        border: none;
+        background: none;
+        color: #6b7280;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s ease;
+        font-weight: 500;
+    }
+
+    .panorama-tab.active {
+        color: #144b44;
+        border-bottom-color: #144b44;
+    }
+
+    .panorama-tab:hover {
+        color: #144b44;
+    }
+
+    .panorama-url-field {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 16px;
+        background: #f9fafb;
+    }
+
+    .btn-remove-url {
+        background: #ef4444;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-remove-url:hover {
+        background: #dc2626;
+    }
+
+    .btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 10px 16px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: 500;
+    }
+
+    .btn-secondary:hover {
+        background: #e5e7eb;
+        border-color: #9ca3af;
+    }
+
     @media (max-width: 768px) {
-        .grid-2, .grid-3 {
+
+        .grid-2,
+        .grid-3 {
             grid-template-columns: 1fr;
         }
-        
+
         .checkbox-group {
             grid-template-columns: 1fr;
+        }
+
+        .panorama-tabs {
+            flex-direction: column;
         }
     }
 </style>
@@ -191,19 +266,20 @@
     <!-- Основная информация -->
     <div class="form-section">
         <h3 class="text-lg font-semibold text-gray-900 mb-6">Основная информация</h3>
-        
+
         <div class="grid-2">
             <div>
                 <label class="form-label">Название объявления <span class="required">*</span></label>
-                <input type="text" name="title" class="form-input" placeholder="Например: 3-комнатная квартира в центре" required>
+                <input type="text" name="title" class="form-input" placeholder="Например: 3-комнатная квартира в центре"
+                    required>
             </div>
-            
+
             <div>
                 <label class="form-label">Цена (сом) <span class="required">*</span></label>
                 <input type="number" name="price" class="form-input" placeholder="0" min="0" required>
             </div>
         </div>
-        
+
         <div class="grid-2 mt-4">
             <div>
                 <label class="form-label">Категория <span class="required">*</span></label>
@@ -212,7 +288,7 @@
                     <!-- Категории будут загружены через JavaScript -->
                 </select>
             </div>
-            
+
             <div>
                 <label class="form-label">Тип недвижимости</label>
                 <select name="type" class="form-select">
@@ -223,18 +299,19 @@
                 </select>
             </div>
         </div>
-        
+
         <div class="mt-4">
             <label class="form-label">Описание <span class="required">*</span></label>
-            <textarea name="description" class="form-textarea" placeholder="Подробное описание недвижимости..." required></textarea>
+            <textarea name="description" class="form-textarea" placeholder="Подробное описание недвижимости..."
+                required></textarea>
         </div>
-        
+
         <div class="grid-2 mt-4">
             <div>
                 <label class="form-label">Адрес <span class="required">*</span></label>
                 <input type="text" name="address" class="form-input" placeholder="Улица, дом, район" required>
             </div>
-            
+
             <div>
                 <label class="form-label">Город <span class="required">*</span></label>
                 <select name="city" class="form-select" required>
@@ -248,13 +325,13 @@
     <!-- Характеристики -->
     <div class="form-section">
         <h3 class="text-lg font-semibold text-gray-900 mb-6">Характеристики</h3>
-        
+
         <div class="grid-3">
             <div>
                 <label class="form-label">Площадь (м²)</label>
                 <input type="number" name="area" class="form-input" placeholder="0" min="0" step="0.1">
             </div>
-            
+
             <div>
                 <label class="form-label">Количество комнат</label>
                 <select name="rooms" class="form-select">
@@ -266,19 +343,19 @@
                     <option value="5">5+ комнат</option>
                 </select>
             </div>
-            
+
             <div>
                 <label class="form-label">Этаж</label>
                 <input type="number" name="floor" class="form-input" placeholder="0" min="1" max="50">
             </div>
         </div>
-        
+
         <div class="grid-2 mt-4">
             <div>
                 <label class="form-label">Этажность здания</label>
                 <input type="number" name="building_floors" class="form-input" placeholder="0" min="1" max="50">
             </div>
-            
+
             <div>
                 <label class="form-label">Санузел</label>
                 <select name="bathroom_type" class="form-select">
@@ -349,16 +426,66 @@
     <!-- Фотографии -->
     <div class="form-section">
         <h3 class="text-lg font-semibold text-gray-900 mb-6">Фотографии <span class="required">*</span></h3>
-        
+
         <div class="photo-upload-area" onclick="document.getElementById('photoInput').click()">
             <i class="fas fa-camera text-3xl text-gray-400 mb-4"></i>
             <p class="text-gray-600 text-lg font-medium">Нажмите для добавления фото</p>
             <p class="text-gray-400 text-sm mt-2">Минимум 2 фотографии, максимум 10</p>
         </div>
-        
+
         <input type="file" id="photoInput" name="photos" multiple accept="image/*" style="display: none;">
-        
+
         <div id="uploadedPhotos" class="uploaded-photos"></div>
+    </div>
+
+    <!-- 360° Панорамы -->
+    <div class="form-section">
+        <h3 class="text-lg font-semibold text-gray-900 mb-6">360° Панорамы (опционально)</h3>
+
+        <div class="panorama-upload-section">
+            <!-- Переключатель между файлами и URL -->
+            <div class="panorama-tabs mb-4">
+                <button type="button" id="panorama-files-tab" class="panorama-tab active"
+                    onclick="switchPanoramaMode('files')">
+                    <i class="fas fa-upload mr-2"></i>Загрузить файлы
+                </button>
+                <button type="button" id="panorama-urls-tab" class="panorama-tab" onclick="switchPanoramaMode('urls')">
+                    <i class="fas fa-link mr-2"></i>Добавить по URL
+                </button>
+            </div>
+
+            <!-- Загрузка файлов -->
+            <div id="panorama-files-section">
+                <div class="photo-upload-area" onclick="document.getElementById('panoramaInput').click()">
+                    <i class="fas fa-vr-cardboard text-3xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 text-lg font-medium">Нажмите для добавления панорам</p>
+                    <p class="text-gray-500 text-sm">Поддерживаются: JPG, PNG (до 300 МБ каждый, максимум 10 файлов)</p>
+                </div>
+                <input type="file" id="panoramaInput" name="panoramas" multiple accept="image/*" style="display: none;">
+
+                <div id="uploadedPanoramas" class="uploaded-photos mt-4"></div>
+            </div>
+
+            <!-- Добавление по URL -->
+            <div id="panorama-urls-section" style="display: none;">
+                <div id="panorama-url-fields">
+                    <div class="panorama-url-field mb-3">
+                        <div class="flex gap-2">
+                            <input type="url" class="form-input flex-1"
+                                placeholder="https://kuula.co/share/... или другая ссылка" name="panorama_urls[]">
+                            <button type="button" class="btn-remove-url" onclick="removePanoramaUrlField(this)">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <input type="text" class="form-input mt-2" placeholder="Комментарий (опционально)"
+                            name="panorama_notes[]">
+                    </div>
+                </div>
+                <button type="button" id="add-panorama-url" class="btn-secondary" onclick="addPanoramaUrlField()">
+                    <i class="fas fa-plus mr-2"></i>Добавить URL
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Кнопки -->
@@ -366,9 +493,10 @@
         <a href="/companies/listings" class="text-gray-600 hover:text-gray-800 font-medium">
             <i class="fas fa-arrow-left mr-2"></i>Назад к списку
         </a>
-        
+
         <div class="space-x-4">
-            <button type="button" onclick="saveDraft()" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
+            <button type="button" onclick="saveDraft()"
+                class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
                 Сохранить черновик
             </button>
             <button type="submit" class="btn-save">
@@ -379,88 +507,88 @@
 </form>
 
 <script>
-let uploadedFiles = [];
+    let uploadedFiles = [];
 
-// Загрузка данных при инициализации
-document.addEventListener('DOMContentLoaded', function() {
-    loadCities();
-    loadCategories();
-});
-
-// Загрузка городов из JSON файла
-async function loadCities() {
-    try {
-        const response = await fetch('/static/data/cities.json');
-        const data = await response.json();
-        
-        const citySelect = document.querySelector('select[name="city"]');
-        citySelect.innerHTML = '<option value="">Выберите город</option>';
-        
-        data.regions.forEach(region => {
-            // Добавляем группу региона
-            const optgroup = document.createElement('optgroup');
-            optgroup.label = region.name;
-            
-            region.cities.forEach(city => {
-                const option = document.createElement('option');
-                option.value = city;
-                option.textContent = city;
-                optgroup.appendChild(option);
-            });
-            
-            citySelect.appendChild(optgroup);
-        });
-    } catch (error) {
-        console.error('Ошибка загрузки городов:', error);
-    }
-}
-
-// Загрузка категорий из БД
-async function loadCategories() {
-    try {
-        const response = await fetch('/api/v1/categories');
-        const categories = await response.json();
-        
-        const categorySelect = document.querySelector('select[name="category_id"]');
-        categorySelect.innerHTML = '<option value="">Выберите категорию</option>';
-        
-        categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category.id;
-            option.textContent = category.name;
-            categorySelect.appendChild(option);
-        });
-    } catch (error) {
-        console.error('Ошибка загрузки категорий:', error);
-    }
-}
-
-// Обработка загрузки фотографий
-document.getElementById('photoInput').addEventListener('change', function(e) {
-    const files = Array.from(e.target.files);
-    
-    files.forEach(file => {
-        if (uploadedFiles.length >= 10) {
-            alert('Максимум 10 фотографий');
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            uploadedFiles.push({
-                file: file,
-                url: e.target.result
-            });
-            renderPhotos();
-        };
-        reader.readAsDataURL(file);
+    // Загрузка данных при инициализации
+    document.addEventListener('DOMContentLoaded', function () {
+        loadCities();
+        loadCategories();
     });
-});
 
-// Отображение загруженных фото
-function renderPhotos() {
-    const container = document.getElementById('uploadedPhotos');
-    container.innerHTML = uploadedFiles.map((item, index) => `
+    // Загрузка городов из JSON файла
+    async function loadCities() {
+        try {
+            const response = await fetch('/static/data/cities.json');
+            const data = await response.json();
+
+            const citySelect = document.querySelector('select[name="city"]');
+            citySelect.innerHTML = '<option value="">Выберите город</option>';
+
+            data.regions.forEach(region => {
+                // Добавляем группу региона
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = region.name;
+
+                region.cities.forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city;
+                    option.textContent = city;
+                    optgroup.appendChild(option);
+                });
+
+                citySelect.appendChild(optgroup);
+            });
+        } catch (error) {
+            console.error('Ошибка загрузки городов:', error);
+        }
+    }
+
+    // Загрузка категорий из БД
+    async function loadCategories() {
+        try {
+            const response = await fetch('/api/v1/categories');
+            const categories = await response.json();
+
+            const categorySelect = document.querySelector('select[name="category_id"]');
+            categorySelect.innerHTML = '<option value="">Выберите категорию</option>';
+
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                categorySelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Ошибка загрузки категорий:', error);
+        }
+    }
+
+    // Обработка загрузки фотографий
+    document.getElementById('photoInput').addEventListener('change', function (e) {
+        const files = Array.from(e.target.files);
+
+        files.forEach(file => {
+            if (uploadedFiles.length >= 10) {
+                alert('Максимум 10 фотографий');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                uploadedFiles.push({
+                    file: file,
+                    url: e.target.result
+                });
+                renderPhotos();
+            };
+            reader.readAsDataURL(file);
+        });
+    });
+
+    // Отображение загруженных фото
+    function renderPhotos() {
+        const container = document.getElementById('uploadedPhotos');
+        container.innerHTML = uploadedFiles.map((item, index) => `
         <div class="photo-item">
             <img src="${item.url}" alt="Photo ${index + 1}">
             <button type="button" class="photo-remove" onclick="removePhoto(${index})">
@@ -468,74 +596,204 @@ function renderPhotos() {
             </button>
         </div>
     `).join('');
-}
-
-// Удаление фото
-function removePhoto(index) {
-    uploadedFiles.splice(index, 1);
-    renderPhotos();
-}
-
-// Сохранение черновика
-function saveDraft() {
-    const formData = new FormData(document.getElementById('createListingForm'));
-    formData.set('status', 'draft');
-    
-    // Добавляем фотографии
-    uploadedFiles.forEach((item, index) => {
-        formData.append(`photo_${index}`, item.file);
-    });
-    
-    submitForm(formData, 'Черновик сохранен');
-}
-
-// Отправка формы
-document.getElementById('createListingForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    if (uploadedFiles.length < 2) {
-        alert('Необходимо загрузить минимум 2 фотографии');
-        return;
     }
-    
-    const formData = new FormData(this);
-    formData.set('status', 'pending');
-    
-    // Добавляем фотографии
-    uploadedFiles.forEach((item, index) => {
-        formData.append(`photo_${index}`, item.file);
-    });
-    
-    submitForm(formData, 'Объявление отправлено на модерацию');
-});
 
-// Отправка данных на сервер
-async function submitForm(formData, successMessage) {
-    const submitBtn = document.querySelector('.btn-save');
-    const originalText = submitBtn.innerHTML;
-    
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Сохранение...';
-    
-    try {
-        const response = await fetch('/api/v1/companies/properties', {
-            method: 'POST',
-            body: formData
+    // Удаление фото
+    function removePhoto(index) {
+        uploadedFiles.splice(index, 1);
+        renderPhotos();
+    }
+
+    // Сохранение черновика
+    function saveDraft() {
+        const formData = new FormData(document.getElementById('createListingForm'));
+        formData.set('status', 'draft');
+
+        // Добавляем фотографии
+        uploadedFiles.forEach((item, index) => {
+            formData.append(`photo_${index}`, item.file);
         });
-        
-        if (response.ok) {
-            alert(successMessage);
-            window.location.href = '/companies/listings';
-        } else {
-            const error = await response.json();
-            alert('Ошибка: ' + (error.detail || 'Неизвестная ошибка'));
-        }
-    } catch (error) {
-        alert('Ошибка сети: ' + error.message);
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
+
+        submitForm(formData, 'Черновик сохранен');
     }
-}
+
+    // Отправка формы
+    document.getElementById('createListingForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        if (uploadedFiles.length < 2) {
+            alert('Необходимо загрузить минимум 2 фотографии');
+            return;
+        }
+
+        const formData = new FormData(this);
+        formData.set('status', 'pending');
+
+        // Добавляем фотографии
+        uploadedFiles.forEach((item, index) => {
+            formData.append(`photo_${index}`, item.file);
+        });
+
+        submitForm(formData, 'Объявление отправлено на модерацию');
+    });
+
+    // Переменные для панорам
+    let uploadedPanoramas = [];
+    let panoramaMode = 'files'; // 'files' или 'urls'
+
+    // Переключение режима панорам
+    function switchPanoramaMode(mode) {
+        panoramaMode = mode;
+
+        const filesTab = document.getElementById('panorama-files-tab');
+        const urlsTab = document.getElementById('panorama-urls-tab');
+        const filesSection = document.getElementById('panorama-files-section');
+        const urlsSection = document.getElementById('panorama-urls-section');
+
+        if (mode === 'files') {
+            filesTab.classList.add('active');
+            urlsTab.classList.remove('active');
+            filesSection.style.display = 'block';
+            urlsSection.style.display = 'none';
+        } else {
+            urlsTab.classList.add('active');
+            filesTab.classList.remove('active');
+            urlsSection.style.display = 'block';
+            filesSection.style.display = 'none';
+        }
+    }
+
+    // Обработка загрузки панорам
+    document.getElementById('panoramaInput').addEventListener('change', function (e) {
+        const files = Array.from(e.target.files);
+
+        files.forEach(file => {
+            if (uploadedPanoramas.length >= 10) {
+                alert('Максимум 10 панорам');
+                return;
+            }
+
+            // Проверка размера файла (300 МБ)
+            if (file.size > 300 * 1024 * 1024) {
+                alert(`Файл ${file.name} превышает лимит 300 МБ`);
+                return;
+            }
+
+            // Проверка типа файла
+            if (!file.type.startsWith('image/')) {
+                alert(`Файл ${file.name} должен быть изображением`);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                uploadedPanoramas.push({
+                    file: file,
+                    url: e.target.result,
+                    notes: ''
+                });
+                renderPanoramas();
+            };
+            reader.readAsDataURL(file);
+        });
+    });
+
+    // Отображение загруженных панорам
+    function renderPanoramas() {
+        const container = document.getElementById('uploadedPanoramas');
+        container.innerHTML = uploadedPanoramas.map((item, index) => `
+            <div class="photo-item">
+                <img src="${item.url}" alt="Panorama ${index + 1}">
+                <button type="button" class="photo-remove" onclick="removePanorama(${index})">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; font-size: 10px;">
+                    <input type="text" placeholder="Комментарий" style="width: 100%; background: transparent; border: none; color: white; font-size: 10px;" 
+                           value="${item.notes}" onchange="updatePanoramaNotes(${index}, this.value)">
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Удаление панорамы
+    function removePanorama(index) {
+        uploadedPanoramas.splice(index, 1);
+        renderPanoramas();
+    }
+
+    // Обновление комментария к панораме
+    function updatePanoramaNotes(index, notes) {
+        if (uploadedPanoramas[index]) {
+            uploadedPanoramas[index].notes = notes;
+        }
+    }
+
+    // Добавление поля URL панорамы
+    function addPanoramaUrlField() {
+        const container = document.getElementById('panorama-url-fields');
+        const fields = container.querySelectorAll('.panorama-url-field');
+
+        if (fields.length >= 10) {
+            alert('Максимум 10 панорам');
+            return;
+        }
+
+        const fieldHtml = `
+            <div class="panorama-url-field mb-3">
+                <div class="flex gap-2">
+                    <input type="url" class="form-input flex-1" placeholder="https://kuula.co/share/... или другая ссылка" name="panorama_urls[]">
+                    <button type="button" class="btn-remove-url" onclick="removePanoramaUrlField(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <input type="text" class="form-input mt-2" placeholder="Комментарий (опционально)" name="panorama_notes[]">
+            </div>
+        `;
+
+        container.insertAdjacentHTML('beforeend', fieldHtml);
+    }
+
+    // Удаление поля URL панорамы
+    function removePanoramaUrlField(button) {
+        const field = button.closest('.panorama-url-field');
+        field.remove();
+    }
+
+    // Отправка данных на сервер
+    async function submitForm(formData, successMessage) {
+        const submitBtn = document.querySelector('.btn-save');
+        const originalText = submitBtn.innerHTML;
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Сохранение...';
+
+        try {
+            // Добавляем панорамы в зависимости от режима
+            if (panoramaMode === 'files') {
+                uploadedPanoramas.forEach((item, index) => {
+                    formData.append(`panorama_files`, item.file);
+                    formData.append(`panorama_notes`, item.notes || '');
+                });
+            }
+
+            const response = await fetch('/api/v1/companies/properties', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                alert(successMessage);
+                window.location.href = '/companies/listings';
+            } else {
+                const error = await response.json();
+                alert('Ошибка: ' + (error.detail || 'Неизвестная ошибка'));
+            }
+        } catch (error) {
+            alert('Ошибка сети: ' + error.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    }
 </script>
-{% endblock %} 
+{% endblock %}

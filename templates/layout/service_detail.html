@@ -223,6 +223,24 @@
     .map-btn i {
         margin-right: 6px;
     }
+    
+    /* Стили для галереи панорам */
+    .panorama-thumb {
+        transition: all 0.2s ease;
+    }
+    .panorama-thumb:hover {
+        transform: scale(1.05);
+    }
+    .panorama-thumb.border-blue-500 {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    .panorama-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 3px;
+    }
 </style>
 {% endblock %}
 
@@ -285,10 +303,9 @@
                 </a>
                 {% endif %}
                 
-                {% if service_card.has_360_tour %}
-                <button class="btn" id="view-360-btn" data-has-tour="true" 
-                        data-tour-url="{% if service_card.tour_360_optimized_url %}{{ service_card.tour_360_optimized_url }}{% else %}{{ service_card.tour_360_url }}{% endif %}">
-                    <i class="fas fa-vr-cardboard mr-1"></i> 360° тур
+                {% if service_card.panoramas %}
+                <button class="btn" id="view-360-btn">
+                    <i class="fas fa-vr-cardboard mr-1"></i> 360° тур ({{ service_card.panoramas|length }})
                 </button>
                 {% else %}
                 <button class="btn disabled" style="opacity: 0.5; cursor: not-allowed;">
@@ -444,24 +461,56 @@
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
-        <div class="flex-grow">
-            {% if service_card.tour_360_url %}
-            <!-- Если есть внешний URL (например Kuula) -->
-            <iframe src="{{ service_card.tour_360_url }}" allowfullscreen
-                class="w-full h-full"></iframe>
-            {% elif service_card.tour_360_optimized_url %}
-            <!-- Если есть загруженный файл, используем 360° viewer -->
-            <div class="w-full h-full" id="panorama-container">
-                <div id="panorama-sphere" style="width: 100%; height: 100%;"></div>
+        {% if service_card.panoramas|length > 1 %}
+        <!-- Галерея панорам -->
+        <div class="p-4 border-b">
+            <div class="flex gap-2 overflow-x-auto">
+                {% for panorama in service_card.panoramas %}
+                <button class="panorama-thumb flex-shrink-0 w-20 h-16 bg-gray-200 rounded border-2 border-transparent hover:border-blue-500 transition-colors" 
+                        data-panorama-index="{{ loop.index0 }}"
+                        data-panorama-url="{{ panorama.url or '' }}"
+                        data-panorama-file="{{ panorama.optimized_url or panorama.original_url or '' }}"
+                        data-panorama-type="{{ panorama.type or 'file' }}">
+                    {% if panorama.thumbnail_url %}
+                    <img src="{{ panorama.thumbnail_url }}" alt="Панорама {{ loop.index }}" class="w-full h-full object-cover rounded">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center text-gray-500 text-xs">
+                        <i class="fas fa-vr-cardboard"></i>
+                    </div>
+                    {% endif %}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="flex-grow" id="panorama-viewer">
+            {% if service_card.panoramas %}
+            <!-- Контейнер для активной панорамы -->
+            <div id="active-panorama-container" class="w-full h-full">
+                {% set first_panorama = service_card.panoramas[0] %}
+                {% if first_panorama.url %}
+                <!-- Внешний URL (например Kuula) -->
+                <iframe id="panorama-iframe" src="{{ first_panorama.url }}" allowfullscreen class="w-full h-full"></iframe>
+                {% elif first_panorama.optimized_url or first_panorama.original_url %}
+                <!-- Загруженный файл, используем 360° viewer -->
+                <div class="w-full h-full" id="panorama-container">
+                    <div id="panorama-sphere" style="width: 100%; height: 100%;"></div>
+                </div>
+                {% else %}
+                <div class="flex items-center justify-center h-full bg-gray-100">
+                    <div class="text-center p-5">
+                        <i class="fas fa-vr-cardboard text-gray-400 text-5xl mb-3"></i>
+                        <p class="text-gray-500">Панорама недоступна</p>
+                    </div>
+                </div>
+                {% endif %}
             </div>
             {% else %}
-            <div
-                class="flex items-center justify-center h-full bg-gray-100">
+            <div class="flex items-center justify-center h-full bg-gray-100">
                 <div class="text-center p-5">
-                    <i
-                        class="fas fa-vr-cardboard text-gray-400 text-5xl mb-3"></i>
-                    <p class="text-gray-500">360° панорама недоступна
-                        для этого заведения</p>
+                    <i class="fas fa-vr-cardboard text-gray-400 text-5xl mb-3"></i>
+                    <p class="text-gray-500">360° панорама недоступна для этого заведения</p>
                 </div>
             </div>
             {% endif %}
@@ -476,7 +525,7 @@
 
 <!-- Скрытый элемент для передачи данных из Jinja в JavaScript -->
 <div id="page-data"
-    data-has-tour360="{% if service_card.has_360_tour %}true{% else %}false{% endif %}"
+    data-has-panoramas="{% if service_card.panoramas %}true{% else %}false{% endif %}"
     data-service-latitude="{% if service_card.latitude %}{{ service_card.latitude }}{% else %}42.8746{% endif %}"
     data-service-longitude="{% if service_card.longitude %}{{ service_card.longitude }}{% else %}74.5698{% endif %}"
     data-service-title="{{ service_card.title|e }}"
@@ -486,8 +535,77 @@
 <script>
 // Получаем данные из скрытого элемента
 var pageData = document.getElementById('page-data');
-var hasTour360 = pageData.getAttribute('data-has-tour360') === 'true';
-var panoramaViewer = null;
+var panoramasData = {{ service_card.panoramas|tojson|safe }};
+var currentPanoramaIndex = 0;
+var currentPannellumViewer = null;
+
+function switchPanorama(index) {
+    if (!panoramasData || index >= panoramasData.length) return;
+    
+    var panorama = panoramasData[index];
+    var container = document.getElementById('active-panorama-container');
+    
+    if (!container) return;
+    
+    // Уничтожаем предыдущий Pannellum viewer
+    if (currentPannellumViewer) {
+        try {
+            currentPannellumViewer.destroy();
+            currentPannellumViewer = null;
+        } catch (e) {
+            console.log('Ошибка при уничтожении предыдущего viewer:', e);
+        }
+    }
+    
+    // Обновляем активную миниатюру
+    document.querySelectorAll('.panorama-thumb').forEach(function(thumb, i) {
+        if (i === index) {
+            thumb.classList.add('border-blue-500');
+            thumb.classList.remove('border-transparent');
+        } else {
+            thumb.classList.remove('border-blue-500');
+            thumb.classList.add('border-transparent');
+        }
+    });
+    
+    if (panorama.url) {
+        // Внешний URL - используем iframe
+        container.innerHTML = '<iframe id="panorama-iframe" src="' + panorama.url + '" allowfullscreen class="w-full h-full"></iframe>';
+    } else if (panorama.optimized_url || panorama.original_url) {
+        // Загруженный файл - используем Pannellum
+        container.innerHTML = '<div class="w-full h-full" id="panorama-container"><div id="panorama-sphere" style="width: 100%; height: 100%;"></div></div>';
+        
+        setTimeout(function() {
+            try {
+                var panoramaUrl = panorama.optimized_url || panorama.original_url;
+                currentPannellumViewer = pannellum.viewer('panorama-sphere', {
+                    "type": "equirectangular",
+                    "panorama": panoramaUrl,
+                    "autoLoad": true,
+                    "autoRotate": -2,
+                    "autoRotateInactivityDelay": 3000,
+                    "showFullscreenCtrl": true,
+                    "showZoomCtrl": true,
+                    "mouseZoom": true,
+                    "dragToLook": true,
+                    "loadButtonLabel": "Загрузить панораму",
+                    "loadingLabel": "Загрузка...",
+                    "bylineLabel": "360° Панорама",
+                    "nothingLabel": "Панорама не найдена"
+                });
+                console.log('✅ Pannellum инициализирован для панорамы', index);
+            } catch (error) {
+                console.error('❌ Ошибка инициализации Pannellum:', error);
+                container.innerHTML = '<div class="flex items-center justify-center h-full bg-gray-100"><div class="text-center p-5"><i class="fas fa-vr-cardboard text-gray-400 text-5xl mb-3"></i><p class="text-gray-500">Ошибка загрузки панорамы</p></div></div>';
+            }
+        }, 100);
+    } else {
+        // Панорама недоступна
+        container.innerHTML = '<div class="flex items-center justify-center h-full bg-gray-100"><div class="text-center p-5"><i class="fas fa-vr-cardboard text-gray-400 text-5xl mb-3"></i><p class="text-gray-500">Панорама недоступна</p></div></div>';
+    }
+    
+    currentPanoramaIndex = index;
+}
 
 $(document).ready(function() {
     // Инициализация слайдера
@@ -499,56 +617,35 @@ $(document).ready(function() {
         },
     });
     
-    // Обработчик кнопки 360° только если панорама доступна
-    if (hasTour360) {
-        $('#view-360-btn').on('click', function() {
-            $('#modal-360').removeClass('hidden');
-            $('body').addClass('overflow-hidden'); // Запретить прокрутку страницы
-            
-            // Инициализируем Pannellum для загруженных файлов
-            {% if service_card.tour_360_optimized_url %}
-            setTimeout(function() {
-                if (!panoramaViewer) {
-                    try {
-                        panoramaViewer = pannellum.viewer('panorama-sphere', {
-                            "type": "equirectangular",
-                            "panorama": "{{ service_card.tour_360_optimized_url }}",
-                            "autoLoad": true,
-                            "autoRotate": -2,
-                            "autoRotateInactivityDelay": 3000,
-                            "showFullscreenCtrl": true,
-                            "showZoomCtrl": true,
-                            "mouseZoom": true,
-                            "dragToLook": true,
-                            "loadButtonLabel": "Загрузить панораму",
-                            "loadingLabel": "Загрузка...",
-                            "bylineLabel": "360° Панорама",
-                            "nothingLabel": "Панорама не найдена"
-                        });
-                    } catch (error) {
-                        console.error('Ошибка инициализации панорамы:', error);
-                        document.querySelector('#panorama-sphere').innerHTML = 
-                            '<div class="flex items-center justify-center h-full"><p class="text-gray-500">Ошибка загрузки панорамы</p></div>';
-                    }
-                }
-            }, 200);
-            {% endif %}
-        });
-    }
+    // Обработчик кнопки 360° для множественных панорам
+    $('#view-360-btn').on('click', function() {
+        $('#modal-360').removeClass('hidden');
+        $('body').addClass('overflow-hidden');
+        
+        // Инициализируем первую панораму
+        if (panoramasData && panoramasData.length > 0) {
+            switchPanorama(0);
+        }
+    });
+    
+    // Обработчики для миниатюр панорам
+    $(document).on('click', '.panorama-thumb', function() {
+        var index = parseInt($(this).data('panorama-index'));
+        switchPanorama(index);
+    });
     
     // Закрытие модального окна
     $('#close-360-modal').on('click', function() {
         $('#modal-360').addClass('hidden');
-        $('body').removeClass('overflow-hidden'); // Разрешить прокрутку страницы
+        $('body').removeClass('overflow-hidden');
         
-        // Очищаем viewer при закрытии для освобождения памяти
-        if (panoramaViewer) {
+        // Уничтожаем Pannellum viewer при закрытии
+        if (currentPannellumViewer) {
             try {
-                panoramaViewer.destroy();
-                panoramaViewer = null;
-            } catch (error) {
-                console.log('Ошибка при закрытии панорамы:', error);
-                panoramaViewer = null;
+                currentPannellumViewer.destroy();
+                currentPannellumViewer = null;
+            } catch (e) {
+                console.log('Ошибка при уничтожении viewer:', e);
             }
         }
     });

@@ -752,8 +752,11 @@ async def mobile_service_category(request: Request, category_slug: str, db: Sess
 
 @app.get("/mobile/services/card/{card_id}", response_class=HTMLResponse, name="service_detail")
 async def mobile_service_detail(request: Request, card_id: int, db: Session = Depends(deps.get_db)):
-    # Получаем карточку заведения по ID с изображениями
-    service_card = db.query(ServiceCard).options(joinedload(ServiceCard.images)).filter(
+    # Получаем карточку заведения по ID с изображениями и панорамами
+    service_card = db.query(ServiceCard).options(
+        joinedload(ServiceCard.images),
+        joinedload(ServiceCard.panoramas)
+    ).filter(
         ServiceCard.id == card_id,
         ServiceCard.is_active == True
     ).first()
@@ -773,12 +776,28 @@ async def mobile_service_detail(request: Request, card_id: int, db: Session = De
         ServiceCard.is_active == True
     ).limit(6).all()
     
-    # Добавляем has_360_tour к service_card
-    service_card.has_360_tour = service_card.has_360_tour()
+    # Формируем данные сервис-карты с панорамами
+    service_card_data = {
+        "id": service_card.id,
+        "title": service_card.title,
+        "description": service_card.description,
+        "address": service_card.address,
+        "phone": service_card.phone,
+        "email": service_card.email,
+        "website": service_card.website,
+        "image_url": service_card.image_url,
+        "is_active": service_card.is_active,
+        "latitude": service_card.latitude,
+        "longitude": service_card.longitude,
+        "photos_uploaded_at": service_card.photos_uploaded_at,
+        "category_id": service_card.category_id,
+        "images": [{"id": img.id, "url": img.url, "is_main": img.is_main} for img in service_card.images] if service_card.images else [],
+        "panoramas": [p.to_dict() for p in service_card.panoramas] if service_card.panoramas else [],
+    }
     
     return templates.TemplateResponse("layout/service_detail.html", {
         "request": request,
-        "service_card": service_card,
+        "service_card": service_card_data,
         "category": category,
         "similar_services": similar_services
     })
@@ -835,8 +854,8 @@ async def mobile_profile(request: Request, tab: str = None, db: Session = Depend
                                 "area": prop.area,
                                 "status": prop.status,
                                 "notes": prop.notes,  # Дата съемки 360
-                                "tour_360_url": prop.tour_360_url,
-                                "has_tour": bool(prop.tour_360_url or prop.tour_360_file_id),  # Обновленная логика проверки
+                                "panoramas": [p.to_dict() for p in prop.panoramas] if hasattr(prop, 'panoramas') and prop.panoramas else [],
+                                "has_tour": bool(hasattr(prop, 'panoramas') and prop.panoramas),
                                 "image_url": get_valid_image_url(main_image.url if main_image else None)
                             })
                         
@@ -873,8 +892,8 @@ async def mobile_profile(request: Request, tab: str = None, db: Session = Depend
                                     "rooms": prop.rooms,
                                     "area": prop.area,
                                     "status": prop.status,
-                                    "tour_360_url": prop.tour_360_url,
-                                    "has_tour": bool(prop.tour_360_url or prop.tour_360_file_id),  # Обновленная логика проверки
+                                    "panoramas": [p.to_dict() for p in prop.panoramas] if hasattr(prop, 'panoramas') and prop.panoramas else [],
+                                    "has_tour": bool(hasattr(prop, 'panoramas') and prop.panoramas),
                                     "image_url": get_valid_image_url(main_image.url if main_image else None)
                                 })
                             
@@ -1086,12 +1105,9 @@ async def mobile_search(
             "rooms": prop.rooms,
             "area": prop.area,
             "floor": prop.floor,
-            "building_floors": prop.building_floors,  # ДОБАВЛЯЕМ ЭТАЖНОСТЬ ЗДАНИЯ!
-            "has_tour": bool(prop.tour_360_url or prop.tour_360_file_id),  # Обновленная логика проверки
-            "tour_360_url": prop.tour_360_url,  # Добавляем URL для 360° тура
-            # Добавляем поля для загруженных файлов
-            "tour_360_file_id": prop.tour_360_file_id,
-            "tour_360_optimized_url": prop.tour_360_optimized_url,
+            "building_floors": prop.building_floors,
+            "panoramas": [p.to_dict() for p in prop.panoramas] if hasattr(prop, 'panoramas') and prop.panoramas else [],
+            "has_tour": bool(hasattr(prop, 'panoramas') and prop.panoramas),
             "has_balcony": prop.has_balcony,
             "has_furniture": prop.has_furniture,
             "has_renovation": prop.has_renovation,
@@ -1178,7 +1194,8 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
     property = db.query(models.Property).options(
         joinedload(models.Property.owner),
         joinedload(models.Property.images),
-        joinedload(models.Property.categories)
+        joinedload(models.Property.categories),
+        joinedload(models.Property.panoramas)
     ).filter(models.Property.id == property_id).first()
     
     if not property:
@@ -1278,18 +1295,8 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
         "area": property.area,
         "status": property.status.value.lower() if property.status else "draft",
         "is_featured": property.is_featured,
-        "views": property.views or 0,  # Добавляем поле views
-        "created_at": property.created_at.strftime("%d.%m.%Y") if property.created_at else None,  # Добавляем дату публикации
-        "tour_360_url": property.tour_360_url,
-        # Добавляем поля для загруженных 360° панорам
-        "tour_360_file_id": property.tour_360_file_id,
-        "tour_360_original_url": property.tour_360_original_url,
-        "tour_360_optimized_url": property.tour_360_optimized_url,
-        "tour_360_preview_url": property.tour_360_preview_url,
-        "tour_360_thumbnail_url": property.tour_360_thumbnail_url,
-        "tour_360_metadata": property.tour_360_metadata,
-        "tour_360_uploaded_at": property.tour_360_uploaded_at,
-        "has_360": bool(property.tour_360_url or property.tour_360_file_id),  # Добавляем поле has_360
+        "views": property.views or 0,
+        "created_at": property.created_at.strftime("%d.%m.%Y") if property.created_at else None,
         "rooms": property.rooms,
         "floor": property.floor,
         "building_floors": property.building_floors,
@@ -1327,6 +1334,8 @@ async def mobile_property_detail(request: Request, property_id: int, db: Session
         "latitude": property.latitude,
         "longitude": property.longitude,
         "formatted_address": property.formatted_address,
+        # Панорамы
+        "panoramas": [p.to_dict() for p in property.panoramas] if property.panoramas else [],
     }
     
     # Обработка изображений: сначала пробуем медиа-сервер, потом локальные

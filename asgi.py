@@ -1,7 +1,6 @@
 import os
 import sys
 
-# Добавляем корневую директорию в PATH
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from main import app

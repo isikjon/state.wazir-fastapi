@@ -31,6 +31,24 @@ class ServiceCardPanorama(Base, TimestampMixin):
     uploaded_at = Column(DateTime, nullable=True)
     type = Column(String(20), default="file")
     notes = Column(String(255), nullable=True)
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "service_card_id": self.service_card_id,
+            "url": self.url,
+            "file_id": self.file_id,
+            "original_url": self.original_url,
+            "optimized_url": self.optimized_url,
+            "preview_url": self.preview_url,
+            "thumbnail_url": self.thumbnail_url,
+            "meta": self.meta,
+            "uploaded_at": self.uploaded_at.isoformat() if self.uploaded_at else None,
+            "type": self.type,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
 
 
 class ServiceCard(Base, TimestampMixin):

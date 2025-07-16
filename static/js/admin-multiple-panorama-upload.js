@@ -87,7 +87,11 @@ $(document).ready(function() {
         const modal = $('#multiple-panoramas-modal');
         console.log('Модальное окно найдено:', modal.length > 0);
         
-        modal.removeClass('hidden');
+        // Показываем модальное окно
+        console.log('📋 До изменения классов:', modal.attr('class'));
+        modal.removeClass('hidden').addClass('show');
+        console.log('📋 После изменения классов:', modal.attr('class'));
+        console.log('💡 Модальное окно должно быть видимым');
         
         // Загружаем текущие панорамы
         setTimeout(function() {
@@ -100,7 +104,7 @@ $(document).ready(function() {
 
     // Закрытие модального окна только по кнопкам, НЕ по клику вне области
     $(document).on('click', '.close-multiple-panoramas-modal', function(e) {
-        $('#multiple-panoramas-modal').addClass('hidden');
+        $('#multiple-panoramas-modal').removeClass('show').addClass('hidden');
         resetMultipleModal();
     });
 
@@ -318,7 +322,7 @@ function uploadMultipleFiles() {
                         message += `\n\nОшибки:\n${response.errors.join('\n')}`;
                     }
                     alert(message);
-                    $('#multiple-panoramas-modal').addClass('hidden');
+                    $('#multiple-panoramas-modal').removeClass('show').addClass('hidden');
                     location.reload();
                 } else {
                     alert('Ошибка: ' + (response.error || 'Неизвестная ошибка'));
@@ -398,7 +402,7 @@ function uploadMultipleUrls() {
                 message += `\n\nОшибки:\n${data.errors.join('\n')}`;
             }
             alert(message);
-            $('#multiple-panoramas-modal').addClass('hidden');
+            $('#multiple-panoramas-modal').removeClass('show').addClass('hidden');
             location.reload();
         } else {
             alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));

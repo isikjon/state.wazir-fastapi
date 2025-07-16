@@ -10,11 +10,11 @@ let multipleUploadMode = 'file'; // 'file' или 'url'
 $(document).ready(function() {
     // Переключение между табами
     $('#upload-files-tab').on('click', function() {
-        switchToUploadMode('file');
+        switchToMultipleUploadMode('file');
     });
 
     $('#upload-urls-tab').on('click', function() {
-        switchToUploadMode('url');
+        switchToMultipleUploadMode('url');
     });
 
     // Обработка выбора множественных файлов
@@ -101,7 +101,7 @@ $(document).ready(function() {
     });
 });
 
-function switchToUploadMode(mode) {
+function switchToMultipleUploadMode(mode) {
     multipleUploadMode = mode;
     
     if (mode === 'file') {
@@ -386,7 +386,7 @@ function resetMultipleModal() {
     updateProgress(0);
     
     // Переключение на режим загрузки файлов
-    switchToUploadMode('file');
+    switchToMultipleUploadMode('file');
 }
 
 function updateProgress(percent) {

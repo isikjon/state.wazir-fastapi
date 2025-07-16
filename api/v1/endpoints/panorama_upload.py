@@ -289,6 +289,100 @@ async def add_admin_property_panorama_url(
         logger.error(f"💥 Ошибка при добавлении панорам по URL: {str(e)}")
         return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
 
+# API для удаления панорамы недвижимости
+@router.delete("/admin/properties/{property_id}/panoramas/{panorama_id}")
+async def delete_admin_property_panorama(
+    property_id: int,
+    panorama_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    """Удаление панорамы недвижимости (админка)"""
+    logger.info(f"🗑️ Удаление панорамы {panorama_id} для свойства {property_id} (админка)")
+    
+    # Проверка доступа администратора
+    user = await check_admin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    
+    try:
+        # Находим панораму
+        panorama = db.query(models.PropertyPanorama).filter(
+            models.PropertyPanorama.id == panorama_id,
+            models.PropertyPanorama.property_id == property_id
+        ).first()
+        
+        if not panorama:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Панорама не найдена"})
+        
+        # Удаляем файлы с медиа-сервера, если есть file_id
+        if panorama.file_id:
+            try:
+                # Здесь должна быть логика удаления файлов с медиа-сервера
+                # await panorama_processor.delete_panorama_files(panorama.file_id, property_id)
+                logger.info(f"Файлы панорамы {panorama.file_id} должны быть удалены с медиа-сервера")
+            except Exception as e:
+                logger.warning(f"Ошибка удаления файлов с медиа-сервера: {e}")
+        
+        # Удаляем запись из БД
+        db.delete(panorama)
+        db.commit()
+        
+        logger.info(f"✅ Панорама {panorama_id} успешно удалена")
+        return JSONResponse(content={"success": True, "message": "Панорама успешно удалена"})
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"💥 Ошибка при удалении панорамы: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
+
+# API для удаления панорамы сервис-карты
+@router.delete("/admin/service-cards/{card_id}/panoramas/{panorama_id}")
+async def delete_admin_service_card_panorama(
+    card_id: int,
+    panorama_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    """Удаление панорамы сервис-карты (админка)"""
+    logger.info(f"🗑️ Удаление панорамы {panorama_id} для сервис-карты {card_id} (админка)")
+    
+    # Проверка доступа администратора
+    user = await check_admin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    
+    try:
+        # Находим панораму
+        panorama = db.query(models.ServiceCardPanorama).filter(
+            models.ServiceCardPanorama.id == panorama_id,
+            models.ServiceCardPanorama.service_card_id == card_id
+        ).first()
+        
+        if not panorama:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Панорама не найдена"})
+        
+        # Удаляем файлы с медиа-сервера, если есть file_id
+        if panorama.file_id:
+            try:
+                # Здесь должна быть логика удаления файлов с медиа-сервера
+                # await panorama_processor.delete_panorama_files(panorama.file_id, card_id)
+                logger.info(f"Файлы панорамы {panorama.file_id} должны быть удалены с медиа-сервера")
+            except Exception as e:
+                logger.warning(f"Ошибка удаления файлов с медиа-сервера: {e}")
+        
+        # Удаляем запись из БД
+        db.delete(panorama)
+        db.commit()
+        
+        logger.info(f"✅ Панорама {panorama_id} успешно удалена")
+        return JSONResponse(content={"success": True, "message": "Панорама успешно удалена"})
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"💥 Ошибка при удалении панорамы: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
+
 # Для обратной совместимости - старый эндпоинт загрузки одной панорамы
 @router.post("/admin/properties/{property_id}/360/upload")
 async def upload_admin_panorama_legacy(

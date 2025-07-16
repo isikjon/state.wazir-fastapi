@@ -650,6 +650,227 @@
     }
 
     /* Стили для модального окна фотографий */
+    /* Стили для модального окна множественной загрузки */
+    #multiple-panoramas-modal {
+        z-index: 9999;
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    #multiple-panoramas-modal.hidden {
+        display: none !important;
+    }
+
+    #multiple-panoramas-modal.show {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+    }
+
+    #multiple-panoramas-modal .modal-content {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        margin: 0 auto;
+        max-height: calc(100vh - 80px);
+        overflow-y: auto;
+        position: relative;
+        width: 100%;
+        max-width: 800px;
+    }
+
+    .file-item {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        margin-bottom: 8px;
+    }
+
+    .file-item:hover {
+        background: #f3f4f6;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    #file-drop-area.border-blue-400 {
+        border-color: #60a5fa !important;
+    }
+
+    #file-drop-area.bg-blue-50 {
+        background-color: #eff6ff !important;
+    }
+
+    /* Стили для текущих панорам */
+    #current-panoramas-section {
+        margin-bottom: 24px;
+        padding: 16px;
+        background: #f8fafc;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    #current-panoramas-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 12px;
+        margin-top: 12px;
+    }
+
+    .panorama-item {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 12px;
+        transition: all 0.2s ease;
+    }
+
+    .panorama-item:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .panorama-item .aspect-video {
+        aspect-ratio: 16/9;
+        background: #f3f4f6;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+
+    .panorama-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .delete-panorama-btn {
+        width: 100%;
+        padding: 4px 8px;
+        background: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-top: 8px;
+    }
+
+    .delete-panorama-btn:hover {
+        background: #fecaca;
+        border-color: #f87171;
+    }
+
+    /* Прогресс бар для загрузки */
+    .upload-progress-container {
+        margin-top: 16px;
+        padding: 16px;
+        background: #f8fafc;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .progress-bar-container {
+        background: #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+        height: 8px;
+        margin-bottom: 8px;
+    }
+
+    .progress-bar {
+        background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+        height: 100%;
+        border-radius: 8px;
+        transition: width 0.3s ease;
+        position: relative;
+    }
+
+    .progress-bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+
+    .progress-text {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 14px;
+        color: #4b5563;
+    }
+
+    .progress-status {
+        font-weight: 500;
+    }
+
+    /* Стили для статуса 360° тура */
+    .px-2 {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    .py-1 {
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
+    }
+
+    .text-xs {
+        font-size: 0.75rem;
+        line-height: 1rem;
+    }
+
+    .font-medium {
+        font-weight: 500;
+    }
+
+    .rounded-full {
+        border-radius: 9999px;
+    }
+
+    .bg-green-100 {
+        background-color: #dcfce7;
+    }
+
+    .text-green-800 {
+        color: #166534;
+    }
+
+    .bg-gray-100 {
+        background-color: #f3f4f6;
+    }
+
+    .text-gray-800 {
+        color: #1f2937;
+    }
 </style>
 {% endblock %}
 
@@ -677,12 +898,13 @@
                         <th>Контакты</th>
                         <th>Статус</th>
                         <th>Дата создания</th>
+                        <th>360° Тур</th>
                         <th>Действия</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for card in service_cards %}
-                    <tr>
+                    <tr data-id="{{ card.id }}">
                         <td>{{ card.id }}</td>
                         <td>
                             <div class="card-info">
@@ -716,6 +938,14 @@
                         </td>
                         <td class="card-date">{{ card.created_at.strftime('%d.%m.%Y %H:%M') if card.created_at else ''
                             }}</td>
+                        <td>
+                            {% if card.has_360_tour() %}
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Есть</span>
+                            {% else %}
+                            <span
+                                class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">Нет</span>
+                            {% endif %}
+                        </td>
                         <td>
                             <div class="card-actions">
                                 <button class="card-action view" onclick="viewCardImages({{ card.id }})"
@@ -980,13 +1210,31 @@
 </div>
 
 <!-- Модальное окно для множественной загрузки панорам -->
-<div id="multiple-panoramas-modal" class="modal-backdrop hidden">
-    <div class="modal-content" style="max-width: 800px; width: 90%;">
+<div id="multiple-panoramas-modal" class="hidden">
+    <div class="modal-content">
         <div class="modal-header">
             <h3 class="modal-title">Загрузить несколько панорам</h3>
             <button class="modal-close close-multiple-panoramas-modal">&times;</button>
         </div>
         <div class="modal-body">
+            <!-- Текущие панорамы -->
+            <div id="current-panoramas-section">
+                <h3 class="text-lg font-medium text-gray-900 mb-3">
+                    <i class="fas fa-vr-cardboard mr-2"></i>Текущие панорамы
+                </h3>
+                <div id="current-panoramas-list">
+                    <!-- Панорамы будут загружены через JavaScript -->
+                </div>
+            </div>
+
+            <!-- Заголовок загрузки файлов -->
+            <div class="mb-4">
+                <h3 class="text-lg font-medium text-gray-900">
+                    <i class="fas fa-upload mr-2"></i>Загрузить новые панорамы
+                </h3>
+                <p class="text-sm text-gray-500">Выберите до 10 файлов панорам, максимум 300 МБ каждый</p>
+            </div>
+
             <!-- Переключатель между файлами и URL -->
             <div class="form-group">
                 <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid #e5e7eb;">
@@ -1037,13 +1285,15 @@
             </div>
 
             <!-- Прогресс загрузки -->
-            <div id="upload-progress" class="form-group hidden">
-                <label class="form-label">Прогресс загрузки</label>
-                <div style="background: #f3f4f6; border-radius: 6px; overflow: hidden; height: 20px;">
-                    <div id="progress-bar"
-                        style="background: #3b82f6; height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+            <div id="upload-progress" class="upload-progress-container hidden">
+                <div class="progress-text mb-2">
+                    <span class="progress-status">Загрузка панорам...</span>
+                    <span id="progress-percent">0%</span>
                 </div>
-                <div id="progress-percent" style="text-align: center; margin-top: 5px; font-size: 0.875rem;">0%</div>
+                <div class="progress-bar-container">
+                    <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+                </div>
+                <div class="text-sm text-gray-500" id="upload-status">Подготовка к загрузке...</div>
             </div>
         </div>
         <div class="modal-footer">

@@ -478,22 +478,20 @@ function updatePagePanoramaStatus() {
                 if (multipleCurrentEntityType === 'property') {
                     tableRow = $(`tr[data-id="${multipleCurrentEntityId}"]`);
                 } else {
-                    // Для service cards ищем по другому способу
-                    tableRow = $(`.upload-multiple-panoramas-btn[data-entity-id="${multipleCurrentEntityId}"]`).closest('tr');
+                    // Для service cards ищем по data-id атрибуту строки
+                    tableRow = $(`tr[data-id="${multipleCurrentEntityId}"]`);
                 }
                 
                 if (tableRow.length > 0) {
                     // Находим ячейку с 360° туром
-                    let tourCell = tableRow.find('td').eq(7); // Для properties - 8-я колонка (индекс 7)
-                    
-                    // Если это service cards, может быть другой индекс
-                    if (multipleCurrentEntityType === 'service-card') {
-                        // Ищем ячейку с кнопками действий и обновляем статус тура рядом с ней
-                        const actionCell = tableRow.find('.upload-multiple-panoramas-btn').closest('td');
-                        // Для service cards статус 360° тура может отображаться по-другому
+                    let tourCell;
+                    if (multipleCurrentEntityType === 'property') {
+                        tourCell = tableRow.find('td').eq(7); // Для properties - 8-я колонка (индекс 7)
+                    } else if (multipleCurrentEntityType === 'service-card') {
+                        tourCell = tableRow.find('td').eq(5); // Для service cards - 6-я колонка (индекс 5)
                     }
                     
-                    if (tourCell.length > 0) {
+                    if (tourCell && tourCell.length > 0) {
                         // Обновляем содержимое ячейки
                         if (panoramasCount > 0) {
                             tourCell.html(`<span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Есть (${panoramasCount})</span>`);

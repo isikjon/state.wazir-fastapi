@@ -385,10 +385,23 @@
         z-index: 1000;
         align-items: center;
         justify-content: center;
+        padding: 20px;
     }
 
     .modal-backdrop.show {
         display: flex !important;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-backdrop .modal-content {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        margin: 0;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+        position: relative;
     }
 
     .modal-content {
@@ -955,7 +968,7 @@
 
 <!-- Модальное окно для множественной загрузки панорам -->
 <div id="multiple-panoramas-modal" class="modal-backdrop hidden">
-    <div class="modal-content" style="max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-content" style="max-width: 800px; width: 90%;">
         <div class="modal-header">
             <h3 class="modal-title">Загрузить несколько панорам</h3>
             <button class="modal-close close-multiple-panoramas-modal">&times;</button>

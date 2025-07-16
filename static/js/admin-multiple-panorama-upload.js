@@ -98,12 +98,10 @@ $(document).ready(function() {
         resetMultipleModal();
     });
 
-    // Закрытие модального окна
-    $(document).on('click', '.close-multiple-panoramas-modal, #multiple-panoramas-modal-backdrop', function(e) {
-        if (e.target === this) {
-            $('#multiple-panoramas-modal').addClass('hidden');
-            resetMultipleModal();
-        }
+    // Закрытие модального окна только по кнопкам, НЕ по клику вне области
+    $(document).on('click', '.close-multiple-panoramas-modal', function(e) {
+        $('#multiple-panoramas-modal').addClass('hidden');
+        resetMultipleModal();
     });
 
     // Удаление файла из списка

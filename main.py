@@ -3925,7 +3925,6 @@ async def create_service_card(
             website=website or None,
             latitude=latitude,
             longitude=longitude,
-            tour_360_url=tour_360_url or None,
             is_active=True
         )
         
@@ -3982,45 +3981,56 @@ async def create_service_card(
                 
                 processor = PanoramaProcessor()
                 
-                # Удаление существующих файлов панорамы, если они есть
-                if service_card.tour_360_file_id:
-                    try:
-                        await processor.delete_panorama_files(service_card.tour_360_file_id, str(service_card.id))
-                    except Exception as e:
-                        print(f"Ошибка удаления существующих файлов: {str(e)}")
-                
-                # Обработка панорамы (используем card_id как property_id)
+                # Обработка панорамы
                 result = await processor.upload_panorama(tour_360_file, service_card.id)
                 
                 if not result.get('success'):
                     return JSONResponse(status_code=500, content={"success": False, "error": "Ошибка при загрузке панорамы"})
                 
-                service_card.tour_360_file_id = result.get('file_id')
-                service_card.tour_360_original_url = result['urls'].get('original')
-                service_card.tour_360_optimized_url = result['urls'].get('optimized')
-                service_card.tour_360_preview_url = result['urls'].get('preview')
-                service_card.tour_360_thumbnail_url = result['urls'].get('thumbnail')
-                service_card.tour_360_metadata = json.dumps(result.get('metadata', {}), ensure_ascii=False)
-                service_card.tour_360_uploaded_at = datetime.now()
+                # Создаем запись панорамы в БД
+                panorama = models.ServiceCardPanorama(
+                    service_card_id=service_card.id,
+                    file_id=result.get('file_id'),
+                    original_url=result['urls'].get('original'),
+                    optimized_url=result['urls'].get('optimized'),
+                    preview_url=result['urls'].get('preview'),
+                    thumbnail_url=result['urls'].get('thumbnail'),
+                    meta=json.dumps(result.get('metadata', {}), ensure_ascii=False),
+                    uploaded_at=datetime.now(),
+                    type="file"
+                )
                 
-                service_card.tour_360_url = None
-                
+                db.add(panorama)
                 db.commit()
-                db.refresh(service_card)
                 
-                response_data = {
+                return JSONResponse(content={
                     "success": True,
                     "message": "360° панорама успешно загружена и обработана",
                     "file_id": result.get('file_id'),
                     "urls": result['urls'],
                     "metadata": result.get('metadata', {}),
                     "uploaded_at": datetime.now().isoformat()
-                }
-                
-                return JSONResponse(content=response_data)
+                })
                 
             except Exception as e:
                 print(f"DEBUG: Ошибка при загрузке 360° панорамы: {str(e)}")
+        
+        # Обрабатываем URL панораму если передан
+        elif tour_360_url:
+            try:
+                # Создаем запись панорамы с URL
+                panorama = models.ServiceCardPanorama(
+                    service_card_id=service_card.id,
+                    url=tour_360_url,
+                    uploaded_at=datetime.now(),
+                    type="url"
+                )
+                
+                db.add(panorama)
+                db.commit()
+                
+            except Exception as e:
+                print(f"DEBUG: Ошибка при сохранении URL панорамы: {str(e)}")
         
         return {"success": True, "message": "Карточка заведения создана успешно", "service_card": {
             "id": service_card.id,
@@ -4671,15 +4681,20 @@ async def save_service_card_360_url(
         if not service_card:
             return JSONResponse(status_code=404, content={"success": False, "error": "Заведение не найдено"})
         
-        # Сохраняем URL и очищаем файловые поля
-        service_card.tour_360_url = tour_360_url
-        service_card.tour_360_file_id = None
-        service_card.tour_360_original_url = None
-        service_card.tour_360_optimized_url = None
-        service_card.tour_360_preview_url = None
-        service_card.tour_360_thumbnail_url = None
-        service_card.tour_360_metadata = None
-        service_card.tour_360_uploaded_at = datetime.now()
+        # Удаляем существующие панорамы
+        db.query(models.ServiceCardPanorama).filter(
+            models.ServiceCardPanorama.service_card_id == card_id
+        ).delete()
+        
+        # Создаем новую панораму с URL
+        if tour_360_url:
+            panorama = models.ServiceCardPanorama(
+                service_card_id=card_id,
+                url=tour_360_url,
+                uploaded_at=datetime.now(),
+                type="url"
+            )
+            db.add(panorama)
         
         db.commit()
         
@@ -4703,9 +4718,10 @@ async def get_service_card_media_info(
         return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
     
     try:
-        # Находим карточку заведения с изображениями
+        # Находим карточку заведения с изображениями и панорамами
         service_card = db.query(ServiceCard).options(
-            joinedload(ServiceCard.images)
+            joinedload(ServiceCard.images),
+            joinedload(ServiceCard.panoramas)
         ).filter(ServiceCard.id == card_id).first()
         
         if not service_card:
@@ -4719,13 +4735,25 @@ async def get_service_card_media_info(
         }
         
         # Информация о 360° панораме
+        has_tour = service_card.has_360_tour()
+        panorama_info = None
+        if has_tour and service_card.panoramas:
+            latest_panorama = service_card.panoramas[-1]  # Берем последнюю загруженную
+            panorama_info = {
+                "file_id": latest_panorama.file_id,
+                "url": latest_panorama.url,
+                "optimized_url": latest_panorama.optimized_url,
+                "last_uploaded": latest_panorama.uploaded_at.isoformat() if latest_panorama.uploaded_at else None,
+                "type": latest_panorama.type
+            }
+        
         tour_360_info = {
-            "has_tour": service_card.has_360_tour(),
-            "file_id": service_card.tour_360_file_id,
-            "url": service_card.tour_360_url,
-            "optimized_url": service_card.tour_360_optimized_url,
-            "last_uploaded": service_card.tour_360_uploaded_at.isoformat() if service_card.tour_360_uploaded_at else None,
-            "type": "file" if service_card.tour_360_file_id else ("url" if service_card.tour_360_url else None)
+            "has_tour": has_tour,
+            "file_id": panorama_info["file_id"] if panorama_info else None,
+            "url": panorama_info["url"] if panorama_info else None,
+            "optimized_url": panorama_info["optimized_url"] if panorama_info else None,
+            "last_uploaded": panorama_info["last_uploaded"] if panorama_info else None,
+            "type": panorama_info["type"] if panorama_info else None
         }
         
         return {

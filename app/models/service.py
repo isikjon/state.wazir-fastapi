@@ -78,7 +78,11 @@ class ServiceCard(Base, TimestampMixin):
     
     # Связь с изображениями
     images = relationship("ServiceCardImage", back_populates="service_card", cascade="all, delete-orphan")
-    panoramas = relationship("ServiceCardPanorama", backref="service_card", cascade="all, delete-orphan") 
+    panoramas = relationship("ServiceCardPanorama", backref="service_card", cascade="all, delete-orphan")
+    
+    def has_360_tour(self) -> bool:
+        """Проверяет наличие 360° панорам у карточки заведения"""
+        return len(self.panoramas) > 0 if self.panoramas else False
 
 
 class ServiceCardImage(Base, TimestampMixin):

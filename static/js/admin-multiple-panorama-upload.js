@@ -2,10 +2,10 @@
  * JavaScript для обработки множественной загрузки 360° панорам в админке
  */
 
-let currentEntityId = null;
-let currentEntityType = null; // 'property' или 'service-card'
-let selectedFiles = [];
-let uploadMode = 'file'; // 'file' или 'url'
+let multipleCurrentEntityId = null;
+let multipleCurrentEntityType = null; // 'property' или 'service-card'
+let multipleSelectedFiles = [];
+let multipleUploadMode = 'file'; // 'file' или 'url'
 
 $(document).ready(function() {
     // Переключение между табами
@@ -50,9 +50,17 @@ $(document).ready(function() {
         e.preventDefault();
         e.stopPropagation();
         
-        currentEntityId = $(this).data('entity-id');
-        currentEntityType = $(this).data('entity-type');
-        $('#multiple-panoramas-modal').removeClass('hidden');
+        console.log('Кнопка множественной загрузки нажата');
+        
+        multipleCurrentEntityId = $(this).data('entity-id');
+        multipleCurrentEntityType = $(this).data('entity-type');
+        
+        console.log('Entity ID:', multipleCurrentEntityId, 'Type:', multipleCurrentEntityType);
+        
+        const modal = $('#multiple-panoramas-modal');
+        console.log('Модальное окно найдено:', modal.length > 0);
+        
+        modal.removeClass('hidden');
         
         // Сброс формы
         resetMultipleModal();
@@ -85,7 +93,7 @@ $(document).ready(function() {
 
     // Загрузка панорам
     $('#upload-multiple-panoramas-btn').on('click', function() {
-        if (uploadMode === 'file') {
+        if (multipleUploadMode === 'file') {
             uploadMultipleFiles();
         } else {
             uploadMultipleUrls();
@@ -94,7 +102,7 @@ $(document).ready(function() {
 });
 
 function switchToUploadMode(mode) {
-    uploadMode = mode;
+    multipleUploadMode = mode;
     
     if (mode === 'file') {
         $('#upload-files-tab').addClass('border-blue-500 text-blue-600 font-medium').removeClass('border-transparent text-gray-500');
@@ -113,7 +121,7 @@ function handleMultipleFileSelect(files) {
     if (!files || files.length === 0) return;
     
     // Проверяем общее количество файлов (максимум 10)
-    if (selectedFiles.length + files.length > 10) {
+    if (multipleSelectedFiles.length + files.length > 10) {
         alert('Максимум 10 панорам за одну загрузку');
         return;
     }
@@ -133,7 +141,7 @@ function handleMultipleFileSelect(files) {
             continue;
         }
         
-        selectedFiles.push({
+        multipleSelectedFiles.push({
             file: file,
             name: file.name,
             size: file.size,
@@ -145,7 +153,7 @@ function handleMultipleFileSelect(files) {
 }
 
 function removeFileFromList(index) {
-    selectedFiles.splice(index, 1);
+    multipleSelectedFiles.splice(index, 1);
     updateFilesList();
 }
 
@@ -153,12 +161,12 @@ function updateFilesList() {
     const container = $('#selected-files-list');
     container.empty();
     
-    if (selectedFiles.length === 0) {
+    if (multipleSelectedFiles.length === 0) {
         container.html('<p class="text-gray-500 text-center py-4">Файлы не выбраны</p>');
         return;
     }
     
-    selectedFiles.forEach((fileData, index) => {
+    multipleSelectedFiles.forEach((fileData, index) => {
         const fileItem = $(`
             <div class="file-item border rounded-lg p-3 mb-2">
                 <div class="flex items-center justify-between">
@@ -180,12 +188,12 @@ function updateFilesList() {
     });
     
     // Обновляем счетчик
-    $('#selected-files-count').text(`Выбрано файлов: ${selectedFiles.length}/10`);
+    $('#selected-files-count').text(`Выбрано файлов: ${multipleSelectedFiles.length}/10`);
 }
 
 function updateFileNotes(index, notes) {
-    if (selectedFiles[index]) {
-        selectedFiles[index].notes = notes;
+    if (multipleSelectedFiles[index]) {
+        multipleSelectedFiles[index].notes = notes;
     }
 }
 
@@ -227,7 +235,7 @@ function updateUrlFieldsIndexes() {
 }
 
 function uploadMultipleFiles() {
-    if (selectedFiles.length === 0) {
+    if (multipleSelectedFiles.length === 0) {
         alert('Пожалуйста, выберите файлы для загрузки');
         return;
     }
@@ -235,7 +243,7 @@ function uploadMultipleFiles() {
     const formData = new FormData();
     
     // Добавляем файлы
-    selectedFiles.forEach((fileData, index) => {
+    multipleSelectedFiles.forEach((fileData, index) => {
         formData.append('files', fileData.file);
         formData.append('notes', fileData.notes || '');
     });
@@ -249,10 +257,10 @@ function uploadMultipleFiles() {
     
     // Определяем URL эндпоинта
     let uploadUrl;
-    if (currentEntityType === 'property') {
-        uploadUrl = `/api/v1/admin/properties/${currentEntityId}/panoramas/upload`;
-    } else if (currentEntityType === 'service-card') {
-        uploadUrl = `/api/v1/admin/service-cards/${currentEntityId}/panoramas/upload`;
+    if (multipleCurrentEntityType === 'property') {
+        uploadUrl = `/api/v1/admin/properties/${multipleCurrentEntityId}/panoramas/upload`;
+    } else if (multipleCurrentEntityType === 'service-card') {
+        uploadUrl = `/api/v1/admin/service-cards/${multipleCurrentEntityId}/panoramas/upload`;
     } else {
         alert('Неизвестный тип объекта');
         return;
@@ -329,10 +337,10 @@ function uploadMultipleUrls() {
     
     // Определяем URL эндпоинта
     let uploadUrl;
-    if (currentEntityType === 'property') {
-        uploadUrl = `/api/v1/admin/properties/${currentEntityId}/panoramas/url`;
-    } else if (currentEntityType === 'service-card') {
-        uploadUrl = `/api/v1/admin/service-cards/${currentEntityId}/panoramas/url`;
+    if (multipleCurrentEntityType === 'property') {
+        uploadUrl = `/api/v1/admin/properties/${multipleCurrentEntityId}/panoramas/url`;
+    } else if (multipleCurrentEntityType === 'service-card') {
+        uploadUrl = `/api/v1/admin/service-cards/${multipleCurrentEntityId}/panoramas/url`;
     } else {
         alert('Неизвестный тип объекта');
         return;
@@ -367,7 +375,7 @@ function uploadMultipleUrls() {
 }
 
 function resetMultipleModal() {
-    selectedFiles = [];
+    multipleSelectedFiles = [];
     updateFilesList();
     
     // Очищаем URL поля

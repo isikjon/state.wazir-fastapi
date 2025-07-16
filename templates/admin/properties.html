@@ -687,6 +687,52 @@
     }
 </script>
 
+<!-- Стили для модального окна множественной загрузки -->
+<style>
+    #multiple-panoramas-modal {
+        z-index: 9999;
+    }
+
+    #multiple-panoramas-modal.hidden {
+        display: none;
+    }
+
+    #multiple-panoramas-modal:not(.hidden) {
+        display: flex;
+    }
+
+    .file-item {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+    }
+
+    .file-item:hover {
+        background: #f3f4f6;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    #file-drop-area.border-blue-400 {
+        border-color: #60a5fa !important;
+    }
+
+    #file-drop-area.bg-blue-50 {
+        background-color: #eff6ff !important;
+    }
+</style>
+
 <!-- Модальное окно для множественной загрузки панорам -->
 <div id="multiple-panoramas-modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
     <div id="multiple-panoramas-modal-backdrop" class="fixed inset-0 bg-black bg-opacity-50"></div>

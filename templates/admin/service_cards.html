@@ -1094,5 +1094,405 @@
 <script src="/static/js/admin-panorama-upload.js"></script>
 <script src="/static/js/admin-multiple-panorama-upload.js"></script>
 <script>
+let addCardMap;
+let addCardMarker;
+const categoryId = {{ category.id }};
+
+// Функция для просмотра изображений карточки
+function viewCardImages(cardId) {
+    console.log('Viewing images for card:', cardId);
+    // TODO: Реализовать модальное окно для просмотра изображений
+    alert('Функция просмотра изображений будет реализована позже');
+}
+
+// Функция для управления 360° панорамой
+function manage360Tour(cardId) {
+    console.log('Managing 360 tour for card:', cardId);
+    $('#tour360-card-id').val(cardId);
+    
+    // Загрузка информации о текущей панораме
+    fetch(`/admin/services/cards/${cardId}/360-info`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.has_tour) {
+                $('#current-360-info').show();
+                $('#current-360-type').text(data.tour_type === 'url' ? 'URL ссылка' : 'Загруженный файл');
+                $('#current-360-date').text('Загружено: ' + (data.upload_date || 'Неизвестно'));
+                $('#delete-360-btn').show();
+            } else {
+                $('#current-360-info').hide();
+                $('#delete-360-btn').hide();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading 360 info:', error);
+            $('#current-360-info').hide();
+            $('#delete-360-btn').hide();
+        });
+    
+    // Сброс формы
+    $('#tour360-file').val('');
+    $('#tour-360-url').val('');
+    $('#tour-360-date').val('');
+    $('#file-preview').hide();
+    switchTo360Mode('file');
+    
+    openModal('tour360Modal');
+}
+
+// Функция для редактирования карточки
+function editCardFromData(button) {
+    const cardData = {
+        id: button.getAttribute('data-id'),
+        title: button.getAttribute('data-title'),
+        description: button.getAttribute('data-description'),
+        address: button.getAttribute('data-address'),
+        phone: button.getAttribute('data-phone'),
+        email: button.getAttribute('data-email'),
+        website: button.getAttribute('data-website'),
+        image: button.getAttribute('data-image'),
+        active: button.getAttribute('data-active') === 'true'
+    };
+    
+    console.log('Editing card:', cardData);
+    
+    // Заполнение формы редактирования
+    $('#editCardId').val(cardData.id);
+    $('#editCardTitle').val(cardData.title);
+    $('#editCardDescription').val(cardData.description);
+    $('#editCardAddress').val(cardData.address);
+    $('#editCardPhone').val(cardData.phone);
+    $('#editCardEmail').val(cardData.email);
+    $('#editCardWebsite').val(cardData.website);
+    
+    openModal('editCardModal');
+}
+
+// Функция для удаления карточки
+function deleteCard(cardId, cardTitle) {
+    if (confirm(`Вы уверены, что хотите удалить заведение "${cardTitle}"?`)) {
+        fetch(`/admin/services/cards/${cardId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Заведение успешно удалено');
+                location.reload();
+            } else {
+                alert('Ошибка при удалении: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting card:', error);
+            alert('Ошибка при удалении заведения');
+        });
+    }
+}
+
+// Функция для удаления 360° панорамы
+function delete360Tour() {
+    const cardId = $('#tour360-card-id').val();
+    if (confirm('Вы уверены, что хотите удалить 360° панораму?')) {
+        fetch(`/admin/services/cards/${cardId}/360-delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('360° панорама удалена');
+                $('#current-360-info').hide();
+                $('#delete-360-btn').hide();
+            } else {
+                alert('Ошибка при удалении: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting 360 tour:', error);
+            alert('Ошибка при удалении панорамы');
+        });
+    }
+}
+
+// Функция для переключения режима 360° панорамы
+function switchTo360Mode(mode) {
+    if (mode === 'file') {
+        $('#file-upload-form').show();
+        $('#url-upload-form').addClass('hidden');
+        $('#upload-file-tab').addClass('active-tab').removeClass('inactive-tab');
+        $('#upload-url-tab').addClass('inactive-tab').removeClass('active-tab');
+    } else {
+        $('#file-upload-form').hide();
+        $('#url-upload-form').removeClass('hidden');
+        $('#upload-url-tab').addClass('active-tab').removeClass('inactive-tab');
+        $('#upload-file-tab').addClass('inactive-tab').removeClass('active-tab');
+    }
+}
+
+// Функция открытия модального окна
+function openModal(modalId) {
+    document.getElementById(modalId).style.display = 'flex';
+    document.getElementById(modalId).classList.add('show');
+}
+
+// Функция закрытия модального окна
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+    document.getElementById(modalId).classList.remove('show');
+}
+
+// Функция отправки формы добавления карточки
+function submitAddCard() {
+    const formData = new FormData();
+    
+    // Основные данные
+    formData.append('title', $('#addCardTitle').val());
+    formData.append('description', $('#addCardDescription').val());
+    formData.append('address', $('#addCardAddress').val());
+    formData.append('phone', $('#addCardPhone').val());
+    formData.append('email', $('#addCardEmail').val());
+    formData.append('website', $('#addCardWebsite').val());
+    formData.append('latitude', $('#addCardLatitude').val());
+    formData.append('longitude', $('#addCardLongitude').val());
+    
+    // Изображения
+    const imageFiles = $('#addCardImages')[0].files;
+    for (let i = 0; i < imageFiles.length; i++) {
+        formData.append('images', imageFiles[i]);
+    }
+    
+    // 360° панорама
+    const activeTab = $('.tour-tab.active').data('tab');
+    if (activeTab === 'url') {
+        formData.append('tour_360_url', $('#addCard360Url').val());
+    } else if (activeTab === 'file') {
+        const tour360File = $('#addCard360File')[0].files[0];
+        if (tour360File) {
+            formData.append('tour_360_file', tour360File);
+        }
+    }
+    
+    fetch(`/admin/services/categories/${categoryId}/cards/add`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Заведение успешно добавлено');
+            location.reload();
+        } else {
+            alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+        }
+    })
+    .catch(error => {
+        console.error('Error adding card:', error);
+        alert('Ошибка при добавлении заведения');
+    });
+}
+
+// Функция отправки формы редактирования карточки
+function submitEditCard() {
+    const cardId = $('#editCardId').val();
+    const formData = new FormData();
+    
+    formData.append('title', $('#editCardTitle').val());
+    formData.append('description', $('#editCardDescription').val());
+    formData.append('address', $('#editCardAddress').val());
+    formData.append('phone', $('#editCardPhone').val());
+    formData.append('email', $('#editCardEmail').val());
+    formData.append('website', $('#editCardWebsite').val());
+    
+    fetch(`/admin/services/cards/${cardId}/edit`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Заведение успешно обновлено');
+            location.reload();
+        } else {
+            alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+        }
+    })
+    .catch(error => {
+        console.error('Error updating card:', error);
+        alert('Ошибка при обновлении заведения');
+    });
+}
+
+// Инициализация при загрузке страницы
+$(document).ready(function() {
+    // Обработчик для кнопки добавления карточки
+    $('#add-card-btn').click(function() {
+        openModal('addCardModal');
+        // Инициализация карты после открытия модального окна
+        setTimeout(initAddCardMap, 100);
+    });
+    
+    // Обработчики для переключения вкладок 360° панорамы
+    $('.tour-tab').click(function() {
+        $('.tour-tab').removeClass('active');
+        $(this).addClass('active');
+        
+        const tab = $(this).data('tab');
+        if (tab === 'url') {
+            $('#tour-url-section').show();
+            $('#tour-file-section').hide();
+        } else {
+            $('#tour-url-section').hide();
+            $('#tour-file-section').show();
+        }
+    });
+    
+    // Обработчик для загрузки изображений
+    $('#addCardImages').change(function() {
+        const files = this.files;
+        const preview = $('#addCardImagesPreview > div');
+        preview.empty();
+        
+        if (files.length > 0) {
+            $('#addCardImagesPreview').show();
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const imgContainer = $('<div class="image-preview-container"></div>');
+                    const img = $('<img class="image-preview">').attr('src', e.target.result);
+                    const removeBtn = $('<button class="image-remove-btn" type="button">&times;</button>');
+                    
+                    removeBtn.click(function() {
+                        imgContainer.remove();
+                        if (preview.children().length === 0) {
+                            $('#addCardImagesPreview').hide();
+                        }
+                    });
+                    
+                    imgContainer.append(img).append(removeBtn);
+                    preview.append(imgContainer);
+                };
+                
+                reader.readAsDataURL(file);
+            }
+        } else {
+            $('#addCardImagesPreview').hide();
+        }
+    });
+    
+    // Обработчик для загрузки 360° файла
+    $('#addCard360File').change(function() {
+        const file = this.files[0];
+        if (file) {
+            $('#addCard360Preview').show();
+            $('#addCard360FileName').text(file.name);
+        } else {
+            $('#addCard360Preview').hide();
+        }
+    });
+    
+    // Обработчик для кнопки сохранения 360° панорамы
+    $('#save-360-btn').click(function() {
+        const cardId = $('#tour360-card-id').val();
+        const formData = new FormData();
+        
+        if ($('#file-upload-form').is(':visible')) {
+            const file = $('#tour360-file')[0].files[0];
+            if (file) {
+                formData.append('tour_360_file', file);
+            }
+        } else {
+            formData.append('tour_360_url', $('#tour-360-url').val());
+            formData.append('tour_360_date', $('#tour-360-date').val());
+        }
+        
+        fetch(`/admin/services/cards/${cardId}/360-upload`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('360° панорама сохранена');
+                closeModal('tour360Modal');
+                location.reload();
+            } else {
+                alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Error saving 360 tour:', error);
+            alert('Ошибка при сохранении панорамы');
+        });
+    });
+    
+    // Закрытие модальных окон по клику вне их содержимого
+    $('.modal').click(function(e) {
+        if (e.target === this) {
+            closeModal(this.id);
+        }
+    });
+    
+    // Закрытие модальных окон по клавише Escape
+    $(document).keydown(function(e) {
+        if (e.key === 'Escape') {
+            $('.modal.show').each(function() {
+                closeModal(this.id);
+            });
+        }
+    });
+});
+
+// Функция инициализации карты для добавления карточки
+function initAddCardMap() {
+    if (typeof google === 'undefined') {
+        console.error('Google Maps API не загружен');
+        return;
+    }
+    
+    const bishkek = { lat: 42.8746, lng: 74.5698 };
+    
+    addCardMap = new google.maps.Map(document.getElementById('addCardMap'), {
+        zoom: 12,
+        center: bishkek,
+        mapTypeId: 'roadmap'
+    });
+    
+    addCardMarker = new google.maps.Marker({
+        position: bishkek,
+        map: addCardMap,
+        draggable: true
+    });
+    
+    // Обновление координат при перемещении маркера
+    addCardMarker.addListener('dragend', function(event) {
+        const lat = event.latLng.lat();
+        const lng = event.latLng.lng();
+        $('#addCardLatitude').val(lat);
+        $('#addCardLongitude').val(lng);
+    });
+    
+    // Установка маркера по клику на карте
+    addCardMap.addListener('click', function(event) {
+        const lat = event.latLng.lat();
+        const lng = event.latLng.lng();
+        
+        addCardMarker.setPosition(event.latLng);
+        $('#addCardLatitude').val(lat);
+        $('#addCardLongitude').val(lng);
+    });
+    
+    // Установка начальных координат
+    $('#addCardLatitude').val(bishkek.lat);
+    $('#addCardLongitude').val(bishkek.lng);
+}
 </script>
 {% endblock %}

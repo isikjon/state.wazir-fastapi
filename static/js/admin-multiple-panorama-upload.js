@@ -18,24 +18,39 @@ $(document).ready(function() {
     });
 
     // Обработка выбора множественных файлов
-    $('#panorama-files').on('change', function(e) {
+    $(document).on('change', '#panorama-files', function(e) {
+        console.log('Файлы выбраны:', e.target.files.length);
         handleMultipleFileSelect(e.target.files);
     });
 
+    // Обработка клика на область загрузки файлов
+    $(document).on('click', '#file-drop-area', function(e) {
+        e.preventDefault();
+        console.log('Клик по области загрузки файлов');
+        
+        const fileInput = $('#panorama-files');
+        console.log('Input элемент найден:', fileInput.length > 0);
+        
+        if (fileInput.length > 0) {
+            fileInput[0].click();
+            console.log('Клик по input выполнен');
+        } else {
+            console.error('Input элемент #panorama-files не найден!');
+        }
+    });
+
     // Обработка drag & drop для множественных файлов
-    const dropArea = $('#file-drop-area');
-    
-    dropArea.on('dragover', function(e) {
+    $(document).on('dragover', '#file-drop-area', function(e) {
         e.preventDefault();
         $(this).addClass('border-blue-400 bg-blue-50');
     });
 
-    dropArea.on('dragleave', function(e) {
+    $(document).on('dragleave', '#file-drop-area', function(e) {
         e.preventDefault();
         $(this).removeClass('border-blue-400 bg-blue-50');
     });
 
-    dropArea.on('drop', function(e) {
+    $(document).on('drop', '#file-drop-area', function(e) {
         e.preventDefault();
         $(this).removeClass('border-blue-400 bg-blue-50');
         
@@ -61,6 +76,22 @@ $(document).ready(function() {
         console.log('Модальное окно найдено:', modal.length > 0);
         
         modal.removeClass('hidden');
+        
+        // Проверяем, что все элементы на месте после открытия модального окна
+        setTimeout(function() {
+            const dropArea = $('#file-drop-area');
+            const fileInput = $('#panorama-files');
+            const fileUploadSection = $('#file-upload-section');
+            
+            console.log('Drop area найдена:', dropArea.length > 0);
+            console.log('File input найден:', fileInput.length > 0);
+            console.log('File upload section найдена:', fileUploadSection.length > 0);
+            
+            // Выводим HTML структуру для отладки
+            if (dropArea.length === 0) {
+                console.log('HTML модального окна:', $('#multiple-panoramas-modal').html());
+            }
+        }, 100);
         
         // Сброс формы
         resetMultipleModal();

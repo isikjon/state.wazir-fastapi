@@ -426,11 +426,12 @@ function loadCurrentPanoramas() {
         return;
     }
     
+    // Определяем API URL в зависимости от типа объекта
     let apiUrl;
     if (multipleCurrentEntityType === 'property') {
-        apiUrl = `/api/v1/panorama_upload/admin/properties/${multipleCurrentEntityId}/360`;
+        apiUrl = `/api/v1/admin/properties/${multipleCurrentEntityId}/media`;
     } else if (multipleCurrentEntityType === 'service-card') {
-        apiUrl = `/api/v1/panorama_upload/admin/service-cards/${multipleCurrentEntityId}/360`;
+        apiUrl = `/api/v1/admin/service-cards/${multipleCurrentEntityId}/media`;
     } else {
         console.log('Неизвестный тип объекта для загрузки панорам');
         return;

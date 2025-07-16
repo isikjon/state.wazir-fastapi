@@ -4736,6 +4736,25 @@ async def get_service_card_media_info(
         
         # Информация о 360° панораме
         has_tour = service_card.has_360_tour()
+        
+        # Формируем список всех панорам для JavaScript
+        panoramas_list = []
+        if service_card.panoramas:
+            for panorama in service_card.panoramas:
+                panoramas_list.append({
+                    "id": panorama.id,
+                    "file_id": panorama.file_id,
+                    "url": panorama.url,
+                    "original_url": panorama.original_url,
+                    "optimized_url": panorama.optimized_url,
+                    "preview_url": panorama.preview_url,
+                    "thumbnail_url": panorama.thumbnail_url,
+                    "uploaded_at": panorama.uploaded_at.isoformat() if panorama.uploaded_at else None,
+                    "type": panorama.type,
+                    "notes": panorama.notes
+                })
+        
+        # Информация о последней панораме для обратной совместимости
         panorama_info = None
         if has_tour and service_card.panoramas:
             latest_panorama = service_card.panoramas[-1]  # Берем последнюю загруженную
@@ -4759,7 +4778,8 @@ async def get_service_card_media_info(
         return {
             "success": True,
             "photos": photos_info,
-            "tour_360": tour_360_info
+            "tour_360": tour_360_info,
+            "panoramas": panoramas_list  # Добавляем список панорам для JavaScript
         }
         
     except Exception as e:
@@ -4768,102 +4788,14 @@ async def get_service_card_media_info(
 
 # API для загрузки фотографий заведения
 @app.post("/api/v1/admin/service-cards/{card_id}/photos")
-async def upload_service_card_photos(
+async def admin_upload_service_card_photos(
     card_id: int,
+    request: Request,
     photos: List[UploadFile] = File(...),
     db: Session = Depends(deps.get_db)
 ):
-    """Загрузка фотографий для заведения - точная копия логики недвижимости"""
-    try:
-        print("=== ЗАГРУЗКА ФОТОГРАФИЙ ЗАВЕДЕНИЯ ===")
-        print(f"Card ID: {card_id}, файлов: {len(photos)}")
-        
-        # Проверяем что заведение существует
-        service_card = db.query(ServiceCard).filter(ServiceCard.id == card_id).first()
-        if not service_card:
-            return JSONResponse(status_code=404, content={"success": False, "error": "Заведение не найдено"})
-        
-        # Проверяем фотографии - ТОЧНО КАК В НЕДВИЖИМОСТИ
-        if not photos or len(photos) < 2:
-            return JSONResponse(status_code=400, content={
-                "success": False, 
-                "message": "Необходимо загрузить минимум 2 фотографии"
-            })
-        
-        # Проверяем типы файлов - ТОЧНО КАК В НЕДВИЖИМОСТИ
-        allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
-        for photo in photos:
-            if photo.content_type not in allowed_types:
-                return JSONResponse(status_code=400, content={
-                    "success": False,
-                    "message": f"Неподдерживаемый тип файла: {photo.content_type}"
-                })
-        
-        # Загружаем изображения на медиа-сервер - ТОЧНО КАК В НЕДВИЖИМОСТИ (БЕЗ ВТОРОГО ПАРАМЕТРА!)
-        print("DEBUG: Загрузка изображений на медиа-сервер...")
-        from app.utils.media_uploader import media_uploader
-        upload_result = await media_uploader.upload_property_images(photos)
-        
-        print(f"DEBUG: Результат загрузки: {upload_result}")
-        
-        if upload_result["status"] != "success":
-            return JSONResponse(status_code=400, content={
-                "success": False,
-                "message": f"Ошибка загрузки изображений: {upload_result['message']}"
-            })
-        
-        property_media_id = upload_result["property_id"]
-        images_data = upload_result["files"]
-        
-        print(f"DEBUG: Изображения загружены, media_id: {property_media_id}")
-        
-        # Удаляем старые изображения из БД
-        old_images = db.query(ServiceCardImage).filter(ServiceCardImage.service_card_id == card_id).all()
-        for old_image in old_images:
-            db.delete(old_image)
-        print(f"DEBUG: Удалено {len(old_images)} старых изображений")
-        
-        uploaded_images = []
-        # Создаем записи в БД для каждого загруженного изображения
-        for i, file_info in enumerate(images_data):
-            # Берем medium URL как основной
-            image_url = file_info["urls"]["medium"]
-            
-            print(f"DEBUG: Создаем запись для изображения: {image_url}")
-            
-            service_image = ServiceCardImage(
-                service_card_id=card_id,
-                url=image_url,
-                is_main=(i == 0)  # Первое изображение - основное
-            )
-            db.add(service_image)
-            uploaded_images.append(image_url)
-            
-            # Если это первое изображение, обновляем основное изображение заведения
-            if i == 0:
-                service_card.image_url = image_url
-                print(f"DEBUG: Установлено основное изображение: {image_url}")
-        
-        # Обновляем дату загрузки фотографий
-        from datetime import datetime
-        service_card.photos_uploaded_at = datetime.utcnow()
-        
-        db.commit()
-        print(f"DEBUG: Сохранено {len(uploaded_images)} изображений в БД")
-        print("=== ЗАГРУЗКА ЗАВЕРШЕНА УСПЕШНО ===")
-        
-        return {
-            "success": True,
-            "message": f"Успешно загружено {len(images_data)} фотографий",
-            "count": len(images_data),
-            "images": uploaded_images,
-            "media_id": property_media_id
-        }
-            
-    except Exception as e:
-        db.rollback()
-        print(f"ОШИБКА: {str(e)}")
-        return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
+    # Используем существующую логику загрузки фотографий
+    return await upload_service_card_photos(card_id, photos, db)
 
 @app.post("/mobile/test-debug-upload")
 async def test_debug_upload(
@@ -5586,6 +5518,210 @@ async def admin_upload_service_card_photos(
 ):
     # Используем существующую логику загрузки фотографий
     return await upload_service_card_photos(card_id, photos, db)
+
+# API для удаления отдельной панорамы заведения
+@app.delete("/api/v1/admin/service-cards/{card_id}/panoramas/{panorama_id}")
+async def delete_service_card_panorama(
+    card_id: int,
+    panorama_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    user = await check_admin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    
+    try:
+        # Проверяем что заведение существует
+        service_card = db.query(ServiceCard).filter(ServiceCard.id == card_id).first()
+        if not service_card:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Заведение не найдено"})
+        
+        # Находим и удаляем конкретную панораму
+        panorama = db.query(models.ServiceCardPanorama).filter(
+            models.ServiceCardPanorama.id == panorama_id,
+            models.ServiceCardPanorama.service_card_id == card_id
+        ).first()
+        
+        if not panorama:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Панорама не найдена"})
+        
+        # Удаляем панораму
+        db.delete(panorama)
+        db.commit()
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": "Панорама успешно удалена"
+        })
+        
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR: Ошибка при удалении панорамы: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
+
+# API для удаления отдельной панорамы недвижимости
+@app.delete("/api/v1/admin/properties/{property_id}/panoramas/{panorama_id}")
+async def delete_property_panorama(
+    property_id: int,
+    panorama_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    user = await check_admin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    
+    try:
+        # Проверяем что объект недвижимости существует
+        property_obj = db.query(models.Property).filter(models.Property.id == property_id).first()
+        if not property_obj:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Объект недвижимости не найден"})
+        
+        # Находим и удаляем конкретную панораму
+        panorama = db.query(models.PropertyPanorama).filter(
+            models.PropertyPanorama.id == panorama_id,
+            models.PropertyPanorama.property_id == property_id
+        ).first()
+        
+        if not panorama:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Панорама не найдена"})
+        
+        # Удаляем панораму
+        db.delete(panorama)
+        db.commit()
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": "Панорама успешно удалена"
+        })
+        
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR: Ошибка при удалении панорамы недвижимости: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
+
+# API для получения информации о медиафайлах недвижимости
+@app.get("/api/v1/admin/properties/{property_id}/media")
+async def get_property_media_info(
+    property_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    """Получение информации о медиафайлах недвижимости"""
+    user = await check_admin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    
+    try:
+        # Находим объект недвижимости с изображениями и панорамами
+        property_obj = db.query(models.Property).options(
+            joinedload(models.Property.images),
+            joinedload(models.Property.panoramas)
+        ).filter(models.Property.id == property_id).first()
+        
+        if not property_obj:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Объект недвижимости не найден"})
+        
+        # Информация о фотографиях
+        photos_info = {
+            "count": len(property_obj.images) if property_obj.images else 0,
+            "last_uploaded": property_obj.created_at.isoformat() if property_obj.created_at else None,
+            "photos": [{"url": img.url, "is_main": img.is_main} for img in property_obj.images] if property_obj.images else []
+        }
+        
+        # Формируем список всех панорам для JavaScript
+        panoramas_list = []
+        if hasattr(property_obj, 'panoramas') and property_obj.panoramas:
+            for panorama in property_obj.panoramas:
+                panoramas_list.append({
+                    "id": panorama.id,
+                    "file_id": panorama.file_id,
+                    "url": panorama.url,
+                    "original_url": panorama.original_url,
+                    "optimized_url": panorama.optimized_url,
+                    "preview_url": panorama.preview_url,
+                    "thumbnail_url": panorama.thumbnail_url,
+                    "uploaded_at": panorama.uploaded_at.isoformat() if panorama.uploaded_at else None,
+                    "type": panorama.type,
+                    "notes": panorama.notes
+                })
+        
+        # Информация о 360° панораме
+        has_tour = len(panoramas_list) > 0
+        
+        # Информация о последней панораме для обратной совместимости  
+        panorama_info = None
+        if has_tour:
+            latest_panorama = panoramas_list[-1]
+            panorama_info = {
+                "file_id": latest_panorama["file_id"],
+                "url": latest_panorama["url"],
+                "optimized_url": latest_panorama["optimized_url"],
+                "last_uploaded": latest_panorama["uploaded_at"],
+                "type": latest_panorama["type"]
+            }
+        
+        tour_360_info = {
+            "has_tour": has_tour,
+            "file_id": panorama_info["file_id"] if panorama_info else None,
+            "url": panorama_info["url"] if panorama_info else None,
+            "optimized_url": panorama_info["optimized_url"] if panorama_info else None,
+            "last_uploaded": panorama_info["last_uploaded"] if panorama_info else None,
+            "type": panorama_info["type"] if panorama_info else None
+        }
+        
+        return {
+            "success": True,
+            "photos": photos_info,
+            "tour_360": tour_360_info,
+            "panoramas": panoramas_list
+        }
+        
+    except Exception as e:
+        print(f"ERROR: Ошибка при получении медиа-информации недвижимости: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
+
+# API для удаления отдельной панорамы заведения
+@app.delete("/api/v1/admin/service-cards/{card_id}/panoramas/{panorama_id}")
+async def delete_service_card_panorama(
+    card_id: int,
+    panorama_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    user = await check_admin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    
+    try:
+        # Проверяем что заведение существует
+        service_card = db.query(ServiceCard).filter(ServiceCard.id == card_id).first()
+        if not service_card:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Заведение не найдено"})
+        
+        # Находим и удаляем конкретную панораму
+        panorama = db.query(models.ServiceCardPanorama).filter(
+            models.ServiceCardPanorama.id == panorama_id,
+            models.ServiceCardPanorama.service_card_id == card_id
+        ).first()
+        
+        if not panorama:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Панорама не найдена"})
+        
+        # Удаляем панораму
+        db.delete(panorama)
+        db.commit()
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": "Панорама успешно удалена"
+        })
+        
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR: Ошибка при удалении панорамы: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
 
 if __name__ == "__main__":
     import uvicorn

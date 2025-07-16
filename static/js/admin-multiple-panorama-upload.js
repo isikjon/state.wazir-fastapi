@@ -283,8 +283,8 @@ function uploadMultipleFiles() {
     });
     
     // Показываем прогресс
-    $('#upload-progress').removeClass('hidden');
-    updateProgress(0);
+    showUploadProgress();
+    updateUploadProgress(0, 'Подготовка к загрузке...');
     
     // Отключаем кнопку загрузки и меняем текст
     const uploadBtn = $('#upload-multiple-panoramas-btn');
@@ -299,6 +299,8 @@ function uploadMultipleFiles() {
         uploadUrl = `/api/v1/admin/service-cards/${multipleCurrentEntityId}/panoramas/upload`;
     } else {
         alert('Неизвестный тип объекта');
+        hideUploadProgress();
+        uploadBtn.prop('disabled', false).html('Загрузить панорамы');
         return;
     }
     
@@ -308,7 +310,7 @@ function uploadMultipleFiles() {
     xhr.upload.addEventListener('progress', function(e) {
         if (e.lengthComputable) {
             const percentComplete = (e.loaded / e.total) * 100;
-            updateProgress(percentComplete);
+            updateUploadProgress(percentComplete, 'Загрузка файлов...');
         }
     });
     
@@ -317,27 +319,41 @@ function uploadMultipleFiles() {
             try {
                 const response = JSON.parse(xhr.responseText);
                 if (response.success) {
-                    let message = `Успешно загружено ${response.total_uploaded} панорам`;
-                    if (response.errors && response.errors.length > 0) {
-                        message += `\n\nОшибки:\n${response.errors.join('\n')}`;
-                    }
-                    alert(message);
-                    $('#multiple-panoramas-modal').removeClass('show').addClass('hidden');
-                    location.reload();
+                    updateUploadProgress(100, 'Загрузка завершена!');
+                    
+                    setTimeout(() => {
+                        let message = `Успешно загружено ${response.total_uploaded} панорам`;
+                        if (response.errors && response.errors.length > 0) {
+                            message += `\n\nОшибки:\n${response.errors.join('\n')}`;
+                        }
+                        alert(message);
+                        
+                        // Обновляем список текущих панорам
+                        loadCurrentPanoramas();
+                        
+                        // Обновляем статус 360° тура на странице
+                        updatePagePanoramaStatus();
+                        
+                        // Сбрасываем форму
+                        resetMultipleModal();
+                        hideUploadProgress();
+                    }, 1000);
                 } else {
                     alert('Ошибка: ' + (response.error || 'Неизвестная ошибка'));
+                    hideUploadProgress();
                 }
             } catch (e) {
                 alert('Ошибка обработки ответа сервера');
+                hideUploadProgress();
             }
         } else {
             alert('Ошибка загрузки файлов');
+            hideUploadProgress();
         }
         
         // Восстанавливаем кнопку
         uploadBtn.prop('disabled', false);
         uploadBtn.html('Загрузить панорамы');
-        $('#upload-progress').addClass('hidden');
     });
     
     xhr.addEventListener('error', function() {
@@ -345,7 +361,7 @@ function uploadMultipleFiles() {
         // Восстанавливаем кнопку
         uploadBtn.prop('disabled', false);
         uploadBtn.html('Загрузить панорамы');
-        $('#upload-progress').addClass('hidden');
+        hideUploadProgress();
     });
     
     xhr.open('POST', uploadUrl);
@@ -375,6 +391,10 @@ function uploadMultipleUrls() {
         return;
     }
     
+    // Показываем прогресс
+    showUploadProgress();
+    updateUploadProgress(0, 'Обработка URL...');
+    
     // Определяем URL эндпоинта
     let uploadUrl;
     if (multipleCurrentEntityType === 'property') {
@@ -383,6 +403,7 @@ function uploadMultipleUrls() {
         uploadUrl = `/api/v1/admin/service-cards/${multipleCurrentEntityId}/panoramas/url`;
     } else {
         alert('Неизвестный тип объекта');
+        hideUploadProgress();
         return;
     }
     
@@ -394,24 +415,121 @@ function uploadMultipleUrls() {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        updateUploadProgress(50, 'Обработка ответа...');
+        return response.json();
+    })
     .then(data => {
-        if (data.success) {
-            let message = `Успешно добавлено ${data.total_added} панорам`;
-            if (data.errors && data.errors.length > 0) {
-                message += `\n\nОшибки:\n${data.errors.join('\n')}`;
+        updateUploadProgress(100, 'Завершено!');
+        
+        setTimeout(() => {
+            if (data.success) {
+                let message = `Успешно добавлено ${data.total_added} панорам`;
+                if (data.errors && data.errors.length > 0) {
+                    message += `\n\nОшибки:\n${data.errors.join('\n')}`;
+                }
+                alert(message);
+                
+                // Обновляем список текущих панорам
+                loadCurrentPanoramas();
+                
+                // Обновляем статус 360° тура на странице
+                updatePagePanoramaStatus();
+                
+                // Сбрасываем форму
+                resetMultipleModal();
+            } else {
+                alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
             }
-            alert(message);
-            $('#multiple-panoramas-modal').removeClass('show').addClass('hidden');
-            location.reload();
-        } else {
-            alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
-        }
+            hideUploadProgress();
+        }, 1000);
     })
     .catch(error => {
         console.error('Ошибка при добавлении панорам по URL:', error);
         alert('Произошла ошибка при добавлении панорам');
+        hideUploadProgress();
     });
+}
+
+// Функция для обновления статуса 360° тура на странице
+function updatePagePanoramaStatus() {
+    if (!multipleCurrentEntityId || !multipleCurrentEntityType) {
+        return;
+    }
+    
+    // Определяем API URL для получения обновленной информации
+    let apiUrl;
+    if (multipleCurrentEntityType === 'property') {
+        apiUrl = `/api/v1/admin/properties/${multipleCurrentEntityId}/media`;
+    } else if (multipleCurrentEntityType === 'service-card') {
+        apiUrl = `/api/v1/admin/service-cards/${multipleCurrentEntityId}/media`;
+    } else {
+        return;
+    }
+    
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.panoramas) {
+                const panoramasCount = data.panoramas.length;
+                
+                // Находим соответствующую строку в таблице
+                let tableRow;
+                if (multipleCurrentEntityType === 'property') {
+                    tableRow = $(`tr[data-id="${multipleCurrentEntityId}"]`);
+                } else {
+                    // Для service cards ищем по другому способу
+                    tableRow = $(`.upload-multiple-panoramas-btn[data-entity-id="${multipleCurrentEntityId}"]`).closest('tr');
+                }
+                
+                if (tableRow.length > 0) {
+                    // Находим ячейку с 360° туром
+                    let tourCell = tableRow.find('td').eq(7); // Для properties - 8-я колонка (индекс 7)
+                    
+                    // Если это service cards, может быть другой индекс
+                    if (multipleCurrentEntityType === 'service-card') {
+                        // Ищем ячейку с кнопками действий и обновляем статус тура рядом с ней
+                        const actionCell = tableRow.find('.upload-multiple-panoramas-btn').closest('td');
+                        // Для service cards статус 360° тура может отображаться по-другому
+                    }
+                    
+                    if (tourCell.length > 0) {
+                        // Обновляем содержимое ячейки
+                        if (panoramasCount > 0) {
+                            tourCell.html(`<span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Есть (${panoramasCount})</span>`);
+                        } else {
+                            tourCell.html(`<span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">Нет</span>`);
+                        }
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка обновления статуса панорам на странице:', error);
+        });
+}
+
+function showUploadProgress() {
+    $('#upload-progress').removeClass('hidden');
+}
+
+function hideUploadProgress() {
+    $('#upload-progress').addClass('hidden');
+}
+
+function updateUploadProgress(percent, status) {
+    $('#progress-percent').text(Math.round(percent) + '%');
+    $('#progress-bar').css('width', percent + '%');
+    $('#upload-status').text(status || 'Загрузка...');
+    
+    // Обновляем статус в заголовке
+    if (percent === 100) {
+        $('.progress-status').text('Загрузка завершена!');
+    } else if (percent > 0) {
+        $('.progress-status').text('Загрузка панорам...');
+    } else {
+        $('.progress-status').text('Подготовка...');
+    }
 }
 
 function resetMultipleModal() {
@@ -420,18 +538,15 @@ function resetMultipleModal() {
     
     // Очищаем URL поля
     $('#url-fields-container').empty();
-    addUrlField(); // Добавляем одно поле по умолчанию
+    if ($('#add-url-field').length > 0) {
+        addUrlField(); // Добавляем одно поле по умолчанию если есть кнопка
+    }
     
-    $('#upload-progress').addClass('hidden');
-    updateProgress(0);
+    hideUploadProgress();
+    updateUploadProgress(0, 'Подготовка к загрузке...');
     
     // Переключение на режим загрузки файлов
     switchToMultipleUploadMode('file');
-}
-
-function updateProgress(percent) {
-    $('#progress-percent').text(Math.round(percent) + '%');
-    $('#progress-bar').css('width', percent + '%');
 }
 
 function loadCurrentPanoramas() {
@@ -470,6 +585,10 @@ function displayCurrentPanoramas(data) {
     
     if (!data.success || !data.panoramas || data.panoramas.length === 0) {
         container.html('<p class="text-gray-500 text-center py-4">Панорамы не найдены</p>');
+        // Обновляем заголовок секции
+        $('#current-panoramas-section h3').html(`
+            <i class="fas fa-vr-cardboard mr-2"></i>Текущие панорамы (0)
+        `);
         return;
     }
     
@@ -482,7 +601,7 @@ function displayCurrentPanoramas(data) {
         const notes = panorama.notes || 'Без комментария';
         
         html += `
-            <div class="panorama-item bg-gray-50 border border-gray-200 rounded-lg p-3">
+            <div class="panorama-item">
                 <div class="aspect-video bg-gray-100 rounded mb-2 overflow-hidden">
                     <img src="${thumbnailUrl}" alt="Панорама ${index + 1}" 
                          class="w-full h-full object-cover" 
@@ -493,8 +612,7 @@ function displayCurrentPanoramas(data) {
                     <div>Загружена: ${uploadDate}</div>
                     <div class="mt-1 text-gray-500">${notes}</div>
                 </div>
-                <button type="button" class="delete-panorama-btn mt-2 w-full px-2 py-1 bg-red-100 hover:bg-red-200 text-red-600 text-xs rounded" 
-                        data-panorama-id="${panorama.id}">
+                <button type="button" class="delete-panorama-btn" data-panorama-id="${panorama.id}">
                     <i class="fas fa-trash mr-1"></i>Удалить
                 </button>
             </div>
@@ -527,6 +645,11 @@ $(document).on('click', '.delete-panorama-btn', function() {
         return;
     }
     
+    // Показываем индикатор удаления
+    const btn = $(this);
+    const originalHtml = btn.html();
+    btn.html('<i class="fas fa-spinner fa-spin mr-1"></i>Удаление...').prop('disabled', true);
+    
     fetch(deleteUrl, {
         method: 'DELETE'
     })
@@ -537,11 +660,13 @@ $(document).on('click', '.delete-panorama-btn', function() {
             loadCurrentPanoramas(); // Перезагружаем список
         } else {
             alert('Ошибка удаления: ' + (data.error || 'Неизвестная ошибка'));
+            btn.html(originalHtml).prop('disabled', false);
         }
     })
     .catch(error => {
         console.error('Ошибка удаления панорамы:', error);
         alert('Произошла ошибка при удалении панорамы');
+        btn.html(originalHtml).prop('disabled', false);
     });
 });
 

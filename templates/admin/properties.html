@@ -35,7 +35,7 @@
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
                             <i class="fas fa-search"></i>
                         </div>
-                        <input type="text" name="search" placeholder="Поиск объявлений..." value="{{ search_query }}"
+                        <input type="text" name="search" placeholder="Поиск по названию объявления..." value="{{ search_query or '' }}"
                             class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                     </div>
                 </div>
@@ -165,8 +165,8 @@
                             property.created_at[:10] if property.created_at else 'Н/Д' }}</td>
                         <td class="py-3 px-4 text-sm">{{ property.views }}</td>
                         <td class="py-3 px-4">
-                            {% if property.panoramas %}
-                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Есть ({{
+                            {% if property.panoramas and property.panoramas|length > 0 %}
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Есть ({{
                                 property.panoramas|length }})</span>
                             {% else %}
                             <span
@@ -686,19 +686,43 @@
 <style>
     #multiple-panoramas-modal {
         z-index: 9999;
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
     }
 
     #multiple-panoramas-modal.hidden {
-        display: none;
+        display: none !important;
     }
 
-    #multiple-panoramas-modal:not(.hidden) {
-        display: flex;
+    #multiple-panoramas-modal.show {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+    }
+
+    #multiple-panoramas-modal .modal-content {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        margin: 0 auto;
+        max-height: calc(100vh - 80px);
+        overflow-y: auto;
+        position: relative;
+        width: 100%;
+        max-width: 800px;
     }
 
     .file-item {
         background: #f9fafb;
         border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        margin-bottom: 8px;
     }
 
     .file-item:hover {
@@ -726,87 +750,198 @@
     #file-drop-area.bg-blue-50 {
         background-color: #eff6ff !important;
     }
+
+    /* Стили для текущих панорам */
+    #current-panoramas-section {
+        margin-bottom: 24px;
+        padding: 16px;
+        background: #f8fafc;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    #current-panoramas-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 12px;
+        margin-top: 12px;
+    }
+
+    .panorama-item {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 12px;
+        transition: all 0.2s ease;
+    }
+
+    .panorama-item:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .panorama-item .aspect-video {
+        aspect-ratio: 16/9;
+        background: #f3f4f6;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+
+    .panorama-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .delete-panorama-btn {
+        width: 100%;
+        padding: 4px 8px;
+        background: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-top: 8px;
+    }
+
+    .delete-panorama-btn:hover {
+        background: #fecaca;
+        border-color: #f87171;
+    }
+
+    /* Прогресс бар для загрузки */
+    .upload-progress-container {
+        margin-top: 16px;
+        padding: 16px;
+        background: #f8fafc;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .progress-bar-container {
+        background: #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+        height: 8px;
+        margin-bottom: 8px;
+    }
+
+    .progress-bar {
+        background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+        height: 100%;
+        border-radius: 8px;
+        transition: width 0.3s ease;
+        position: relative;
+    }
+
+    .progress-bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+
+    .progress-text {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 14px;
+        color: #4b5563;
+    }
+
+    .progress-status {
+        font-weight: 500;
+    }
 </style>
 
 <!-- Модальное окно для множественной загрузки панорам -->
-<div id="multiple-panoramas-modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
-    <div id="multiple-panoramas-modal-backdrop" class="fixed inset-0 bg-black bg-opacity-50"></div>
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
-            <div class="flex items-center justify-between p-4 border-b">
-                <h2 class="text-xl font-semibold">Загрузить несколько панорам</h2>
-                <button class="close-multiple-panoramas-modal text-gray-500 hover:text-gray-700 focus:outline-none">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="p-4">
-                <!-- Текущие панорамы -->
-                <div id="current-panoramas-section" class="mb-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-3">
-                        <i class="fas fa-vr-cardboard mr-2"></i>Текущие панорамы
-                    </h3>
-                    <div id="current-panoramas-list" class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-                        <!-- Панорамы будут загружены через JavaScript -->
-                    </div>
+<div id="multiple-panoramas-modal" class="hidden">
+    <div class="modal-content">
+        <div class="flex items-center justify-between p-4 border-b">
+            <h2 class="text-xl font-semibold">Загрузить несколько панорам</h2>
+            <button class="close-multiple-panoramas-modal text-gray-500 hover:text-gray-700 focus:outline-none">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-4">
+            <!-- Текущие панорамы -->
+            <div id="current-panoramas-section">
+                <h3 class="text-lg font-medium text-gray-900 mb-3">
+                    <i class="fas fa-vr-cardboard mr-2"></i>Текущие панорамы
+                </h3>
+                <div id="current-panoramas-list">
+                    <!-- Панорамы будут загружены через JavaScript -->
                 </div>
+            </div>
 
-                <!-- Заголовок загрузки файлов -->
+            <!-- Заголовок загрузки файлов -->
+            <div class="mb-4">
+                <h3 class="text-lg font-medium text-gray-900">
+                    <i class="fas fa-upload mr-2"></i>Загрузить новые панорамы
+                </h3>
+                <p class="text-sm text-gray-500">Выберите до 10 файлов панорам, максимум 300 МБ каждый</p>
+            </div>
+
+            <!-- Секция загрузки файлов -->
+            <div id="file-upload-section">
                 <div class="mb-4">
-                    <h3 class="text-lg font-medium text-gray-900">
-                        <i class="fas fa-upload mr-2"></i>Загрузить новые панорамы
-                    </h3>
-                    <p class="text-sm text-gray-500">Выберите до 10 файлов панорам, максимум 300 МБ каждый</p>
-                </div>
-
-                <!-- Секция загрузки файлов -->
-                <div id="file-upload-section">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Выберите файлы панорам (до 10
-                            файлов, максимум 300 МБ каждый)</label>
-                        <div id="file-drop-area"
-                            class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors cursor-pointer">
-                            <div class="space-y-1 text-center">
-                                <i class="fas fa-vr-cardboard text-4xl text-gray-400 mb-4"></i>
-                                <div class="flex text-sm text-gray-600">
-                                    <span class="font-medium text-blue-600">Нажмите для выбора файлов</span>
-                                    <span class="ml-1">или перетащите их сюда</span>
-                                </div>
-                                <p class="text-xs text-gray-500">PNG, JPG, JPEG до 300 МБ каждый</p>
-                                <p class="text-xs text-gray-500">Панорамные изображения (соотношение сторон 2:1)</p>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Выберите файлы панорам (до 10
+                        файлов, максимум 300 МБ каждый)</label>
+                    <div id="file-drop-area"
+                        class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors cursor-pointer">
+                        <div class="space-y-1 text-center">
+                            <i class="fas fa-vr-cardboard text-4xl text-gray-400 mb-4"></i>
+                            <div class="flex text-sm text-gray-600">
+                                <span class="font-medium text-blue-600">Нажмите для выбора файлов</span>
+                                <span class="ml-1">или перетащите их сюда</span>
                             </div>
-                        </div>
-                        <input type="file" id="panorama-files" multiple accept="image/*" style="display: none;">
-                    </div>
-
-                    <!-- Список выбранных файлов -->
-                    <div class="mb-4">
-                        <div id="selected-files-count" class="text-sm text-gray-600 mb-2">Выбрано файлов: 0/10</div>
-                        <div id="selected-files-list"
-                            class="max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
-                            <p class="text-gray-500 text-center py-4">Файлы не выбраны</p>
+                            <p class="text-xs text-gray-500">PNG, JPG, JPEG до 300 МБ каждый</p>
+                            <p class="text-xs text-gray-500">Панорамные изображения (соотношение сторон 2:1)</p>
                         </div>
                     </div>
+                    <input type="file" id="panorama-files" multiple accept="image/*" style="display: none;">
                 </div>
 
-
-
-                <!-- Прогресс загрузки -->
-                <div id="upload-progress" class="mb-4 hidden">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Прогресс загрузки</label>
-                    <div class="w-full bg-gray-200 rounded-full h-3">
-                        <div id="progress-bar" class="bg-blue-600 h-3 rounded-full transition-all duration-300"
-                            style="width: 0%"></div>
+                <!-- Список выбранных файлов -->
+                <div class="mb-4">
+                    <div id="selected-files-count" class="text-sm text-gray-600 mb-2">Выбрано файлов: 0/10</div>
+                    <div id="selected-files-list"
+                        class="max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
+                        <p class="text-gray-500 text-center py-4">Файлы не выбраны</p>
                     </div>
-                    <div id="progress-percent" class="text-center text-sm text-gray-600 mt-1">0%</div>
                 </div>
             </div>
-            <div class="border-t p-4 flex justify-end space-x-2">
-                <button
-                    class="close-multiple-panoramas-modal px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors">Отмена</button>
-                <button id="upload-multiple-panoramas-btn"
-                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">Загрузить
-                    панорамы</button>
+
+            <!-- Прогресс загрузки -->
+            <div id="upload-progress" class="upload-progress-container hidden">
+                <div class="progress-text mb-2">
+                    <span class="progress-status">Загрузка панорам...</span>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+                </div>
+                <div class="text-sm text-gray-500" id="upload-status">Подготовка к загрузке...</div>
             </div>
+        </div>
+        <div class="border-t p-4 flex justify-end space-x-2">
+            <button
+                class="close-multiple-panoramas-modal px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors">Отмена</button>
+            <button id="upload-multiple-panoramas-btn"
+                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">Загрузить
+                панорамы</button>
         </div>
     </div>
 </div>

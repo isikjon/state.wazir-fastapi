@@ -105,7 +105,7 @@ $(document).ready(function() {
     // Закрытие модального окна только по кнопкам, НЕ по клику вне области
     $(document).on('click', '.close-multiple-panoramas-modal', function(e) {
         $('#multiple-panoramas-modal').removeClass('show').addClass('hidden');
-        resetMultipleModal();
+            resetMultipleModal();
     });
 
     // Удаление файла из списка
@@ -322,11 +322,11 @@ function uploadMultipleFiles() {
                     updateUploadProgress(100, 'Загрузка завершена!');
                     
                     setTimeout(() => {
-                        let message = `Успешно загружено ${response.total_uploaded} панорам`;
-                        if (response.errors && response.errors.length > 0) {
-                            message += `\n\nОшибки:\n${response.errors.join('\n')}`;
-                        }
-                        alert(message);
+                    let message = `Успешно загружено ${response.total_uploaded} панорам`;
+                    if (response.errors && response.errors.length > 0) {
+                        message += `\n\nОшибки:\n${response.errors.join('\n')}`;
+                    }
+                    alert(message);
                         
                         // Обновляем список текущих панорам
                         loadCurrentPanoramas();
@@ -423,12 +423,12 @@ function uploadMultipleUrls() {
         updateUploadProgress(100, 'Завершено!');
         
         setTimeout(() => {
-            if (data.success) {
-                let message = `Успешно добавлено ${data.total_added} панорам`;
-                if (data.errors && data.errors.length > 0) {
-                    message += `\n\nОшибки:\n${data.errors.join('\n')}`;
-                }
-                alert(message);
+        if (data.success) {
+            let message = `Успешно добавлено ${data.total_added} панорам`;
+            if (data.errors && data.errors.length > 0) {
+                message += `\n\nОшибки:\n${data.errors.join('\n')}`;
+            }
+            alert(message);
                 
                 // Обновляем список текущих панорам
                 loadCurrentPanoramas();
@@ -438,9 +438,9 @@ function uploadMultipleUrls() {
                 
                 // Сбрасываем форму
                 resetMultipleModal();
-            } else {
-                alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
-            }
+        } else {
+            alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+        }
             hideUploadProgress();
         }, 1000);
     })

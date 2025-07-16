@@ -2,12 +2,24 @@
  * JavaScript для обработки множественной загрузки 360° панорам в админке
  */
 
+console.log('🚀 admin-multiple-panorama-upload.js загружен');
+
 let multipleCurrentEntityId = null;
 let multipleCurrentEntityType = null; // 'property' или 'service-card'
 let multipleSelectedFiles = [];
 let multipleUploadMode = 'file'; // 'file' или 'url'
 
 $(document).ready(function() {
+    console.log('📝 Document ready для admin-multiple-panorama-upload.js');
+    
+    // Проверяем есть ли кнопки на странице
+    const uploadButtons = $('.upload-multiple-panoramas-btn');
+    console.log('🔍 Найдено кнопок загрузки панорам:', uploadButtons.length);
+    
+    // Проверяем есть ли модальное окно
+    const modal = $('#multiple-panoramas-modal');
+    console.log('🪟 Модальное окно найдено:', modal.length > 0);
+
     // Переключение между табами
     $('#upload-files-tab').on('click', function() {
         switchToMultipleUploadMode('file');
@@ -62,10 +74,10 @@ $(document).ready(function() {
 
     // Открытие модального окна множественной загрузки панорам
     $(document).on('click', '.upload-multiple-panoramas-btn', function(e) {
+        console.log('🎯 КЛИК ПО КНОПКЕ ПАНОРАМ!!! Обработчик сработал');
+        
         e.preventDefault();
         e.stopPropagation();
-        
-        console.log('Кнопка множественной загрузки нажата');
         
         multipleCurrentEntityId = $(this).data('entity-id');
         multipleCurrentEntityType = $(this).data('entity-type');

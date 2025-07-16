@@ -5380,6 +5380,213 @@ async def company_profile(request: Request, db: Session = Depends(deps.get_db)):
         "current_user": user
     })
 
+# API для добавления карточки заведения (новый роут для фронтенда)
+@app.post("/admin/services/categories/{category_id}/cards/add")
+async def admin_add_service_card(
+    category_id: int,
+    request: Request,
+    title: str = Form(...),
+    description: str = Form(""),
+    address: str = Form(""),
+    phone: str = Form(""),
+    email: str = Form(""),
+    website: str = Form(""),
+    latitude: float = Form(None),
+    longitude: float = Form(None),
+    tour_360_url: str = Form(""),
+    images: List[UploadFile] = File(default=[]),
+    tour_360_file: UploadFile = File(None),
+    db: Session = Depends(deps.get_db)
+):
+    # Используем существующую логику из API
+    return await create_service_card(
+        request, category_id, title, description, address, phone, email, website,
+        latitude, longitude, tour_360_url, images, tour_360_file, db
+    )
+
+# API для получения информации о 360° панораме карточки
+@app.get("/admin/services/cards/{card_id}/360-info")
+async def get_service_card_360_info(
+    card_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    user = await check_admin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    
+    try:
+        # Находим карточку заведения с панорамами
+        service_card = db.query(ServiceCard).options(
+            joinedload(ServiceCard.panoramas)
+        ).filter(ServiceCard.id == card_id).first()
+        
+        if not service_card:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Заведение не найдено"})
+        
+        has_tour = service_card.has_360_tour()
+        tour_info = {
+            "success": True,
+            "has_tour": has_tour,
+            "tour_type": None,
+            "upload_date": None
+        }
+        
+        if has_tour and service_card.panoramas:
+            latest_panorama = service_card.panoramas[-1]
+            tour_info.update({
+                "tour_type": latest_panorama.type,
+                "upload_date": latest_panorama.uploaded_at.strftime('%d.%m.%Y %H:%M') if latest_panorama.uploaded_at else None
+            })
+        
+        return JSONResponse(content=tour_info)
+        
+    except Exception as e:
+        print(f"ERROR: Ошибка при получении 360° информации: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
+
+# API для удаления карточки заведения (алиас)
+@app.post("/admin/services/cards/{card_id}/delete")
+async def admin_delete_service_card(
+    card_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    # Используем существующую логику удаления
+    return await delete_service_card(card_id, request, db)
+
+# API для редактирования карточки заведения (алиас)
+@app.post("/admin/services/cards/{card_id}/edit")
+async def admin_edit_service_card(
+    card_id: int,
+    request: Request,
+    title: str = Form(...),
+    description: str = Form(""),
+    address: str = Form(""),
+    phone: str = Form(""),
+    email: str = Form(""),
+    website: str = Form(""),
+    db: Session = Depends(deps.get_db)
+):
+    # Используем существующую логику обновления
+    return await update_service_card(card_id, request, title, description, address, phone, email, website, True, db)
+
+# API для загрузки 360° панорамы (алиас)
+@app.post("/admin/services/cards/{card_id}/360-upload")
+async def admin_upload_service_card_360(
+    card_id: int,
+    request: Request,
+    tour_360_url: str = Form(""),
+    tour_360_date: str = Form(""),
+    tour_360_file: UploadFile = File(None),
+    db: Session = Depends(deps.get_db)
+):
+    user = await check_admin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    
+    try:
+        service_card = db.query(ServiceCard).filter(ServiceCard.id == card_id).first()
+        if not service_card:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Заведение не найдено"})
+        
+        # Удаляем существующие панорамы
+        db.query(models.ServiceCardPanorama).filter(
+            models.ServiceCardPanorama.service_card_id == card_id
+        ).delete()
+        
+        if tour_360_file and tour_360_file.filename:
+            # Загружаем файл панорамы
+            try:
+                from app.utils.panorama_processor import PanoramaProcessor
+                processor = PanoramaProcessor()
+                result = await processor.upload_panorama(tour_360_file, card_id)
+                
+                if result.get('success'):
+                    panorama = models.ServiceCardPanorama(
+                        service_card_id=card_id,
+                        file_id=result.get('file_id'),
+                        original_url=result['urls'].get('original'),
+                        optimized_url=result['urls'].get('optimized'),
+                        preview_url=result['urls'].get('preview'),
+                        thumbnail_url=result['urls'].get('thumbnail'),
+                        meta=json.dumps(result.get('metadata', {}), ensure_ascii=False),
+                        uploaded_at=datetime.now(),
+                        type="file"
+                    )
+                    db.add(panorama)
+                    db.commit()
+                    return JSONResponse(content={"success": True, "message": "360° панорама загружена успешно"})
+                else:
+                    return JSONResponse(status_code=500, content={"success": False, "error": "Ошибка при загрузке панорамы"})
+                    
+            except Exception as e:
+                print(f"ERROR: Ошибка загрузки 360° файла: {str(e)}")
+                return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка загрузки: {str(e)}"})
+                
+        elif tour_360_url:
+            # Сохраняем URL панорамы
+            panorama = models.ServiceCardPanorama(
+                service_card_id=card_id,
+                url=tour_360_url,
+                uploaded_at=datetime.now(),
+                type="url"
+            )
+            db.add(panorama)
+            db.commit()
+            return JSONResponse(content={"success": True, "message": "360° панорама сохранена успешно"})
+        else:
+            return JSONResponse(status_code=400, content={"success": False, "error": "Не указан файл или URL панорамы"})
+            
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR: Ошибка при загрузке 360°: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
+
+# API для удаления 360° панорамы
+@app.post("/admin/services/cards/{card_id}/360-delete")
+async def admin_delete_service_card_360(
+    card_id: int,
+    request: Request,
+    db: Session = Depends(deps.get_db)
+):
+    user = await check_admin_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Доступ запрещен"})
+    
+    try:
+        service_card = db.query(ServiceCard).filter(ServiceCard.id == card_id).first()
+        if not service_card:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Заведение не найдено"})
+        
+        # Удаляем все панорамы
+        deleted_count = db.query(models.ServiceCardPanorama).filter(
+            models.ServiceCardPanorama.service_card_id == card_id
+        ).delete()
+        
+        db.commit()
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": f"Удалено {deleted_count} панорам"
+        })
+        
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR: Ошибка при удалении 360°: {str(e)}")
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
+
+# API для загрузки фотографий заведения (алиас)
+@app.post("/admin/services/cards/{card_id}/photos")
+async def admin_upload_service_card_photos(
+    card_id: int,
+    request: Request,
+    photos: List[UploadFile] = File(...),
+    db: Session = Depends(deps.get_db)
+):
+    # Используем существующую логику загрузки фотографий
+    return await upload_service_card_photos(card_id, photos, db)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -3899,9 +3899,9 @@ async def create_service_card(
     website: str = Form(""),
     latitude: float = Form(None),
     longitude: float = Form(None),
-    tour_360_url: str = Form(""),
+    tour_360_url: Optional[str] = Form(None),
     images: List[UploadFile] = File(default=[]),
-    tour_360_file: UploadFile = File(None),
+    tour_360_files: List[UploadFile] = File(default=[]),
     db: Session = Depends(deps.get_db)
 ):
     # Проверяем доступ администратора
@@ -3975,44 +3975,51 @@ async def create_service_card(
                 import traceback
                 print(f"DEBUG: Полная ошибка: {traceback.format_exc()}")
         
-        # Обрабатываем 360° панораму
-        if tour_360_file and tour_360_file.filename:
+        # Обрабатываем 360° панораму (множественные файлы)
+        if tour_360_files and len(tour_360_files) > 0 and any(f.filename for f in tour_360_files):
             try:
                 from app.utils.panorama_processor import PanoramaProcessor
                 
                 processor = PanoramaProcessor()
                 
-                # Обработка панорамы
-                result = await processor.upload_panorama(tour_360_file, service_card.id)
+                # Обрабатываем каждый файл панорамы
+                for i, tour_360_file in enumerate(tour_360_files):
+                    if not tour_360_file or not tour_360_file.filename:
+                        continue
+
+                    # Обработка панорамы
+                    result = await processor.upload_panorama(tour_360_file, service_card.id)
+                    
+                    if not result.get('success'):
+                        print(f"ERROR: Ошибка при загрузке панорамы {i+1}: {result.get("message", "Неизвестная ошибка")}")
+                        continue
+                    
+                    # Создаем запись панорамы в БД
+                    panorama = models.ServiceCardPanorama(
+                        service_card_id=service_card.id,
+                        file_id=result.get('file_id'),
+                        original_url=result['urls'].get('original'),
+                        optimized_url=result['urls'].get('optimized'),
+                        preview_url=result['urls'].get('preview'),
+                        thumbnail_url=result['urls'].get('thumbnail'),
+                        meta=json.dumps(result.get('metadata', {}), ensure_ascii=False),
+                        uploaded_at=datetime.now(),
+                        type="file"
+                    )
+                    
+                    db.add(panorama)
+                    
+                    uploaded_panoramas.append({
+                        "file_id": result.get('file_id'),
+                        "urls": result['urls'],
+                        "metadata": result.get('metadata', {}),
+                        "uploaded_at": datetime.now().isoformat()
+                    })
                 
-                if not result.get('success'):
-                    return JSONResponse(status_code=500, content={"success": False, "error": "Ошибка при загрузке панорамы"})
-                
-                # Создаем запись панорамы в БД
-                panorama = models.ServiceCardPanorama(
-                    service_card_id=service_card.id,
-                    file_id=result.get('file_id'),
-                    original_url=result['urls'].get('original'),
-                    optimized_url=result['urls'].get('optimized'),
-                    preview_url=result['urls'].get('preview'),
-                    thumbnail_url=result['urls'].get('thumbnail'),
-                    meta=json.dumps(result.get('metadata', {}), ensure_ascii=False),
-                    uploaded_at=datetime.now(),
-                    type="file"
-                )
-                
-                db.add(panorama)
-                db.commit()
-                
-                return JSONResponse(content={
-                    "success": True,
-                    "message": "360° панорама успешно загружена и обработана",
-                    "file_id": result.get('file_id'),
-                    "urls": result['urls'],
-                    "metadata": result.get('metadata', {}),
-                    "uploaded_at": datetime.now().isoformat()
-                })
-                
+                # Коммитим все изменения одновременно
+                if uploaded_panoramas:
+                    db.commit()
+                    print(f"DEBUG: Успешно загружено {len(uploaded_panoramas)} панорам")
             except Exception as e:
                 print(f"DEBUG: Ошибка при загрузке 360° панорамы: {str(e)}")
         
@@ -5438,15 +5445,15 @@ async def admin_add_service_card(
     website: str = Form(""),
     latitude: float = Form(None),
     longitude: float = Form(None),
-    tour_360_url: str = Form(""),
+    tour_360_url: Optional[str] = Form(None),
     images: List[UploadFile] = File(default=[]),
-    tour_360_file: UploadFile = File(None),
+    tour_360_files: List[UploadFile] = File(default=[]),
     db: Session = Depends(deps.get_db)
 ):
-    # Используем существующую логику из API
+    # Используем существующую логику из API с поддержкой множественных панорам
     return await create_service_card(
         request, category_id, title, description, address, phone, email, website,
-        latitude, longitude, tour_360_url, images, tour_360_file, db
+        latitude, longitude, tour_360_url, images, tour_360_files, db
     )
 
 # API для получения информации о 360° панораме карточки
@@ -5545,25 +5552,33 @@ async def admin_upload_service_card_360(
             try:
                 from app.utils.panorama_processor import PanoramaProcessor
                 processor = PanoramaProcessor()
-                result = await processor.upload_panorama(tour_360_file, card_id)
                 
-                if result.get('success'):
-                    panorama = models.ServiceCardPanorama(
-                        service_card_id=card_id,
-                        file_id=result.get('file_id'),
-                        original_url=result['urls'].get('original'),
-                        optimized_url=result['urls'].get('optimized'),
-                        preview_url=result['urls'].get('preview'),
-                        thumbnail_url=result['urls'].get('thumbnail'),
-                        meta=json.dumps(result.get('metadata', {}), ensure_ascii=False),
-                        uploaded_at=datetime.now(),
-                        type="file"
-                    )
-                    db.add(panorama)
-                    db.commit()
-                    return JSONResponse(content={"success": True, "message": "360° панорама загружена успешно"})
-                else:
-                    return JSONResponse(status_code=500, content={"success": False, "error": "Ошибка при загрузке панорамы"})
+                # Обрабатываем каждый файл панорамы
+                for i, tour_360_file in enumerate(tour_360_files):
+                    if not tour_360_file or not tour_360_file.filename:
+                        continue
+                        
+                    # Обработка панорамы
+                    result = await processor.upload_panorama(tour_360_file, card_id)
+                    
+                    if result.get('success'):
+                        panorama = models.ServiceCardPanorama(
+                            service_card_id=card_id,
+                            file_id=result.get('file_id'),
+                            original_url=result['urls'].get('original'),
+                            optimized_url=result['urls'].get('optimized'),
+                            preview_url=result['urls'].get('preview'),
+                            thumbnail_url=result['urls'].get('thumbnail'),
+                            meta=json.dumps(result.get('metadata', {}), ensure_ascii=False),
+                            uploaded_at=datetime.now(),
+                            type="file"
+                        )
+                        db.add(panorama)
+                        db.commit()
+                        return JSONResponse(content={"success": True, "message": "360° панорама загружена успешно"})
+                    else:
+                        print(f"ERROR: Ошибка при загрузке панорамы {i+1}: {result.get("message", "Неизвестная ошибка")}")
+                        continue
                     
             except Exception as e:
                 print(f"ERROR: Ошибка загрузки 360° файла: {str(e)}")

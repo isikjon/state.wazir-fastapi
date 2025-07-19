@@ -2075,12 +2075,51 @@ function initAddCardMap() {
         });
     });
     
-    // Синхронизация поля адреса с картой
+    // Синхронизация поля адреса с картой + автокомплит
     let addressTimeout;
+    
+    // Инициализируем автокомплит Google Places для адреса
+    const addressInput = document.getElementById('addCardAddress');
+    const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+        types: ['establishment', 'geocode'],
+        componentRestrictions: { country: 'kg' }, // Ограничиваем Кыргызстаном
+        fields: ['place_id', 'geometry', 'name', 'formatted_address', 'types']
+    });
+    
+    // Обработчик выбора места из автокомплита
+    autocomplete.addListener('place_changed', function() {
+        const place = autocomplete.getPlace();
+        
+        if (!place.geometry) {
+            console.log("Место не найдено: '" + place.name + "'");
+            return;
+        }
+        
+        // Устанавливаем маркер на выбранное место
+        const location = place.geometry.location;
+        addCardMarker.setPosition(location);
+        addCardMap.setCenter(location);
+        addCardMap.setZoom(16); // Увеличиваем масштаб для заведений
+        
+        // Обновляем координаты
+        $('#addCardLatitude').val(location.lat());
+        $('#addCardLongitude').val(location.lng());
+        
+        // Если не заполнено название заведения, предлагаем название из Google Places
+        if (!$('#addCardTitle').val() && place.name) {
+            $('#addCardTitle').val(place.name);
+        }
+        
+        // Устанавливаем отформатированный адрес
+        $('#addCardAddress').val(place.formatted_address);
+    });
+    
+    // Обработчик ручного ввода адреса (геокодирование)
     $('#addCardAddress').on('input', function() {
         clearTimeout(addressTimeout);
         const address = $(this).val();
         
+        // Если пользователь вводит адрес вручную (не из автокомплита)
         if (address.length > 3) {
             addressTimeout = setTimeout(() => {
                 geocoder.geocode({ 
@@ -2160,13 +2199,76 @@ function removeFileFromList(index) {
 
 // Функция загрузки текущих панорам
 function loadCurrentPanoramas(entityId, entityType) {
-    // Здесь будет запрос к API для получения текущих панорам
-    $('#current-panoramas-list').html('<p class="text-gray-500 text-center py-4">Загрузка...</p>');
+    $('#current-panoramas-list').html('<p class="text-gray-500 text-center py-4">Загрузка панорам...</p>');
     
-    // Имитация загрузки - в реальности здесь будет fetch запрос
-    setTimeout(() => {
-        $('#current-panoramas-list').html('<p class="text-gray-500 text-center py-4">Панорам пока нет</p>');
-    }, 500);
+    // Загружаем панорамы с сервера
+    fetch(`/api/v1/admin/service-cards/${entityId}/media`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.panoramas && data.panoramas.length > 0) {
+                displayCurrentPanoramas(data.panoramas);
+            } else {
+                $('#current-panoramas-list').html('<p class="text-gray-500 text-center py-4">Панорам пока нет</p>');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading panoramas:', error);
+            $('#current-panoramas-list').html('<p class="text-red-500 text-center py-4">Ошибка загрузки панорам</p>');
+        });
+}
+
+// Функция отображения текущих панорам
+function displayCurrentPanoramas(panoramas) {
+    const panoramasList = $('#current-panoramas-list');
+    panoramasList.empty();
+    
+    panoramas.forEach(panorama => {
+        const panoramaItem = $(`
+            <div class="panorama-item" style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px;">
+                <div class="aspect-video" style="aspect-ratio: 16/9; background: #f3f4f6; border-radius: 6px; overflow: hidden; margin-bottom: 8px; position: relative;">
+                    ${panorama.thumbnail_url ? 
+                        `<img src="${panorama.thumbnail_url}" alt="Панорама" style="width: 100%; height: 100%; object-fit: cover;">` :
+                        `<div style="display: flex; align-items: center; justify-content: center; height: 100%;"><i class="fas fa-vr-cardboard" style="font-size: 2rem; color: #9ca3af;"></i></div>`
+                    }
+                    <div style="position: absolute; top: 4px; left: 4px; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">
+                        <i class="fas fa-vr-cardboard"></i> 360°
+                    </div>
+                </div>
+                <div style="font-size: 0.875rem; color: #4b5563; margin-bottom: 4px;">${panorama.notes || 'Панорама'}</div>
+                <div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 8px;">
+                    Загружено: ${new Date(panorama.uploaded_at).toLocaleDateString('ru-RU')}
+                </div>
+                <button class="delete-panorama-btn" onclick="deletePanorama(${panorama.id})" style="width: 100%; padding: 4px 8px; background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                    <i class="fas fa-trash"></i> Удалить
+                </button>
+            </div>
+        `);
+        panoramasList.append(panoramaItem);
+    });
+}
+
+// Функция удаления панорамы
+function deletePanorama(panoramaId) {
+    if (!confirm('Удалить эту панораму?')) return;
+    
+    const entityId = $('.upload-multiple-panoramas-btn').first().data('entity-id');
+    
+    fetch(`/api/v1/admin/service-cards/${entityId}/panoramas/${panoramaId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Перезагружаем список панорам
+            loadCurrentPanoramas(entityId, 'service-card');
+        } else {
+            alert('Ошибка при удалении: ' + (data.error || 'Неизвестная ошибка'));
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting panorama:', error);
+        alert('Ошибка при удалении панорамы');
+    });
 }
 
 // Функция сброса формы множественной загрузки
@@ -2202,10 +2304,15 @@ function uploadMultiplePanoramas() {
     const formData = new FormData();
     const entityId = $('.upload-multiple-panoramas-btn').first().data('entity-id');
     
-    Array.from(files).forEach((file, index) => {
-        formData.append('panorama_files', file);
-        formData.append('notes', `Панорама ${index + 1}`);
-    });
+    // Добавляем файлы с индивидуальными заметками
+    for (let i = 0; i < files.length; i++) {
+        formData.append('files', files[i]);
+    }
+    
+    // Добавляем заметки для каждого файла
+    for (let i = 0; i < files.length; i++) {
+        formData.append('notes', `Панорама ${i + 1}`);
+    }
     
     // Показываем прогресс
     const uploadBtn = $('#upload-multiple-panoramas-btn');

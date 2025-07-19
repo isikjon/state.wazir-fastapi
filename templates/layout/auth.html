@@ -334,7 +334,7 @@
                         console.log('Login response:', response); // Добавляем лог ответа
                         
                         // Проверяем структуру ответа
-                        if (response && response.access_token) {
+                        if (response && response.success && response.access_token) {
                             // Сохраняем данные для "Запомнить меня" при успешной авторизации
                             const contactValue = $('#user-id').val();
                             const passwordValue = $('#password').val();
@@ -354,8 +354,8 @@
                             // Перенаправляем на страницу дашборда
                             window.location.href = '/mobile';
                         } else {
-                            // Показываем сообщение об ошибке
-                            $('#error-message').text(response.detail || 'Ошибка авторизации').removeClass('hidden');
+                            // Показываем конкретную ошибку от сервера
+                            $('#error-message').text(response.error || 'Ошибка авторизации').removeClass('hidden');
                             $submitBtn.html('Войти');
                             $submitBtn.prop('disabled', false);
                         }

@@ -158,6 +158,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             '/api/v1/auth/verify-code',
             '/api/v1/auth/register',
             '/api/v1/auth/reset-password',
+            '/api/v1/categories',
             '/api/v1/telegram/initiate',
             '/api/v1/telegram/verify-phone',
             '/api/v1/telegram/verify-code',
@@ -5214,18 +5215,38 @@ async def company_dashboard(request: Request, db: Session = Depends(deps.get_db)
         models.Property.owner_id == user.id
     ).all()
     
+    # Рассчитываем основные метрики
+    total_properties = len(company_properties)
+    active_properties = len([p for p in company_properties if p.status == models.PropertyStatus.ACTIVE])
+    pending_properties = len([p for p in company_properties if p.status == models.PropertyStatus.PENDING])
+    draft_properties = len([p for p in company_properties if p.status == models.PropertyStatus.DRAFT])
+    
+    # Рассчитываем среднюю цену
+    prices = [p.price for p in company_properties if p.price and p.price > 0]
+    avg_price = sum(prices) / len(prices) if prices else 0
+    
+    # Рассчитываем просмотры
+    total_views = sum([getattr(p, 'views_count', 0) for p in company_properties])
+    
     stats = {
-        "total_listings": len(company_properties),
-        "active_listings": len([p for p in company_properties if p.status == models.PropertyStatus.ACTIVE]),
-        "draft_listings": len([p for p in company_properties if p.status == models.PropertyStatus.DRAFT]),
-        "views_this_month": sum([p.views_count for p in company_properties]) if hasattr(models.Property, 'views_count') else 0
+        "total_properties": total_properties,
+        "active_properties": active_properties,
+        "pending_properties": pending_properties,
+        "draft_properties": draft_properties,
+        "properties_growth": 0,  # TODO: добавить логику расчета роста
+        "views_this_month": total_views,  # TODO: фильтровать по месяцу
+        "total_views": total_views,
+        "avg_price": avg_price,
+        "price_change": 0  # TODO: добавить логику изменения цены
     }
     
     return templates.TemplateResponse("companies/dashboard.html", {
         "request": request,
         "current_user": user,
         "stats": stats,
-        "recent_properties": company_properties[:5]
+        "recent_properties": company_properties[:5],
+        "chart_labels": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],  # TODO: добавить реальные данные
+        "chart_data": [0, 0, 0, 0, 0, 0, 0]  # TODO: добавить реальные данные просмотров
     })
 
 @app.get("/companies/listings", response_class=HTMLResponse)
@@ -5234,25 +5255,103 @@ async def company_listings(request: Request, db: Session = Depends(deps.get_db))
     if isinstance(user, RedirectResponse):
         return user
     
-    # Получаем объявления компании
-    properties = db.query(models.Property).filter(
-        models.Property.owner_id == user.id
-    ).order_by(models.Property.created_at.desc()).all()
-    
-    total_count = len(properties)
-    active_count = len([p for p in properties if p.status == models.PropertyStatus.ACTIVE])
-    pending_count = len([p for p in properties if p.status == models.PropertyStatus.PENDING])
-    draft_count = len([p for p in properties if p.status == models.PropertyStatus.DRAFT])
-    
-    return templates.TemplateResponse("companies/listings.html", {
-        "request": request,
-        "current_user": user,
-        "properties": properties,
-        "total_count": total_count,
-        "active_count": active_count,
-        "pending_count": pending_count,
-        "draft_count": draft_count
-    })
+    try:
+        # Получаем объявления компании
+        properties_query = db.query(models.Property).filter(
+            models.Property.owner_id == user.id
+        ).order_by(models.Property.created_at.desc())
+        
+        properties = properties_query.all()
+        
+        # Преобразуем объекты Property в простые словари для шаблона
+        properties_data = []
+        for prop in properties:
+            try:
+                property_data = {
+                    "id": prop.id,
+                    "title": prop.title or "Без названия",
+                    "price": prop.price or 0,
+                    "address": prop.address or "",
+                    "status": prop.status.value if prop.status else "draft",
+                    "property_type": getattr(prop, 'property_type', 'apartment'),
+                    "rooms": prop.rooms,
+                    "area": prop.area,
+                    "created_at": prop.created_at,
+                    "created_at_formatted": prop.created_at.strftime('%Y-%m-%d %H:%M:%S') if prop.created_at else '-',
+                    "views": getattr(prop, 'views', 0),
+                    "image_url": None,
+                    "owner_name": user.full_name or "Компания",
+                    "tour_360_url": getattr(prop, 'tour_360_url', None),
+                    "tour_360_file_id": getattr(prop, 'tour_360_file_id', None)
+                }
+                
+                # Пытаемся получить первое изображение
+                try:
+                    if hasattr(prop, 'images') and prop.images:
+                        property_data["image_url"] = prop.images[0].url
+                    elif hasattr(prop, 'photo_urls') and prop.photo_urls:
+                        if isinstance(prop.photo_urls, list) and prop.photo_urls:
+                            property_data["image_url"] = prop.photo_urls[0]
+                        elif isinstance(prop.photo_urls, str):
+                            property_data["image_url"] = prop.photo_urls
+                except Exception as img_error:
+                    print(f"DEBUG: Ошибка получения изображения для объявления {prop.id}: {img_error}")
+                    property_data["image_url"] = None
+                
+                properties_data.append(property_data)
+                
+            except Exception as prop_error:
+                print(f"DEBUG: Ошибка обработки объявления {prop.id}: {prop_error}")
+                # Добавляем минимальные данные
+                properties_data.append({
+                    "id": prop.id,
+                    "title": "Ошибка загрузки",
+                    "price": 0,
+                    "address": "",
+                    "status": "error",
+                    "property_type": "apartment",
+                    "rooms": None,
+                    "area": None,
+                    "created_at": prop.created_at,
+                    "created_at_formatted": prop.created_at.strftime('%Y-%m-%d %H:%M:%S') if prop.created_at else '-',
+                    "views": 0,
+                    "image_url": None,
+                    "owner_name": user.full_name or "Компания",
+                    "tour_360_url": None,
+                    "tour_360_file_id": None
+                })
+        
+        # Подсчитываем статистику
+        total_count = len(properties_data)
+        active_count = len([p for p in properties_data if p["status"] == "active"])
+        pending_count = len([p for p in properties_data if p["status"] == "pending"])
+        draft_count = len([p for p in properties_data if p["status"] == "draft"])
+        
+        return templates.TemplateResponse("companies/listings.html", {
+            "request": request,
+            "current_user": user,
+            "properties": properties_data,
+            "total_count": total_count,
+            "active_count": active_count,
+            "pending_count": pending_count,
+            "draft_count": draft_count
+        })
+        
+    except Exception as e:
+        print(f"DEBUG: Критическая ошибка в companies_listings: {e}")
+        import traceback
+        print(f"DEBUG: Traceback: {traceback.format_exc()}")
+        
+        # Возвращаем пустую страницу в случае ошибки
+        return templates.TemplateResponse("companies/listings.html", {
+            "request": request,
+            "current_user": user,
+            "properties": [],
+            "total_count": 0,
+            "active_count": 0,
+            "pending_count": 0,
+            "draft_count": 0
+        })
 
 @app.get("/companies/create-listing", response_class=HTMLResponse)
 async def company_create_listing(request: Request, db: Session = Depends(deps.get_db)):
@@ -5275,30 +5374,44 @@ async def company_analytics(request: Request, db: Session = Depends(deps.get_db)
     if isinstance(user, RedirectResponse):
         return user
     
-    # Получаем все объявления компании
-    company_properties = db.query(models.Property).filter(
+    # Получаем статистику объявлений компании
+    properties = db.query(models.Property).filter(
         models.Property.owner_id == user.id
     ).all()
     
-    # Простейшая статистика (можно расширить)
     stats = {
-        "total_properties": len(company_properties),
-        "active_properties": len([p for p in company_properties if p.status == models.PropertyStatus.ACTIVE]),
-        "pending_properties": len([p for p in company_properties if p.status == models.PropertyStatus.PENDING]),
-        "draft_properties": len([p for p in company_properties if p.status == models.PropertyStatus.DRAFT]),
+        "total_properties": len(properties),
+        "active_properties": len([p for p in properties if p.status == models.PropertyStatus.ACTIVE]),
+        "pending_properties": len([p for p in properties if p.status == models.PropertyStatus.PENDING]),
+        "draft_properties": len([p for p in properties if p.status == models.PropertyStatus.DRAFT])
     }
-    
-    # Топ-объявления по просмотрам
-    top_properties = sorted(company_properties, key=lambda p: getattr(p, 'views', 0), reverse=True)[:5]
-    # Последние объявления
-    recent_properties = sorted(company_properties, key=lambda p: getattr(p, 'created_at', None) or 0, reverse=True)[:5]
     
     return templates.TemplateResponse("companies/analytics.html", {
         "request": request,
         "current_user": user,
-        "stats": stats,
-        "top_properties": top_properties,
-        "recent_properties": recent_properties
+        "stats": stats
+    })
+
+@app.get("/companies/bulk-upload", response_class=HTMLResponse)
+async def company_bulk_upload(request: Request, db: Session = Depends(deps.get_db)):
+    user = await check_company_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    return templates.TemplateResponse("companies/bulk_upload.html", {
+        "request": request,
+        "current_user": user
+    })
+
+@app.get("/companies/settings", response_class=HTMLResponse)
+async def company_settings(request: Request, db: Session = Depends(deps.get_db)):
+    user = await check_company_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    return templates.TemplateResponse("companies/settings.html", {
+        "request": request,
+        "current_user": user
     })
 
 @app.get("/companies/profile", response_class=HTMLResponse)
@@ -5723,6 +5836,125 @@ async def delete_service_card_panorama(
         print(f"ERROR: Ошибка при удалении панорамы: {str(e)}")
         return JSONResponse(status_code=500, content={"success": False, "error": f"Ошибка сервера: {str(e)}"})
 
+# API эндпоинт для получения категорий недвижимости (без аутентификации)
+@app.get("/api/v1/categories")
+async def get_property_categories(db: Session = Depends(deps.get_db)):
+    """Получение списка категорий недвижимости для форм"""
+    try:
+        # Получаем все категории из базы данных
+        categories = db.query(models.Category).all()
+        
+        # Если категорий нет, создаем базовые
+        if not categories:
+            print("DEBUG: Категории не найдены, создаем базовые")
+            basic_categories = [
+                {"id": 1, "name": "Продажа", "description": "Продажа недвижимости"},
+                {"id": 2, "name": "Аренда", "description": "Аренда недвижимости"},
+                {"id": 3, "name": "Новостройки", "description": "Новые объекты недвижимости"},
+                {"id": 4, "name": "Посуточная", "description": "Посуточная аренда"},
+                {"id": 5, "name": "Коммерческая", "description": "Коммерческая недвижимость"},
+                {"id": 6, "name": "Ипотека", "description": "Недвижимость в ипотеку"}
+            ]
+            
+            for cat_data in basic_categories:
+                category = models.Category(
+                    id=cat_data["id"],
+                    name=cat_data["name"],
+                    description=cat_data["description"]
+                )
+                db.add(category)
+            
+            db.commit()
+            categories = db.query(models.Category).all()
+        
+        # Возвращаем категории в формате для JavaScript
+        return [
+            {
+                "id": category.id,
+                "name": category.name,
+                "description": category.description or ""
+            }
+            for category in categories
+        ]
+        
+    except Exception as e:
+        print(f"DEBUG: Ошибка получения категорий: {e}")
+        # Возвращаем заглушки если что-то пошло не так
+        return [
+            {"id": 1, "name": "Продажа", "description": "Продажа недвижимости"},
+            {"id": 2, "name": "Аренда", "description": "Аренда недвижимости"},
+            {"id": 3, "name": "Новостройки", "description": "Новые объекты недвижимости"},
+            {"id": 4, "name": "Посуточная", "description": "Посуточная аренда"},
+            {"id": 5, "name": "Коммерческая", "description": "Коммерческая недвижимость"},
+            {"id": 6, "name": "Ипотека", "description": "Недвижимость в ипотеку"}
+        ]
+
+@app.get("/companies/settings", response_class=HTMLResponse)
+async def company_settings(request: Request, db: Session = Depends(deps.get_db)):
+    user = await check_company_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    return templates.TemplateResponse("companies/settings.html", {
+        "request": request,
+        "current_user": user
+    })
+
+# Отладочный эндпоинт для проверки данных компании
+@app.get("/companies/debug", response_class=JSONResponse)
+async def company_debug(request: Request, db: Session = Depends(deps.get_db)):
+    try:
+        user = await check_company_access(request, db)
+        if isinstance(user, RedirectResponse):
+            return {"error": "Access denied"}
+        
+        # Получаем объявления компании
+        properties = db.query(models.Property).filter(
+            models.Property.owner_id == user.id
+        ).limit(5).all()
+        
+        debug_data = {
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "full_name": user.full_name,
+                "role": str(user.role)
+            },
+            "properties_count": len(properties),
+            "properties": []
+        }
+        
+        for prop in properties:
+            try:
+                prop_data = {
+                    "id": prop.id,
+                    "title": prop.title,
+                    "status": str(prop.status) if prop.status else None,
+                    "price": prop.price,
+                    "created_at": str(prop.created_at) if prop.created_at else None,
+                    "has_images": hasattr(prop, 'images'),
+                    "has_photo_urls": hasattr(prop, 'photo_urls')
+                }
+                debug_data["properties"].append(prop_data)
+            except Exception as e:
+                debug_data["properties"].append({"error": str(e), "id": prop.id})
+        
+        return debug_data
+        
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/companies/profile", response_class=HTMLResponse)
+async def company_profile(request: Request, db: Session = Depends(deps.get_db)):
+    user = await check_company_access(request, db)
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    return templates.TemplateResponse("companies/profile.html", {
+        "request": request,
+        "current_user": user
+    })
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

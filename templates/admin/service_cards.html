@@ -871,6 +871,48 @@
     .text-gray-800 {
         color: #1f2937;
     }
+    
+    /* Стили для drag&drop зоны файлов */
+    #file-drop-area {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    #file-drop-area:hover {
+        border-color: #60a5fa;
+        background-color: #eff6ff;
+    }
+    
+    #file-drop-area.border-blue-400 {
+        border-color: #60a5fa !important;
+    }
+    
+    #file-drop-area.bg-blue-50 {
+        background-color: #eff6ff !important;
+    }
+    
+    /* Стили для списка файлов */
+    .file-item {
+        transition: all 0.2s ease;
+    }
+    
+    .file-item:hover {
+        background-color: #f3f4f6 !important;
+        transform: translateX(2px);
+    }
+    
+    /* Анимация для модального окна */
+    #multiple-panoramas-modal {
+        transition: opacity 0.3s ease;
+    }
+    
+    #multiple-panoramas-modal.show {
+        opacity: 1;
+    }
+    
+    #multiple-panoramas-modal.hidden {
+        opacity: 0;
+    }
 </style>
 {% endblock %}
 
@@ -1085,26 +1127,9 @@
                     <label class="form-label">360° Панорама (опционально)</label>
                     <div class="tour-360-section"
                         style="border: 2px dashed #d1d5db; border-radius: 8px; padding: 20px; margin-bottom: 10px;">
-                        <div class="tour-360-tabs"
-                            style="display: flex; margin-bottom: 15px; border-bottom: 1px solid #e5e7eb;">
-                            <button type="button" class="tour-tab active" data-tab="url"
-                                style="padding: 10px 20px; border: none; background: none; color: #4b5563; cursor: pointer; border-bottom: 2px solid transparent;">
-                                URL ссылка
-                            </button>
-                            <button type="button" class="tour-tab" data-tab="file"
-                                style="padding: 10px 20px; border: none; background: none; color: #4b5563; cursor: pointer; border-bottom: 2px solid transparent;">
-                                Загрузить файл
-                            </button>
-                        </div>
-
-                        <div class="tour-360-url-section" id="tour-url-section">
-                            <input type="url" class="form-input" id="addCard360Url"
-                                placeholder="https://kuula.co/share/... или другая ссылка на 360° панораму">
-                            <small style="color: #6b7280; font-size: 0.8rem;">Поддерживаются ссылки на Kuula, Matterport
-                                и другие сервисы</small>
-                        </div>
-
-                        <div class="tour-360-file-section" id="tour-file-section" style="display: none;">
+                        
+                        <!-- Убираем табы, оставляем только загрузку файлов -->
+                        <div class="tour-360-file-section" id="tour-file-section">
                             <input type="file" id="addCard360File" accept="image/*" style="display: none;">
                             <div class="upload-360-placeholder"
                                 onclick="document.getElementById('addCard360File').click();"
@@ -1112,7 +1137,7 @@
                                 <i class="fas fa-vr-cardboard"
                                     style="font-size: 2rem; color: #9ca3af; margin-bottom: 10px;"></i>
                                 <p style="color: #6b7280; margin: 0;">Нажмите для выбора 360° изображения</p>
-                                <small style="color: #9ca3af;">Поддерживаются: JPG, PNG (панорамные изображения)</small>
+                                <small style="color: #9ca3af;">Поддерживаются: JPG, PNG (панорамные изображения, до 300 МБ)</small>
                             </div>
                             <div id="addCard360Preview" style="display: none; margin-top: 15px; text-align: center;">
                                 <div style="padding: 10px; background: #f3f4f6; border-radius: 6px;">
@@ -1213,7 +1238,7 @@
 <div id="multiple-panoramas-modal" class="hidden">
     <div class="modal-content">
         <div class="modal-header">
-            <h3 class="modal-title">Загрузить несколько панорам</h3>
+            <h3 class="modal-title">Загрузить несколько 360° панорам</h3>
             <button class="modal-close close-multiple-panoramas-modal">&times;</button>
         </div>
         <div class="modal-body">
@@ -1233,18 +1258,6 @@
                     <i class="fas fa-upload mr-2"></i>Загрузить новые панорамы
                 </h3>
                 <p class="text-sm text-gray-500">Выберите до 10 файлов панорам, максимум 300 МБ каждый</p>
-            </div>
-
-            <!-- Переключатель между файлами и URL -->
-            <div class="form-group">
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid #e5e7eb;">
-                    <button type="button" id="upload-files-tab" class="tour-tab active">
-                        <i class="fas fa-upload"></i> Загрузить файлы
-                    </button>
-                    <button type="button" id="upload-urls-tab" class="tour-tab">
-                        <i class="fas fa-link"></i> Добавить по URL
-                    </button>
-                </div>
             </div>
 
             <!-- Секция загрузки файлов -->
@@ -1267,20 +1280,6 @@
                         style="max-height: 300px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px; margin-top: 10px;">
                         <p class="text-gray-500 text-center py-4">Файлы не выбраны</p>
                     </div>
-                </div>
-            </div>
-
-            <!-- Секция добавления по URL -->
-            <div id="url-upload-section" class="hidden">
-                <div class="form-group">
-                    <label class="form-label">URL панорам</label>
-                    <div id="url-fields-container">
-                        <!-- Поля URL будут добавляться динамически -->
-                    </div>
-                    <button type="button" id="add-url-field" class="btn btn-secondary" style="margin-top: 10px;">
-                        <i class="fas fa-plus"></i> Добавить URL
-                    </button>
-                    <div id="url-fields-count" class="form-hint" style="margin-top: 5px;">Полей URL: 0/10</div>
                 </div>
             </div>
 
@@ -1477,40 +1476,83 @@ function uploadPhotos() {
     
     if (!files || files.length === 0) {
         alert('Выберите файлы для загрузки');
-            return;
-        }
+        return;
+    }
 
-            const formData = new FormData();
+    const formData = new FormData();
     for (let i = 0; i < files.length; i++) {
         formData.append('photos', files[i]);
     }
     
-    // Показываем индикатор загрузки
+    // Показываем прогресс-бар
     const uploadBtn = $(event.target);
     const originalText = uploadBtn.text();
     uploadBtn.text('Загрузка...').prop('disabled', true);
     
-    fetch(`/admin/services/cards/${cardId}/photos`, {
-                method: 'POST',
-            body: formData
-        })
-            .then(response => response.json())
-            .then(data => {
-        if (data.success) {
-            alert(`Успешно загружено ${data.count} фотографий`);
-            closeModal('photosModal');
-            location.reload(); // Обновляем страницу чтобы показать новые фотографии
-                } else {
-            alert('Ошибка при загрузке: ' + (data.message || data.error || 'Неизвестная ошибка'));
-                }
-            })
-            .catch(error => {
-        console.error('Error uploading photos:', error);
-        alert('Ошибка при загрузке фотографий');
-    })
-    .finally(() => {
-        uploadBtn.text(originalText).prop('disabled', false);
+    // Создаем прогресс-бар если его нет
+    let progressContainer = $('#upload-progress-container');
+    if (progressContainer.length === 0) {
+        progressContainer = $(`
+            <div id="upload-progress-container" style="margin-top: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>Загрузка фотографий...</span>
+                    <span id="upload-progress-percent">0%</span>
+                </div>
+                <div style="width: 100%; background-color: #e5e7eb; border-radius: 4px; overflow: hidden;">
+                    <div id="upload-progress-bar" style="width: 0%; height: 8px; background-color: #3b82f6; transition: width 0.3s ease;"></div>
+                </div>
+                <div id="upload-status" style="font-size: 0.875rem; color: #6b7280; margin-top: 5px;">Подготовка к загрузке...</div>
+            </div>
+        `);
+        $('.modal-body').append(progressContainer);
+    }
+    progressContainer.show();
+    
+    // Создаем XMLHttpRequest для отслеживания прогресса
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            $('#upload-progress-bar').css('width', percentComplete + '%');
+            $('#upload-progress-percent').text(Math.round(percentComplete) + '%');
+            $('#upload-status').text(`Загружено ${Math.round(e.loaded / 1024)} КБ из ${Math.round(e.total / 1024)} КБ`);
+        }
     });
+    
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            try {
+                const data = JSON.parse(xhr.responseText);
+                if (data.success) {
+                    $('#upload-status').text(`Успешно загружено ${data.count} фотографий`);
+                    setTimeout(() => {
+                        closeModal('photosModal');
+                        location.reload();
+                    }, 1500);
+                } else {
+                    alert('Ошибка при загрузке: ' + (data.message || data.error || 'Неизвестная ошибка'));
+                    progressContainer.hide();
+                }
+            } catch (e) {
+                alert('Ошибка при обработке ответа сервера');
+                progressContainer.hide();
+            }
+        } else {
+            alert('Ошибка при загрузке фотографий');
+            progressContainer.hide();
+        }
+        uploadBtn.text(originalText).prop('disabled', false);
+    };
+    
+    xhr.onerror = function() {
+        alert('Ошибка при загрузке фотографий');
+        progressContainer.hide();
+        uploadBtn.text(originalText).prop('disabled', false);
+    };
+    
+    xhr.open('POST', `/admin/services/cards/${cardId}/photos`);
+    xhr.send(formData);
 }
 
 // Функция для управления 360° панорамой
@@ -1657,7 +1699,7 @@ function closeModal(modalId) {
 
 // Функция отправки формы добавления карточки
 function submitAddCard() {
-            const formData = new FormData();
+    const formData = new FormData();
     
     // Основные данные
     formData.append('title', $('#addCardTitle').val());
@@ -1675,34 +1717,82 @@ function submitAddCard() {
         formData.append('images', imageFiles[i]);
     }
     
-    // 360° панорама
-    const activeTab = $('.tour-tab.active').data('tab');
-    if (activeTab === 'url') {
-        formData.append('tour_360_url', $('#addCard360Url').val());
-    } else if (activeTab === 'file') {
-        const tour360File = $('#addCard360File')[0].files[0];
-        if (tour360File) {
-            formData.append('tour_360_file', tour360File);
-        }
+    // 360° панорама - только файлы, убираем URL логику
+    const tour360File = $('#addCard360File')[0].files[0];
+    if (tour360File) {
+        formData.append('tour_360_file', tour360File);
     }
     
-    fetch(`/admin/services/categories/${categoryId}/cards/add`, {
-                method: 'POST',
-            body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-            alert('Заведение успешно добавлено');
-            location.reload();
-                    } else {
-                alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
-                    }
-                })
-                .catch(error => {
-        console.error('Error adding card:', error);
-        alert('Ошибка при добавлении заведения');
+    // Показываем прогресс-бар
+    const submitBtn = $('button[onclick="submitAddCard()"]');
+    const originalText = submitBtn.text();
+    submitBtn.text('Создание...').prop('disabled', true);
+    
+    // Создаем прогресс-бар
+    let progressContainer = $('#submit-progress-container');
+    if (progressContainer.length === 0) {
+        progressContainer = $(`
+            <div id="submit-progress-container" style="margin-top: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>Создание заведения...</span>
+                    <span id="submit-progress-percent">0%</span>
+                </div>
+                <div style="width: 100%; background-color: #e5e7eb; border-radius: 4px; overflow: hidden;">
+                    <div id="submit-progress-bar" style="width: 0%; height: 8px; background-color: #10b981; transition: width 0.3s ease;"></div>
+                </div>
+                <div id="submit-status" style="font-size: 0.875rem; color: #6b7280; margin-top: 5px;">Подготовка данных...</div>
+            </div>
+        `);
+        $('.modal-footer').before(progressContainer);
+    }
+    progressContainer.show();
+    
+    // Используем XMLHttpRequest для отслеживания прогресса
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            $('#submit-progress-bar').css('width', percentComplete + '%');
+            $('#submit-progress-percent').text(Math.round(percentComplete) + '%');
+            $('#submit-status').text(`Отправлено ${Math.round(e.loaded / 1024)} КБ из ${Math.round(e.total / 1024)} КБ`);
+        }
     });
+    
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            try {
+                const data = JSON.parse(xhr.responseText);
+                if (data.success) {
+                    $('#submit-status').text('Заведение успешно создано!');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                    progressContainer.hide();
+                    submitBtn.text(originalText).prop('disabled', false);
+                }
+            } catch (e) {
+                alert('Ошибка при обработке ответа сервера');
+                progressContainer.hide();
+                submitBtn.text(originalText).prop('disabled', false);
+            }
+        } else {
+            alert('Ошибка при создании заведения');
+            progressContainer.hide();
+            submitBtn.text(originalText).prop('disabled', false);
+        }
+    };
+    
+    xhr.onerror = function() {
+        alert('Ошибка при создании заведения');
+        progressContainer.hide();
+        submitBtn.text(originalText).prop('disabled', false);
+    };
+    
+    xhr.open('POST', `/admin/services/categories/${categoryId}/cards/add`);
+    xhr.send(formData);
 }
 
 // Функция отправки формы редактирования карточки
@@ -1745,19 +1835,60 @@ $(document).ready(function() {
         setTimeout(initAddCardMap, 100);
     });
     
-    // Обработчики для переключения вкладок 360° панорамы
+    // Обработчики для переключения вкладок 360° панорамы (только для единичной загрузки)
     $('.tour-tab').click(function() {
         $('.tour-tab').removeClass('active');
         $(this).addClass('active');
         
         const tab = $(this).data('tab');
-        if (tab === 'url') {
-            $('#tour-url-section').show();
-            $('#tour-file-section').hide();
-                } else {
-            $('#tour-url-section').hide();
-            $('#tour-file-section').show();
-        }
+        // Убираем логику табов, так как теперь только файлы
+    });
+    
+    // Обработчик для множественной загрузки панорам
+    $('.upload-multiple-panoramas-btn').click(function() {
+        const entityId = $(this).data('entity-id');
+        const entityType = $(this).data('entity-type');
+        
+        // Открываем модальное окно множественной загрузки
+        $('#multiple-panoramas-modal').removeClass('hidden').addClass('show');
+        
+        // Загружаем текущие панорамы
+        loadCurrentPanoramas(entityId, entityType);
+        
+        // Сбрасываем форму
+        resetMultiplePanoramaForm();
+    });
+    
+    // Обработчики для закрытия модального окна множественной загрузки
+    $('.close-multiple-panoramas-modal').click(function() {
+        $('#multiple-panoramas-modal').addClass('hidden').removeClass('show');
+    });
+    
+    // Обработчик для выбора файлов панорам
+    $('#panorama-files').change(function() {
+        const files = this.files;
+        displaySelectedFiles(files);
+    });
+    
+    // Drag & Drop для файлов панорам
+    $('#file-drop-area').on('dragover', function(e) {
+        e.preventDefault();
+        $(this).addClass('border-blue-400 bg-blue-50');
+    }).on('dragleave', function(e) {
+        e.preventDefault();
+        $(this).removeClass('border-blue-400 bg-blue-50');
+    }).on('drop', function(e) {
+        e.preventDefault();
+        $(this).removeClass('border-blue-400 bg-blue-50');
+        
+        const files = e.originalEvent.dataTransfer.files;
+        $('#panorama-files')[0].files = files;
+        displaySelectedFiles(files);
+    });
+    
+    // Обработчик для кнопки загрузки множественных панорам
+    $('#upload-multiple-panoramas-btn').click(function() {
+        uploadMultiplePanoramas();
     });
     
     // Обработчик для загрузки изображений
@@ -1769,29 +1900,35 @@ $(document).ready(function() {
         if (files.length > 0) {
             $('#addCardImagesPreview').show();
             
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
+            Array.from(files).forEach((file, index) => {
                 const reader = new FileReader();
                 
                 reader.onload = function(e) {
-                    const imgContainer = $('<div class="image-preview-container"></div>');
-                    const img = $('<img class="image-preview">').attr('src', e.target.result);
-                    const removeBtn = $('<button class="image-remove-btn" type="button">&times;</button>');
+                    const imgContainer = $(`
+                        <div class="image-preview-container" style="position: relative; display: inline-block; margin: 5px;">
+                            <img class="image-preview" src="${e.target.result}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; border: 2px solid #e5e7eb;">
+                            <div class="image-info" style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 4px; font-size: 0.75rem; text-align: center; border-radius: 0 0 6px 6px;">
+                                ${file.name.substring(0, 15)}${file.name.length > 15 ? '...' : ''}
+                                <br>
+                                <span style="color: #9ca3af;">${(file.size / 1024).toFixed(1)} КБ</span>
+                            </div>
+                            <button class="image-remove-btn" type="button" style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; background: #ef4444; color: white; border: none; cursor: pointer; font-size: 14px; line-height: 1;">&times;</button>
+                        </div>
+                    `);
                     
-                    removeBtn.click(function() {
+                    imgContainer.find('.image-remove-btn').click(function() {
                         imgContainer.remove();
                         if (preview.children().length === 0) {
                             $('#addCardImagesPreview').hide();
                         }
                     });
                     
-                    imgContainer.append(img).append(removeBtn);
                     preview.append(imgContainer);
                 };
                 
                 reader.readAsDataURL(file);
-            }
-                    } else {
+            });
+        } else {
             $('#addCardImagesPreview').hide();
         }
     });
@@ -1800,9 +1937,35 @@ $(document).ready(function() {
     $('#addCard360File').change(function() {
         const file = this.files[0];
         if (file) {
-            $('#addCard360Preview').show();
-            $('#addCard360FileName').text(file.name);
+            // Показываем улучшенное превью
+            const preview = $(`
+                <div id="360-file-preview" style="margin-top: 15px; text-align: center; padding: 15px; background: #f9fafb; border-radius: 8px; border: 2px solid #e5e7eb;">
+                    <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+                        <i class="fas fa-vr-cardboard" style="color: #4b5563; margin-right: 8px; font-size: 1.5rem;"></i>
+                        <span style="color: #4b5563; font-weight: 500;">360° Панорама выбрана</span>
+                    </div>
+                    <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #d1d5db;">
+                        <div style="font-weight: 500; color: #374151; margin-bottom: 5px;">${file.name}</div>
+                        <div style="font-size: 0.875rem; color: #6b7280;">
+                            Размер: ${(file.size / (1024 * 1024)).toFixed(2)} МБ
+                            <br>
+                            Тип: ${file.type || 'Неизвестно'}
+                        </div>
+                    </div>
+                    <button type="button" onclick="$('#addCard360File').val(''); $('#360-file-preview').remove();" style="margin-top: 8px; padding: 4px 8px; background: #ef4444; color: white; border: none; border-radius: 4px; font-size: 0.75rem; cursor: pointer;">
+                        <i class="fas fa-times"></i> Удалить
+                    </button>
+                </div>
+            `);
+            
+            // Удаляем старое превью если есть
+            $('#360-file-preview').remove();
+            $('#addCard360Preview').hide();
+            
+            // Добавляем новое превью
+            $('#tour-file-section').append(preview);
         } else {
+            $('#360-file-preview').remove();
             $('#addCard360Preview').hide();
         }
     });
@@ -1823,31 +1986,27 @@ $(document).ready(function() {
         }
         
         fetch(`/admin/services/cards/${cardId}/360-upload`, {
-                method: 'POST',
+            method: 'POST',
             body: formData
-            })
+        })
         .then(response => response.json())
-                .then(data => {
+        .then(data => {
             if (data.success) {
                 alert('360° панорама сохранена');
                 closeModal('tour360Modal');
                 location.reload();
-                    } else {
+            } else {
                 alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
-                    }
-                })
-                .catch(error => {
+            }
+        })
+        .catch(error => {
             console.error('Error saving 360 tour:', error);
             alert('Ошибка при сохранении панорамы');
         });
     });
     
-    // Закрытие модальных окон по клику вне их содержимого
-    $('.modal').click(function(e) {
-        if (e.target === this) {
-            closeModal(this.id);
-        }
-    });
+    // УБИРАЕМ автозакрытие модальных окон по клику вне их содержимого
+    // Модальные окна закрываются только при нажатии на крестик, отмену или кнопки действий
     
     // Закрытие модальных окон по клавише Escape
     $(document).keydown(function(e) {
@@ -1863,44 +2022,243 @@ $(document).ready(function() {
 function initAddCardMap() {
     if (typeof google === 'undefined') {
         console.error('Google Maps API не загружен');
-            return;
-            }
+        return;
+    }
 
-    const bishkek = { lat: 42.8746, lng: 74.5698 };
+    // Изменяем город по умолчанию на Ош
+    const osh = { lat: 40.5283, lng: 72.7985 };
     
     addCardMap = new google.maps.Map(document.getElementById('addCardMap'), {
         zoom: 12,
-        center: bishkek,
+        center: osh,
         mapTypeId: 'roadmap'
     });
     
     addCardMarker = new google.maps.Marker({
-        position: bishkek,
+        position: osh,
         map: addCardMap,
         draggable: true
     });
     
-    // Обновление координат при перемещении маркера
+    // Создаем сервис геокодирования
+    const geocoder = new google.maps.Geocoder();
+    
+    // Обновление координат при перемещении маркера + обратное геокодирование
     addCardMarker.addListener('dragend', function(event) {
         const lat = event.latLng.lat();
         const lng = event.latLng.lng();
         $('#addCardLatitude').val(lat);
         $('#addCardLongitude').val(lng);
+        
+        // Получаем адрес по координатам
+        geocoder.geocode({ location: event.latLng }, function(results, status) {
+            if (status === 'OK' && results[0]) {
+                $('#addCardAddress').val(results[0].formatted_address);
+            }
+        });
     });
     
-    // Установка маркера по клику на карте
+    // Установка маркера по клику на карте + обратное геокодирование
     addCardMap.addListener('click', function(event) {
-            const lat = event.latLng.lat();
-            const lng = event.latLng.lng();
+        const lat = event.latLng.lat();
+        const lng = event.latLng.lng();
         
         addCardMarker.setPosition(event.latLng);
         $('#addCardLatitude').val(lat);
         $('#addCardLongitude').val(lng);
+        
+        // Получаем адрес по координатам
+        geocoder.geocode({ location: event.latLng }, function(results, status) {
+            if (status === 'OK' && results[0]) {
+                $('#addCardAddress').val(results[0].formatted_address);
+            }
+        });
     });
     
-    // Установка начальных координат
-    $('#addCardLatitude').val(bishkek.lat);
-    $('#addCardLongitude').val(bishkek.lng);
+    // Синхронизация поля адреса с картой
+    let addressTimeout;
+    $('#addCardAddress').on('input', function() {
+        clearTimeout(addressTimeout);
+        const address = $(this).val();
+        
+        if (address.length > 3) {
+            addressTimeout = setTimeout(() => {
+                geocoder.geocode({ 
+                    address: address,
+                    region: 'KG' // Приоритет для Кыргызстана
+                }, function(results, status) {
+                    if (status === 'OK' && results[0]) {
+                        const location = results[0].geometry.location;
+                        addCardMarker.setPosition(location);
+                        addCardMap.setCenter(location);
+                        $('#addCardLatitude').val(location.lat());
+                        $('#addCardLongitude').val(location.lng());
+                    }
+                });
+            }, 1000); // Задержка в 1 секунду
+        }
+    });
+    
+    // Установка начальных координат Оша
+    $('#addCardLatitude').val(osh.lat);
+    $('#addCardLongitude').val(osh.lng);
+}
+
+// Функции для работы с множественной загрузкой панорам
+
+// Функция отображения выбранных файлов
+function displaySelectedFiles(files) {
+    const filesList = $('#selected-files-list');
+    const filesCount = $('#selected-files-count');
+    
+    if (files.length === 0) {
+        filesList.html('<p class="text-gray-500 text-center py-4">Файлы не выбраны</p>');
+        filesCount.text('Выбрано файлов: 0/10');
+        return;
     }
+    
+    filesCount.text(`Выбрано файлов: ${files.length}/10`);
+    filesList.empty();
+    
+    Array.from(files).forEach((file, index) => {
+        const fileItem = $(`
+            <div class="file-item" style="padding: 12px; margin-bottom: 8px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center;">
+                        <i class="fas fa-vr-cardboard" style="color: #4b5563; margin-right: 12px; font-size: 1.2rem;"></i>
+                        <div>
+                            <div style="font-weight: 500; color: #374151;">${file.name}</div>
+                            <div style="font-size: 0.875rem; color: #6b7280;">
+                                ${(file.size / (1024 * 1024)).toFixed(2)} МБ • ${file.type || 'Неизвестный тип'}
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" onclick="removeFileFromList(${index})" style="padding: 4px 8px; background: #ef4444; color: white; border: none; border-radius: 4px; font-size: 0.75rem; cursor: pointer;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `);
+        filesList.append(fileItem);
+    });
+}
+
+// Функция удаления файла из списка
+function removeFileFromList(index) {
+    const fileInput = $('#panorama-files')[0];
+    const dt = new DataTransfer();
+    
+    Array.from(fileInput.files).forEach((file, i) => {
+        if (i !== index) {
+            dt.items.add(file);
+        }
+    });
+    
+    fileInput.files = dt.files;
+    displaySelectedFiles(fileInput.files);
+}
+
+// Функция загрузки текущих панорам
+function loadCurrentPanoramas(entityId, entityType) {
+    // Здесь будет запрос к API для получения текущих панорам
+    $('#current-panoramas-list').html('<p class="text-gray-500 text-center py-4">Загрузка...</p>');
+    
+    // Имитация загрузки - в реальности здесь будет fetch запрос
+    setTimeout(() => {
+        $('#current-panoramas-list').html('<p class="text-gray-500 text-center py-4">Панорам пока нет</p>');
+    }, 500);
+}
+
+// Функция сброса формы множественной загрузки
+function resetMultiplePanoramaForm() {
+    $('#panorama-files').val('');
+    $('#selected-files-list').html('<p class="text-gray-500 text-center py-4">Файлы не выбраны</p>');
+    $('#selected-files-count').text('Выбрано файлов: 0/10');
+    $('#upload-progress').addClass('hidden');
+}
+
+// Функция загрузки множественных панорам
+function uploadMultiplePanoramas() {
+    const files = $('#panorama-files')[0].files;
+    
+    if (files.length === 0) {
+        alert('Выберите файлы для загрузки');
+        return;
+    }
+    
+    if (files.length > 10) {
+        alert('Максимум 10 файлов за раз');
+        return;
+    }
+    
+    // Проверяем размер файлов
+    for (let file of files) {
+        if (file.size > 300 * 1024 * 1024) { // 300 МБ
+            alert(`Файл "${file.name}" слишком большой. Максимум 300 МБ`);
+            return;
+        }
+    }
+    
+    const formData = new FormData();
+    const entityId = $('.upload-multiple-panoramas-btn').first().data('entity-id');
+    
+    Array.from(files).forEach((file, index) => {
+        formData.append('panorama_files', file);
+        formData.append('notes', `Панорама ${index + 1}`);
+    });
+    
+    // Показываем прогресс
+    const uploadBtn = $('#upload-multiple-panoramas-btn');
+    const originalText = uploadBtn.text();
+    uploadBtn.text('Загрузка...').prop('disabled', true);
+    
+    $('#upload-progress').removeClass('hidden');
+    
+    // Используем XMLHttpRequest для отслеживания прогресса
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            $('#progress-bar').css('width', percentComplete + '%');
+            $('#progress-percent').text(Math.round(percentComplete) + '%');
+            $('#upload-status').text(`Загружено ${Math.round(e.loaded / (1024 * 1024))} МБ из ${Math.round(e.total / (1024 * 1024))} МБ`);
+        }
+    });
+    
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            try {
+                const data = JSON.parse(xhr.responseText);
+                if (data.success) {
+                    $('#upload-status').text(`Успешно загружено ${files.length} панорам!`);
+                    setTimeout(() => {
+                        $('#multiple-panoramas-modal').addClass('hidden').removeClass('show');
+                        location.reload();
+                    }, 2000);
+                } else {
+                    alert('Ошибка при загрузке: ' + (data.error || 'Неизвестная ошибка'));
+                    $('#upload-progress').addClass('hidden');
+                }
+            } catch (e) {
+                alert('Ошибка при обработке ответа сервера');
+                $('#upload-progress').addClass('hidden');
+            }
+        } else {
+            alert('Ошибка при загрузке панорам');
+            $('#upload-progress').addClass('hidden');
+        }
+        uploadBtn.text(originalText).prop('disabled', false);
+    };
+    
+    xhr.onerror = function() {
+        alert('Ошибка при загрузке панорам');
+        $('#upload-progress').addClass('hidden');
+        uploadBtn.text(originalText).prop('disabled', false);
+    };
+    
+    xhr.open('POST', `/api/v1/admin/service-cards/${entityId}/panoramas/upload`);
+    xhr.send(formData);
+}
 </script>
 {% endblock %}

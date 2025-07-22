@@ -37,6 +37,7 @@ from config import settings
 from api.v1.api import api_router
 from app.api import deps
 from app.utils.security import verify_password
+from app.utils.address_cleaner import clean_plus_code_from_address, is_plus_code_in_address
 from app import models
 from app.models.user import User
 from app.models.token import TokenPayload
@@ -3915,12 +3916,14 @@ async def create_service_card(
         if not category:
             return JSONResponse(status_code=404, content={"success": False, "error": "Категория не найдена"})
         
+        if address and is_plus_code_in_address(address):
+            print(f"🚨 ОБНАРУЖЕН Plus Code при создании заведения '{title}': {address}")
         # Создаем карточку заведения
         service_card = ServiceCard(
             category_id=category_id,
             title=title,
             description=description or None,
-            address=address or None,
+            address=clean_plus_code_from_address(address) if address else None,
             phone=phone or None,
             email=email or None,
             website=website or None,
@@ -4899,7 +4902,9 @@ async def update_service_card(
         # Обновляем поля
         service_card.title = title
         service_card.description = description or None
-        service_card.address = address or None
+        if address and is_plus_code_in_address(address):
+            print(f"🚨 ОБНАРУЖЕН Plus Code при обновлении заведения '{service_card.title}': {address}")
+        service_card.address = clean_plus_code_from_address(address) if address else None
         service_card.phone = phone or None
         service_card.email = email or None
         service_card.website = website or None
@@ -5972,4 +5977,4 @@ async def company_profile(request: Request, db: Session = Depends(deps.get_db)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=

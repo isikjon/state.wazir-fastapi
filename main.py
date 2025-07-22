@@ -5977,4 +5977,4 @@ async def company_profile(request: Request, db: Session = Depends(deps.get_db)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

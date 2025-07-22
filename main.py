@@ -1853,13 +1853,11 @@ async def admin_users(request: Request, db: Session = Depends(deps.get_db)):
         # Получаем количество объявлений пользователя
         properties_count = db.query(models.Property).filter(models.Property.owner_id == user_item.id).count()
         
-        # Получаем количество объявлений с 360-турами
-        tours_count = db.query(models.Property).filter(
-            models.Property.owner_id == user_item.id,
-            models.Property.tour_360_url.isnot(None),
-            models.Property.tour_360_url != ""
-        ).count()
-        
+
+        # Получаем количество объявлений с 360-турами (панорамами)
+        tours_count = db.query(models.Property).join(models.PropertyPanorama).filter(
+            models.Property.owner_id == user_item.id
+        ).distinct().count()
         # Форматируем дату регистрации
         registered_at = "Нет данных"
         if hasattr(user_item, 'created_at') and user_item.created_at:

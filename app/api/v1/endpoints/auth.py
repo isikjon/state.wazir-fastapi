@@ -14,6 +14,7 @@ from config import settings
 import re
 import random
 import string
+from sqlalchemy import func
 
 router = APIRouter()
 
@@ -31,7 +32,28 @@ def user_exists(db: Session, contact: str, contact_type: str) -> bool:
     else:  # телефон
         # Очищаем телефон от пробелов и других символов для сравнения
         phone_clean = re.sub(r'\D', '', contact)
-        user = db.query(models.User).filter(models.User.phone.ilike(f"%{phone_clean}%")).first()
+        
+        # Сначала пытаемся точное совпадение
+        user = db.query(models.User).filter(models.User.phone == contact).first()
+        if user:
+            return True
+            
+        # Ищем с нормализацией через REPLACE (совместимо с MySQL)
+        user = db.query(models.User).filter(
+            func.replace(
+                func.replace(
+                    func.replace(
+                        func.replace(
+                            func.replace(models.User.phone, '+', ''), 
+                            ' ', ''
+                        ), 
+                        '-', ''
+                    ), 
+                    '(', ''
+                ), 
+                ')', ''
+            ) == phone_clean
+        ).first()
     
     return user is not None
 
@@ -42,7 +64,28 @@ def get_user_by_contact(db: Session, contact: str, contact_type: str):
     else:  # телефон
         # Очищаем телефон от пробелов и других символов для сравнения
         phone_clean = re.sub(r'\D', '', contact)
-        return db.query(models.User).filter(models.User.phone.ilike(f"%{phone_clean}%")).first()
+        
+        # Сначала пытаемся точное совпадение
+        user = db.query(models.User).filter(models.User.phone == contact).first()
+        if user:
+            return user
+            
+        # Ищем с нормализацией через REPLACE (совместимо с MySQL)
+        return db.query(models.User).filter(
+            func.replace(
+                func.replace(
+                    func.replace(
+                        func.replace(
+                            func.replace(models.User.phone, '+', ''), 
+                            ' ', ''
+                        ), 
+                        '-', ''
+                    ), 
+                    '(', ''
+                ), 
+                ')', ''
+            ) == phone_clean
+        ).first()
 
 @router.post("/login")
 async def login(

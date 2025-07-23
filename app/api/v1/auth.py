@@ -1,9 +1,11 @@
 from datetime import timedelta
 from typing import Any
+import re
 
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app import models, schemas, services
 from app.api import deps
@@ -21,10 +23,32 @@ router = APIRouter()
 def login_access_token(
     db: Session = Depends(deps.get_db), form_data: OAuth2PasswordRequestForm = Depends()
 ) -> Any:
+    # Сначала пытаемся точное совпадение
     user = db.query(models.User).filter(
         (models.User.email == form_data.username) |
         (models.User.phone == form_data.username)
     ).first()
+    
+    # Если не нашли и это похоже на телефон, пытаемся нормализованный поиск
+    if not user and not '@' in form_data.username:
+        phone_clean = re.sub(r'\D', '', form_data.username)
+        if len(phone_clean) >= 10:  # Минимальная длина телефона
+            user = db.query(models.User).filter(
+                func.replace(
+                    func.replace(
+                        func.replace(
+                            func.replace(
+                                func.replace(models.User.phone, '+', ''), 
+                                ' ', ''
+                            ), 
+                            '-', ''
+                        ), 
+                        '(', ''
+                    ), 
+                    ')', ''
+                ) == phone_clean
+            ).first()
+    
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -50,10 +74,32 @@ def login_access_token(
 def register_user(
     *, db: Session = Depends(deps.get_db), user_in: schemas.UserCreate
 ) -> Any:
+    # Сначала пытаемся точное совпадение
     user = db.query(models.User).filter(
         (models.User.email == user_in.email) |
         (models.User.phone == user_in.phone)
     ).first()
+    
+    # Если не нашли по точному совпадению и есть телефон, проверяем нормализованный поиск
+    if not user and user_in.phone:
+        phone_clean = re.sub(r'\D', '', user_in.phone)
+        if len(phone_clean) >= 10:  # Минимальная длина телефона
+            user = db.query(models.User).filter(
+                func.replace(
+                    func.replace(
+                        func.replace(
+                            func.replace(
+                                func.replace(models.User.phone, '+', ''), 
+                                ' ', ''
+                            ), 
+                            '-', ''
+                        ), 
+                        '(', ''
+                    ), 
+                    ')', ''
+                ) == phone_clean
+            ).first()
+    
     if user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

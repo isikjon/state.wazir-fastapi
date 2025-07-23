@@ -1,9 +1,11 @@
 from typing import Any, Dict, Optional, Union
 
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+import re
 
 from app.services.base import CRUDBase
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.user import UserCreate, UserUpdate
 from app.utils.security import get_password_hash, verify_password
 
@@ -13,7 +15,28 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         return db.query(User).filter(User.email == email).first()
     
     def get_by_phone(self, db: Session, *, phone: str) -> Optional[User]:
-        return db.query(User).filter(User.phone == phone).first()
+        # Сначала пытаемся точное совпадение
+        user = db.query(User).filter(User.phone == phone).first()
+        if user:
+            return user
+            
+        # Ищем с нормализацией через REPLACE (совместимо с MySQL)
+        phone_clean = re.sub(r'\D', '', phone)
+        return db.query(User).filter(
+            func.replace(
+                func.replace(
+                    func.replace(
+                        func.replace(
+                            func.replace(User.phone, '+', ''), 
+                            ' ', ''
+                        ), 
+                        '-', ''
+                    ), 
+                    '(', ''
+                ), 
+                ')', ''
+            ) == phone_clean
+        ).first()
 
     def create(self, db: Session, *, obj_in: UserCreate) -> User:
         db_obj = User(
@@ -57,7 +80,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         return user.is_active
 
     def is_admin(self, user: User) -> bool:
-        return user.role == "admin"
+        return user.role == UserRole.ADMIN
 
 
 user = CRUDUser(User) 

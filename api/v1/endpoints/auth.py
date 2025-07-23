@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, func
 from sqlalchemy import or_
 from app.api import deps
 from app import models
@@ -41,10 +41,21 @@ def user_exists(db: Session, contact: str, contact_type: str) -> bool:
         if user:
             return True
             
-        # Если не нашли, ищем по очищенному номеру с любыми разделителями
+        # Ищем с нормализацией через REPLACE (совместимо с MySQL)
         user = db.query(models.User).filter(
-            models.User.phone.ilike(f"%{phone_clean}%") |
-            models.User.phone == phone_clean
+            func.replace(
+                func.replace(
+                    func.replace(
+                        func.replace(
+                            func.replace(models.User.phone, '+', ''), 
+                            ' ', ''
+                        ), 
+                        '-', ''
+                    ), 
+                    '(', ''
+                ), 
+                ')', ''
+            ) == phone_clean
         ).first()
     
     return user is not None
@@ -62,10 +73,21 @@ def get_user_by_contact(db: Session, contact: str, contact_type: str):
         if user:
             return user
             
-        # Если не нашли, ищем по очищенному номеру с любыми разделителями
+        # Ищем с нормализацией через REPLACE (совместимо с MySQL)
         return db.query(models.User).filter(
-            models.User.phone.ilike(f"%{phone_clean}%") | 
-            models.User.phone == phone_clean
+            func.replace(
+                func.replace(
+                    func.replace(
+                        func.replace(
+                            func.replace(models.User.phone, '+', ''), 
+                            ' ', ''
+                        ), 
+                        '-', ''
+                    ), 
+                    '(', ''
+                ), 
+                ')', ''
+            ) == phone_clean
         ).first()
 
 # Файл для хранения кодов (тот же что использует бот)

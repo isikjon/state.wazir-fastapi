@@ -125,7 +125,7 @@ class Property360Update(BaseModel):
     tour_360_url: str
     notes: Optional[str] = None
 
-@router.get("/{property_id}/360", response_model=Property360Update)
+@router.get("/{property_id}/360")
 def get_property_360(
     property_id: int,
     request: Request,
@@ -150,12 +150,16 @@ def get_property_360(
             detail="Недостаточно прав для просмотра данных 360° панорамы"
         )
     
+    # Получаем панорамы из связанной таблицы
+    panoramas = property.panoramas if hasattr(property, 'panoramas') else []
+    tour_url = panoramas[0].url if panoramas and len(panoramas) > 0 else ""
+    
     return {
-        "tour_360_url": property.tour_360_url or "",
-        "notes": property.notes or ""
+        "tour_360_url": tour_url,
+        "notes": ""
     }
 
-@router.post("/{property_id}/360", response_model=Property360Update)
+@router.post("/{property_id}/360")
 def update_property_360(
     property_id: int,
     update_data: Property360Update,
@@ -165,6 +169,9 @@ def update_property_360(
     """
     Обновление данных 360° панорамы для объявления
     """
+    from app.models.property import PropertyPanorama
+    from datetime import datetime
+    
     current_user = deps.get_current_active_user(request, db)
     
     print(f"DEBUG: Попытка обновления 360° для объявления {property_id}")
@@ -193,14 +200,22 @@ def update_property_360(
         
         print(f"DEBUG: Права доступа подтверждены, обновляем данные 360° панорамы")
         
-        # Обновляем данные 360° панорамы
-        property.tour_360_url = update_data.tour_360_url
-        if update_data.notes:
-            property.notes = update_data.notes
+        # Удаляем существующие панорамы
+        db.query(PropertyPanorama).filter(PropertyPanorama.property_id == property_id).delete()
+        
+        # Создаём новую панораму с URL
+        if update_data.tour_360_url:
+            panorama = PropertyPanorama(
+                property_id=property_id,
+                url=update_data.tour_360_url,
+                type="url",
+                notes=update_data.notes,
+                uploaded_at=datetime.now()
+            )
+            db.add(panorama)
         
         db.commit()
-        db.refresh(property)
-        print(f"DEBUG: Данные 360° панорамы успешно обновлены, URL: {property.tour_360_url}")
+        print(f"DEBUG: Данные 360° панорамы успешно обновлены, URL: {update_data.tour_360_url}")
     
     except HTTPException as http_ex:
         print(f"DEBUG: HTTPException: {http_ex.detail}, status_code: {http_ex.status_code}")
@@ -213,8 +228,8 @@ def update_property_360(
         )
     
     return {
-        "tour_360_url": property.tour_360_url or "",
-        "notes": property.notes or ""
+        "tour_360_url": update_data.tour_360_url or "",
+        "notes": update_data.notes or ""
     }
 
 @router.post("/{property_id}/approve", response_model=dict)

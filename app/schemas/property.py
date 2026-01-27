@@ -67,7 +67,6 @@ class PropertyBase(BaseModel):
     area: float
     status: Optional[PropertyStatus] = PropertyStatus.PENDING
     is_featured: Optional[bool] = False
-    tour_360_url: Optional[str] = None
     type: Optional[str] = "apartment"
     
     # Google Maps координаты

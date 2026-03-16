@@ -172,6 +172,8 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             '/admin/login',   # Admin login page
             '/superadmin/login',  # SuperAdmin login page
             '/companies/login',   # Company login page
+            '/privacy-policy',    # Privacy policy page
+            '/delete-account',    # Delete account page
         ]
         
         # Для статических файлов разрешаем доступ
@@ -614,6 +616,17 @@ async def layout_search():
 @app.get("/layout/property/{property_id}", response_class=RedirectResponse)
 async def layout_property_detail(property_id: int):
     return RedirectResponse(url=f"/mobile/property/{property_id}")
+
+# Публичные страницы (без авторизации)
+@app.get("/privacy-policy", response_class=HTMLResponse)
+async def privacy_policy(request: Request):
+    from fastapi.responses import FileResponse
+    return FileResponse("privacy_policy.html")
+
+@app.get("/delete-account", response_class=HTMLResponse)
+async def delete_account_page(request: Request):
+    from fastapi.responses import FileResponse
+    return FileResponse("delete-account.html")
 
 # Новые страницы для аутентификации
 @app.get("/register", response_class=RedirectResponse)

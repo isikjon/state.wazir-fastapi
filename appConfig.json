@@ -1,0 +1,404 @@
+{
+  "general": {
+    "userAgentRegexes": [],
+    "replaceStrings": [],
+    "publicKey": "zpbmyaj",
+    "deviceRegKey": "urf68nwr5d3r83qwqtkxk6avbm",
+    "appName": "Недвижимость KG",
+    "initialUrl": "https://state.wazir.kg/mobile/auth",
+    "keepScreenOn": null,
+    "screenOrientation": {
+      "iphone": null,
+      "ipad": null,
+      "androidPhone": null,
+      "androidTablet": null
+    },
+    "enableWindowOpen": true,
+    "userAgentAdd": "taalant",
+    "forceUserAgent": "",
+    "iosUserAgentAdd": "taalant",
+    "iosForceUserAgent": "",
+    "androidUserAgentAdd": "taalant",
+    "androidForceUserAgent": "",
+    "languages": [],
+    "nativeBridgeUrls": [],
+    "iosBundleId": "co.taalant.ios.zpbmyaj",
+    "androidPackageName": "co.taalant.android.zpbmyaj",
+    "androidSigningKey": "release",
+    "iosCustomHeaders": {},
+    "androidCustomHeaders": {},
+    "injectMedianJS": true,
+    "forceSessionCookieExpiry": 0
+  },
+  "navigation": {
+    "ignorePageFinishedRegexes": [],
+    "redirects": [],
+    "iosSettings": {},
+    "iosPullToRefresh": true,
+    "androidPullToRefresh": false,
+    "swipeGestures": null,
+    "iosConnectionOfflineTime": 10,
+    "androidConnectionOfflineTime": 10,
+    "regexInternalExternal": {
+      "active": true,
+      "rules": [
+        {
+          "regex": "^(?!https?://).*",
+          "mode": "external",
+          "label": "Non-web links",
+          "pagesToTrigger": "custom"
+        },
+        {
+          "regex": "https?://([-\\w]+\\.)*facebook\\.com.*",
+          "mode": "appbrowser",
+          "label": "Facebook",
+          "pagesToTrigger": "custom"
+        },
+        {
+          "regex": "https?://([\\-\\w]+\\.)*(twitter|x)\\.com/.*",
+          "mode": "appbrowser",
+          "label": "Twitter/X",
+          "pagesToTrigger": "custom"
+        },
+        {
+          "regex": "https?://([-\\w]+\\.)*instagram\\.com/.*",
+          "mode": "appbrowser",
+          "label": "Instagram",
+          "pagesToTrigger": "custom"
+        },
+        {
+          "regex": "https?://maps\\.google\\.com.*",
+          "mode": "appbrowser",
+          "label": "Google Maps",
+          "pagesToTrigger": "custom"
+        },
+        {
+          "regex": "https?://([-\\w]+\\.)*google\\.com/maps/search/.*",
+          "mode": "appbrowser",
+          "label": "Google Maps Search",
+          "pagesToTrigger": "custom"
+        },
+        {
+          "regex": "https?://([-\\w]+\\.)*linkedin\\.com/.*",
+          "mode": "appbrowser",
+          "label": "LinkedIn",
+          "pagesToTrigger": "custom"
+        },
+        {
+          "regex": "https?://login\\.microsoftonline\\.com.*",
+          "mode": "internal",
+          "label": "Microsoft Login",
+          "pagesToTrigger": "custom"
+        },
+        {
+          "regex": "https?:\\/\\/([-\\w]+\\.)*wazir.kg(\\/.*)?$",
+          "mode": "internal",
+          "label": "All pages on my domain",
+          "pagesToTrigger": "domain"
+        },
+        {
+          "regex": ".*",
+          "mode": "appbrowser",
+          "label": "All Other Links",
+          "pagesToTrigger": "all"
+        }
+      ]
+    },
+    "deepLinkDomains": {
+      "enableAndroidApplinks": false,
+      "domains": []
+    },
+    "navigationTitles": {
+      "active": true,
+      "titles": []
+    },
+    "iosShowRefreshButton": false,
+    "androidShowRefreshButton": false,
+    "actionConfig": {
+      "active": true,
+      "actions": [],
+      "actionSelection": []
+    },
+    "navigationLevels": {
+      "active": true,
+      "levels": []
+    },
+    "sidebarNavigation": {
+      "menuSelectionConfig": {
+        "redirectLocations": [
+          {
+            "regex": ".*",
+            "menuName": "default",
+            "loggedIn": true
+          }
+        ]
+      },
+      "menus": [
+        {
+          "active": false,
+          "name": "default",
+          "items": [
+            {
+              "url": "https://state.wazir.kg/mobile/reset",
+              "label": "Не\n                                помню пароль",
+              "subLinks": []
+            },
+            {
+              "url": "https://state.wazir.kg/mobile/register",
+              "label": "Создать id",
+              "subLinks": []
+            },
+            {
+              "url": "https://state.wazir.kg/privacy-policy",
+              "label": "Политика конфиденциальности",
+              "subLinks": []
+            },
+            {
+              "url": "https://state.wazir.kg/delete-account",
+              "label": "Удалить аккаунт",
+              "subLinks": []
+            }
+          ]
+        }
+      ]
+    },
+    "tabNavigation": {
+      "active": false,
+      "tabMenus": [],
+      "tabSelectionConfig": []
+    },
+    "androidShowOfflinePage": true,
+    "iosShowOfflinePage": true,
+    "toolbarNavigation": {
+      "enabled": false,
+      "visibilityByPages": "allPages",
+      "visibilityByBackButton": "backButtonActive",
+      "regexes": [
+        {
+          "enabled": true,
+          "regex": ".*"
+        }
+      ],
+      "items": [
+        {
+          "system": "back",
+          "titleType": "defaultText",
+          "visibility": "allPages",
+          "urlRegex": [
+            {
+              "enabled": true,
+              "regex": ".*"
+            }
+          ]
+        },
+        {
+          "system": "refresh",
+          "enabled": false,
+          "visibility": "allPages",
+          "urlRegex": [
+            {
+              "enabled": true,
+              "regex": ".*"
+            }
+          ]
+        },
+        {
+          "system": "forward",
+          "enabled": false,
+          "titleType": "defaultText",
+          "visibility": "allPages",
+          "urlRegex": [
+            {
+              "enabled": true,
+              "regex": ".*"
+            }
+          ]
+        }
+      ]
+    },
+    "maxWindows": {
+      "enabled": false,
+      "numWindows": 5,
+      "autoClose": false
+    }
+  },
+  "styling": {
+    "splashScreen": {
+      "ios": {
+        "backgroundImage": "https://gonativeio.s3.amazonaws.com/app_files/zpbmyaj/1773656233532_957hyjfaq7nwy_FFFFFF_1_2x2.png",
+        "backgroundImageDark": "https://gonativeio.s3.amazonaws.com/app_files/zpbmyaj/1773656233540_6dq3ybj8wk2ag_ffffff_1_2x2.png",
+        "backgroundColor": "#FFFFFF",
+        "backgroundColorDark": "#ffffff",
+        "centerImage": "https://s3.amazonaws.com/gonativeio/app_files/zpbmyaj/splashscreen_ios.png",
+        "centerImageDark": "https://s3.amazonaws.com/gonativeio/app_files/zpbmyaj/splashscreen_ios_dark.png",
+        "animation": null,
+        "animationDark": null,
+        "animationFrame": null,
+        "animationFrameDark": null,
+        "animationLoop": "once",
+        "animated": false
+      },
+      "android": {
+        "launchImages": {
+          "xxxhdpi": "https://gonativeio.s3.amazonaws.com/app_files/zpbmyaj/1773656233690_qdr2atcxxj38c_720x720.png",
+          "xxhdpi": "https://gonativeio.s3.amazonaws.com/app_files/zpbmyaj/1773656233677_xu7qdxqz9ajmw_540x540.png",
+          "xhdpi": "https://gonativeio.s3.amazonaws.com/app_files/zpbmyaj/1773656233669_kyf80b4g6w4wp_360x360.png",
+          "hdpi": "https://gonativeio.s3.amazonaws.com/app_files/zpbmyaj/1773656233662_h13bk7cy2h14c_270x270.png",
+          "mdpi": "https://gonativeio.s3.amazonaws.com/app_files/zpbmyaj/1773656233653_jzmrt1j9rmq4w_180x180.png"
+        },
+        "launchImagesDark": {
+          "xxxhdpi": "https://gonativeio.s3.amazonaws.com/app_files/zpbmyaj/1773656233849_0y287u46azvvm_720x720.png",
+          "xxhdpi": "https://gonativeio.s3.amazonaws.com/app_files/zpbmyaj/1773656233823_fvwwpur4jm1kc_540x540.png",
+          "xhdpi": "https://gonativeio.s3.amazonaws.com/app_files/zpbmyaj/1773656233798_9kj2qna4mccdc_360x360.png",
+          "hdpi": "https://gonativeio.s3.amazonaws.com/app_files/zpbmyaj/1773656233732_anwf4kehuwu8j_270x270.png",
+          "mdpi": "https://gonativeio.s3.amazonaws.com/app_files/zpbmyaj/1773656233705_4f7dj9pv68fje_180x180.png"
+        },
+        "showSplash": true,
+        "backgroundColor": "#FFFFFF",
+        "backgroundColorDark": "#ffffff",
+        "animation": null,
+        "animationDark": null,
+        "animationFrame": null,
+        "animationFrameDark": null,
+        "animationLoop": "once",
+        "animated": false
+      }
+    },
+    "transitionInteractiveDelayMax": 0.2,
+    "menuAnimationDuration": 0.15,
+    "iosTheme": "default",
+    "androidTabPressedBackgroundColor": "#CCCCCC",
+    "androidTabPressedBackgroundColorDark": "#999999",
+    "androidBackgroundColor": "#FFFFFF",
+    "androidBackgroundColorDark": "#333333",
+    "icon": "https://s3.amazonaws.com/gonativeio/app_files/zpbmyaj/app_icon_android.png",
+    "iosIcon": "https://s3.amazonaws.com/gonativeio/app_files/zpbmyaj/app_icon_android.png",
+    "customIcons": {},
+    "iosDarkMode": "auto",
+    "iosEnableBlurInStatusBar": false,
+    "iosStatusBarStyle": "auto",
+    "iosEnableOverlayInStatusBar": false,
+    "iosStatusBarBackgroundColor": "#ffffffff",
+    "iosStatusBarBackgroundColorDark": "#ffffff",
+    "androidStatusBarStyle": "auto",
+    "androidEnableOverlayInStatusBar": false,
+    "androidStatusBarBackgroundColor": "#ffffff",
+    "androidStatusBarBackgroundColorDark": "#ffffff",
+    "iosTintColor": "#0E0D08",
+    "iosTintColorDark": "#ffffff",
+    "androidIcon": "https://s3.amazonaws.com/gonativeio/app_files/zpbmyaj/app_icon_android.png",
+    "androidTheme": "auto",
+    "androidAccentColor": "#009688",
+    "androidAccentColorDark": "#80cbc4",
+    "androidSystemNavBarColor": "#FFFFFF",
+    "androidSystemNavBarColorDark": "#000000",
+    "androidPullToRefreshColor": "#1A100B",
+    "androidPullToRefreshColorDark": "#FFFFFF",
+    "iosActivityIndicatorColor": "#808080",
+    "iosActivityIndicatorColorDark": "#808080",
+    "androidActivityIndicatorColor": "#808080",
+    "androidActivityIndicatorColorDark": "#808080",
+    "androidWebviewTextZoom": null,
+    "hideWebviewAlpha": 0.5,
+    "forceViewportWidth": null,
+    "initialZoom": null,
+    "pinchToZoom": null,
+    "iosDynamicType": null,
+    "iosGlassDesign": false,
+    "iosTransparentNavBar": true,
+    "androidSwipeNavigationBackgroundColor": "#FFFFFF",
+    "androidSwipeNavigationBackgroundColorDark": "#333333",
+    "androidSwipeNavigationActiveColor": "#000000",
+    "androidSwipeNavigationActiveColorDark": "#FFFFFF",
+    "androidSwipeNavigationInactiveColor": "#666666",
+    "androidSwipeNavigationInactiveColorDark": "#666666",
+    "iosHideNavBarOnScroll": false,
+    "androidHideNavBarOnScroll": false,
+    "navigationTitleImageLocation": "https://s3.amazonaws.com/gonativeio/app_files/zpbmyaj/app_icon_android.png",
+    "navigationTitleImageLocationDark": "https://s3.amazonaws.com/gonativeio/app_files/zpbmyaj/app_icon_android.png",
+    "iosTitleColor": "#0E0D08",
+    "iosTitleColorDark": "#ffffff",
+    "iosNavigationBarTintColor": "#f8f8f8",
+    "iosNavigationBarTintColorDark": "#202020",
+    "androidActionBarBackgroundColor": "#FFFFFF",
+    "androidActionBarBackgroundColorDark": "#333333",
+    "androidHeaderImage": "https://s3.amazonaws.com/gonativeio/app_files/zpbmyaj/app_icon_android.png",
+    "androidHeaderImageDark": "https://s3.amazonaws.com/gonativeio/app_files/zpbmyaj/app_icon_android.png",
+    "androidActionBarForegroundColor": "#1A100B",
+    "androidActionBarForegroundColorDark": "#FFFFFF",
+    "iosSidebarBackgroundColor": "#f8f8f8",
+    "iosSidebarBackgroundColorDark": "#202020",
+    "iosSidebarFont": "Default",
+    "iosHeaderImage": "https://s3.amazonaws.com/gonativeio/app_files/zpbmyaj/app_icon_android.png",
+    "iosHeaderImageDark": "https://s3.amazonaws.com/gonativeio/app_files/zpbmyaj/app_icon_android.png",
+    "iosSidebarTextColor": "#0E0D08",
+    "iosSidebarTextColorDark": "#ffffff",
+    "androidSidebarBackgroundColor": "#FFFFFF",
+    "androidSidebarBackgroundColorDark": "#333333",
+    "androidSidebarForegroundColor": "#1A100B",
+    "androidSidebarForegroundColorDark": "#FFFFFF",
+    "androidSidebarSeparatorColor": "#CCCCCC",
+    "androidSidebarSeparatorColorDark": "#666666",
+    "androidSidebarHighlightColor": "#1A100B",
+    "androidSidebarHighlightColorDark": "#FFFFFF",
+    "androidShowLogoInSideBar": true,
+    "androidShowAppNameInSideBar": true,
+    "iosHideTabBarOnScroll": false,
+    "androidHideTabBarOnScroll": false,
+    "androidTabBarBackgroundColor": "#FFFFFF",
+    "androidTabBarBackgroundColorDark": "#333333",
+    "androidTabBarTextColor": "#949494",
+    "androidTabBarTextColorDark": "#FFFFFF",
+    "androidTabBarIndicatorColor": "#1A100B",
+    "androidTabBarIndicatorColorDark": "#666666",
+    "iosTabBarTintColor": "#f8f8f8",
+    "iosTabBarTintColorDark": "#000000",
+    "iosTabBarInactiveColor": "#A1A1A1",
+    "iosTabBarInactiveColorDark": "#818181",
+    "disableAnimations": false,
+    "navigationTitleImage": false,
+    "androidHideTitleInActionBar": false,
+    "showNavigationBar": false,
+    "showActionBar": false
+  },
+  "allowZoom": null,
+  "contextMenu": {
+    "enabled": false,
+    "linkActions": [
+      "copyLink",
+      "openExternal"
+    ]
+  },
+  "security": {
+    "network": {
+      "allowInsecure": null
+    }
+  },
+  "permissions": {
+    "usesGeolocation": true,
+    "iosLocationUsageDescription": "Приложение использует геолокацию для поиска недвижимости рядом с вами и отображения объектов на карте.",
+    "iosCameraUsageDescription": "Приложение использует камеру для загрузки фотографий объектов недвижимости.",
+    "iosMicrophoneUsageDescription": "Приложение использует микрофон для записи видео при публикации объектов недвижимости.",
+    "enableWebRTCamera": true,
+    "enableWebRTCMicrophone": true,
+    "androidDownloadToPublicStorage": true,
+    "iOSATTUserTrackingDescription": "Это позволяет нам показывать вам более релевантные объявления о недвижимости.",
+    "iOSRequestATTConsentOnLoad": false,
+    "iosPhotoLibraryUsageDescription": "Приложение использует галерею для загрузки фотографий объектов недвижимости.",
+    "iosPhotoLibraryAddUsageDescription": "Приложение сохраняет фотографии объектов недвижимости в вашу галерею.",
+    "iosLocationWhenInUseUsageDescription": "Приложение использует геолокацию для поиска недвижимости рядом с вами.",
+    "iosLocationAlwaysUsageDescription": "Приложение использует геолокацию для уведомлений о новых объектах рядом с вами.",
+    "androidRequestLocationPermission": true,
+    "androidRequestCameraPermission": true,
+    "androidRequestMicrophonePermission": true,
+    "androidRequestStoragePermission": true
+  },
+  "developmentTools": {
+    "enableWebConsoleLogs": false
+  },
+  "services": {
+    "oneSignalV5": {
+      "active": false
+    }
+  }
+}

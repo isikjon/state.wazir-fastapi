@@ -6,6 +6,7 @@ services:
     expose:
       - "8000"
     environment:
+      - DATABASE_URL=mysql+pymysql://wazir:c:ICx9Pr{48y>6BmBc3r@91.218.141.27/wazir
       - DB_HOST=91.218.141.27
       - DB_PORT=3306
       - DB_NAME=wazir
@@ -14,14 +15,24 @@ services:
       - SECRET_KEY=7775c3c9d85f5a9b8c2c28234c2c5d9b8c2c2823
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=2880
+      - GOOGLE_MAPS=AIzaSyCgctqtqKOus6A6cDJaOBqsyo4-3r3zuQA
       - TELEGRAM_BOT_TOKEN=7635146586:AAHfyRr_8S7Dq5CWneST3LdHbLCsrh-vUq8
+      - TELEGRAM_BOT_USERNAME=state_wazir_bot
       - SMS_LOGIN=almaz-91
       - SMS_PASSWORD=sams1488
       - MEDIA_SERVER_URL=https://wazir.kg/media
+      - DEVINO_API_KEY=8YF4D4R8k094r8uR3nwiEnsRuwIXRW67
     volumes:
       - ./media:/app/media
+      - ./static:/app/static
       - ./logs:/app/logs
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - wazir-network
 

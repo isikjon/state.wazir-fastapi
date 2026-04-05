@@ -79,55 +79,61 @@ except ImportError:
 async def lifespan(app: FastAPI):
     # ОТКЛЮЧАЕМ сложный бот с системой сессий
     # if telegram_bot_available and telegram_bot_service:
-    #     print("Запуск Telegram бота...")
+    #     print("Запуск Telegram бота...", flush=True)
     #     await telegram_bot_service.start_bot()
     # else:
-    #     print("Telegram бот не запущен (не настроен или недоступен)")
+    #     print("Telegram бот не запущен (не настроен или недоступен)", flush=True)
     
     # 🔥 ПРИНУДИТЕЛЬНЫЙ ЗАПУСК ПРОСТОГО БОТА 🔥
-    print("🚀 Принудительный запуск простого Telegram бота...")
+    print("🚀 [LIFESPAN] Начало запуска приложения...", flush=True)
     try:
         # Проверяем настройки
+        print("🔍 [LIFESPAN] Проверка настроек бота...", flush=True)
         if not settings.TELEGRAM_BOT_TOKEN:
-            print("❌ TELEGRAM_BOT_TOKEN не настроен!")
+            print("❌ [LIFESPAN] TELEGRAM_BOT_TOKEN не настроен!", flush=True)
         elif not settings.TELEGRAM_BOT_USERNAME:
-            print("❌ TELEGRAM_BOT_USERNAME не настроен!")
+            print("❌ [LIFESPAN] TELEGRAM_BOT_USERNAME не настроен!", flush=True)
         else:
-            print(f"✅ Настройки найдены: @{settings.TELEGRAM_BOT_USERNAME}")
+            print(f"✅ [LIFESPAN] Настройки найдены: @{settings.TELEGRAM_BOT_USERNAME}", flush=True)
             
             # Импортируем бота принудительно
             try:
+                print("📦 [LIFESPAN] Импорт telegram_bot...", flush=True)
                 from telegram_bot import sms_bot
-                print("✅ telegram_bot импортирован успешно")
+                print("✅ [LIFESPAN] telegram_bot импортирован успешно", flush=True)
                 
-                # Запускаем бота в отдельной задаче БЕЗ ОЖИДАНИЯ
+                # Запускаем бота в отдельной задаче
+                print("🤖 [LIFESPAN] Запуск sms_bot.start_bot()...", flush=True)
                 asyncio.create_task(sms_bot.start_bot())
-                print("✅ Задача запуска бота создана")
+                print("✅ [LIFESPAN] Задача запуска бота создана", flush=True)
                 
                 # Даем боту время запуститься
+                print("⏳ [LIFESPAN] Ожидание 1 сек для инициализации бота...", flush=True)
                 await asyncio.sleep(1)
+                print("✅ [LIFESPAN] Ожидание завершено", flush=True)
                 
             except ImportError as e:
-                print(f"❌ Ошибка импорта telegram_bot: {e}")
+                print(f"❌ [LIFESPAN] Ошибка импорта telegram_bot: {e}", flush=True)
             except Exception as e:
-                print(f"❌ Ошибка запуска бота: {e}")
+                print(f"❌ [LIFESPAN] Ошибка запуска бота: {e}", flush=True)
                 import traceback
-                print(f"❌ Traceback: {traceback.format_exc()}")
+                print(f"❌ [LIFESPAN] Traceback: {traceback.format_exc()}", flush=True)
     except Exception as e:
-        print(f"❌ Критическая ошибка при запуске бота: {e}")
+        print(f"❌ [LIFESPAN] Критическая ошибка при запуске бота: {e}", flush=True)
     
-    print("🚀 Приложение запущено")
+    print("🚀 [LIFESPAN] Приложение полностью запущено и готово к работе", flush=True)
     yield
     
     # Останавливаем простой бот
-    print("🛑 Остановка простого Telegram бота...")
+    print("🛑 [LIFESPAN] Остановка приложения и Telegram бота...", flush=True)
     try:
         from telegram_bot import sms_bot
         await sms_bot.stop_bot()
+        print("✅ [LIFESPAN] Бот остановлен", flush=True)
     except Exception as e:
-        print(f"❌ Ошибка остановки простого бота: {e}")
+        print(f"❌ [LIFESPAN] Ошибка остановки простого бота: {e}", flush=True)
     
-    print("🛑 Приложение завершено")
+    print("🛑 [LIFESPAN] Приложение завершено", flush=True)
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()

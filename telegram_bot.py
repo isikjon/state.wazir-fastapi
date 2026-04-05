@@ -206,15 +206,14 @@ class SMSBot:
             return False
             
     async def start_bot(self):
-        """Запуск бота с nest_asyncio"""
-        print("🚀 [BOT] Инициализация Telegram бота...")
+        """Запуск бота с корректной инициализацией для FastAPI"""
+        print("🚀 [BOT] Инициализация Telegram бота...", flush=True)
         
         if not settings.TELEGRAM_BOT_TOKEN:
-            print("❌ [BOT] TELEGRAM_BOT_TOKEN не найден в настройках")
+            print("❌ [BOT] TELEGRAM_BOT_TOKEN не найден в настройках", flush=True)
             return
             
-        print(f"🤖 [BOT] Бот: @{settings.TELEGRAM_BOT_USERNAME}")
-        print(f"🔑 [BOT] Токен: {settings.TELEGRAM_BOT_TOKEN[:10]}...")
+        print(f"🤖 [BOT] Бот: @{settings.TELEGRAM_BOT_USERNAME}", flush=True)
         
         try:
             # Создаем приложение
@@ -225,33 +224,35 @@ class SMSBot:
             self.application.add_handler(MessageHandler(filters.CONTACT, self.handle_contact))
             self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_text))
             
-            # Запускаем бота в фоновой задаче с nest_asyncio
-            self.bot_task = asyncio.create_task(self.application.run_polling(allowed_updates=Update.ALL_TYPES))
-            print("✅ [BOT] Telegram бот запущен успешно!")
+            # Инициализация и запуск (рекомендуемый способ для интеграции)
+            await self.application.initialize()
+            await self.application.start()
+            
+            if self.application.updater:
+                await self.application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+                print("✅ [BOT] Telegram бот запущен (polling)!", flush=True)
+            else:
+                print("❌ [BOT] Ошибка: updater не инициализирован", flush=True)
             
         except Exception as e:
-            print(f"❌ [BOT] Критическая ошибка запуска бота: {e}")
-            logger.error(f"Критическая ошибка запуска бота: {e}")
-            raise
+            print(f"❌ [BOT] Ошибка запуска бота: {e}", flush=True)
+            import traceback
+            print(f"❌ [BOT] Traceback: {traceback.format_exc()}", flush=True)
+            # Не бросаем исключение выше, чтобы не уронить все приложение при сбое бота
         
     async def stop_bot(self):
         """Остановка бота"""
-        print("🛑 [BOT] Остановка Telegram бота...")
+        print("🛑 [BOT] Остановка Telegram бота...", flush=True)
         try:
-            if hasattr(self, 'bot_task') and self.bot_task:
-                self.bot_task.cancel()
-                try:
-                    await self.bot_task
-                except asyncio.CancelledError:
-                    pass
-            
-            if hasattr(self, 'application') and self.application:
+            if self.application:
+                if self.application.updater:
+                    await self.application.updater.stop()
                 await self.application.stop()
+                await self.application.shutdown()
                 
-            print("✅ [BOT] Telegram бот остановлен успешно!")
+            print("✅ [BOT] Telegram бот остановлен успешно!", flush=True)
         except Exception as e:
-            print(f"❌ [BOT] Критическая ошибка остановки бота: {e}")
-            logger.error(f"Критическая ошибка остановки бота: {e}")
+            print(f"❌ [BOT] Ошибка остановки бота: {e}", flush=True)
             
     async def main(self):
         """Запуск бота (для отдельного использования)"""

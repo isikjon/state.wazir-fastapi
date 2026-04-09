@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from app.api import deps
 from datetime import datetime
 
@@ -11,8 +12,7 @@ def health_check(db: Session = Depends(deps.get_db)):
     Проверка работоспособности API и подключения к базе данных
     """
     try:
-        # Проверяем соединение с базой данных, выполняя простой запрос
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         
         return {
             "status": "ok",
